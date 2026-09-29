@@ -35,6 +35,7 @@ const NAV_ITEMS = [
   { href: "/explore", label: "Explorations", icon: Compass },
   { href: "/stations", label: "Stations", icon: Building2 },
   { href: "/datasets", label: "NPDC Data", icon: Database },
+  { href: "/documents", label: "Document AI", icon: FileSearch },
   { href: "/weather", label: "Live Weather", icon: CloudSun },
   { href: "/education", label: "Classroom", icon: GraduationCap },
   { href: "/media", label: "Media & Press", icon: ImageIcon },
