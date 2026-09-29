@@ -16,7 +16,8 @@ import {
   FileText,
   RefreshCw,
   Search,
-  Filter
+  Filter,
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,8 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "audit" | "submissions">("overview");
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("");
+  const [auditResourceTypeFilter, setAuditResourceTypeFilter] = useState("");
+  const [auditActionFilter, setAuditActionFilter] = useState("");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,6 +62,12 @@ export default function AdminPage() {
       loadSubmissions()
     ]);
   }
+
+  useEffect(() => {
+    if (user && activeTab === "audit") {
+      loadAuditLogs();
+    }
+  }, [auditActionFilter, auditResourceTypeFilter, activeTab, user]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -107,10 +116,34 @@ export default function AdminPage() {
 
   async function loadAuditLogs() {
     try {
-      const res = await fetchApi("/audit?limit=50");
+      let query = "/audit?limit=100";
+      if (auditActionFilter) query += `&action=${encodeURIComponent(auditActionFilter)}`;
+      if (auditResourceTypeFilter) query += `&resource_type=${encodeURIComponent(auditResourceTypeFilter)}`;
+      const res = await fetchApi(query);
       setAuditLogs(res.items || []);
     } catch (e) {
       console.error("Failed to load audit logs", e);
+    }
+  }
+
+  async function handleExportAudit(format: "csv" | "json") {
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("vistaar_token") : null;
+      const res = await fetch(`http://localhost:8000/api/v1/audit/export?format=${format}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `vistaar_audit_${new Date().toISOString().slice(0, 10)}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showNotification(`Audit trail exported as ${format.toUpperCase()}`);
+    } catch (e: any) {
+      showNotification(e.message || "Failed to export audit logs", true);
     }
   }
 
@@ -560,7 +593,7 @@ export default function AdminPage() {
       {/* TAB 3: AUDIT TRAIL */}
       {activeTab === "audit" && (
         <Card>
-          <CardHeader className="p-5 border-b border-vistaar-border flex flex-row items-center justify-between">
+          <CardHeader className="p-5 border-b border-vistaar-border flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <CardTitle className="text-base font-bold flex items-center space-x-2">
                 <History className="w-4 h-4 text-vistaar-primary" />
@@ -570,10 +603,76 @@ export default function AdminPage() {
                 Every sensitive event (login, logout, upload, review, approval, role change) is immutably recorded.
               </CardDescription>
             </div>
-            <Button size="sm" variant="outline" onClick={loadAuditLogs}>
-              Refresh Logs
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => handleExportAudit("csv")} className="flex items-center space-x-1.5 text-xs">
+                <Download className="w-3.5 h-3.5" />
+                <span>Export CSV</span>
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => handleExportAudit("json")} className="flex items-center space-x-1.5 text-xs">
+                <Download className="w-3.5 h-3.5" />
+                <span>Export JSON</span>
+              </Button>
+              <Button size="sm" variant="outline" onClick={loadAuditLogs} className="text-xs">
+                Refresh Logs
+              </Button>
+            </div>
           </CardHeader>
+          <div className="p-3 bg-vistaar-bg/50 border-b border-vistaar-border flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex items-center space-x-1.5">
+              <span className="font-semibold text-vistaar-muted text-[11px] uppercase tracking-wide">Action:</span>
+              <select
+                value={auditActionFilter}
+                onChange={(e) => setAuditActionFilter(e.target.value)}
+                className="px-2 py-1 bg-white border border-vistaar-border rounded text-xs text-vistaar-text"
+              >
+                <option value="">All Actions</option>
+                <option value="LOGIN_SUCCESS">LOGIN_SUCCESS</option>
+                <option value="LOGIN_FAILURE">LOGIN_FAILURE</option>
+                <option value="LOGOUT">LOGOUT</option>
+                <option value="USER_ROLE_CHANGED">USER_ROLE_CHANGED</option>
+                <option value="USER_STATUS_CHANGED">USER_STATUS_CHANGED</option>
+                <option value="GENERATE_OUTREACH">GENERATE_OUTREACH</option>
+                <option value="REVISE_PUBLICATION_TRACK">REVISE_PUBLICATION_TRACK</option>
+                <option value="ROLLBACK_PUBLICATION">ROLLBACK_PUBLICATION</option>
+                <option value="TRANSITION_STATUS">TRANSITION_STATUS</option>
+                <option value="UPDATE_DATASET_METADATA">UPDATE_DATASET_METADATA</option>
+              </select>
+            </div>
+
+            <div className="flex items-center space-x-1.5">
+              <span className="font-semibold text-vistaar-muted text-[11px] uppercase tracking-wide">Resource:</span>
+              <select
+                value={auditResourceTypeFilter}
+                onChange={(e) => setAuditResourceTypeFilter(e.target.value)}
+                className="px-2 py-1 bg-white border border-vistaar-border rounded text-xs text-vistaar-text"
+              >
+                <option value="">All Resources</option>
+                <option value="AUTH">AUTH</option>
+                <option value="USER">USER</option>
+                <option value="PUBLICATION">PUBLICATION</option>
+                <option value="DATASET">DATASET</option>
+                <option value="SUBMISSION">SUBMISSION</option>
+              </select>
+            </div>
+
+            {(auditActionFilter || auditResourceTypeFilter) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setAuditActionFilter("");
+                  setAuditResourceTypeFilter("");
+                }}
+                className="text-xs h-7 text-vistaar-muted hover:text-vistaar-text"
+              >
+                Clear Filters
+              </Button>
+            )}
+
+            <div className="ml-auto text-[11px] text-vistaar-muted font-mono">
+              Events: <span className="font-bold text-vistaar-text">{auditLogs.length}</span>
+            </div>
+          </div>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
