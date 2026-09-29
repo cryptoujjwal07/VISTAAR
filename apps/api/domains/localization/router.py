@@ -25,6 +25,7 @@ class PublicationTranslationRequest(BaseModel):
 class ApproveTranslationRequest(BaseModel):
     translation_id: str
     approved: bool
+    publish: Optional[bool] = False
     notes: Optional[str] = None
 
 @router.get("/languages")
@@ -34,7 +35,17 @@ async def get_supported_languages():
         "supported_languages": SUPPORTED_LANGUAGES,
         "default_source": "en",
         "bhashini_enabled": bool(localization_engine.bhashini_key),
-        "ai_translation_enabled": bool(localization_engine.gemini_key)
+        "ai_translation_enabled": bool(localization_engine.gemini_key),
+        "translation_provider_abstraction": "TranslationProvider",
+        "workflow": [
+            "APPROVED_SOURCE",
+            "CLAIM_SEGMENTATION",
+            "TRANSLATION",
+            "TERMINOLOGY_VALIDATION",
+            "NUMERICAL_PRESERVATION",
+            "REVIEW",
+            "PUBLISH",
+        ],
     }
 
 @router.post("/translate", response_model=TranslationResult)
@@ -48,7 +59,7 @@ async def translate_text(req: TranslateRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Target language '{req.target_language}' is not supported. Supported: {list(SUPPORTED_LANGUAGES.keys())}"
         )
-    
+
     result = await localization_engine.translate(
         text=req.text,
         target_lang=req.target_language,
@@ -62,16 +73,21 @@ async def translate_publication(
     current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"]))
 ):
     """
-    Translates an approved publication track into a target regional language.
-    Strictly guarantees that numbers, station names, coordinates, and units
-    remain immutable.
+    Translates an approved publication track into a target regional language (Prompt 22).
+    Workflow: approved source -> claim segmentation -> translation -> terminology validation
+    -> numerical preservation -> review when necessary -> publish.
+    Stores source_language, target_language, translation, provider, version, timestamp, and review_status.
+    Never silently replaces approved source with failed/unverified translation.
     """
     db = get_database()
     pub = await db.publications.find_one({"id": req.publication_id})
     if not pub:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
 
-    track_data = pub.get(req.track.lower())
+    track_key = (req.track or "pib").lower()
+    # Use immutable published_snapshot if available so approved source is guaranteed
+    snap = pub.get("published_snapshot") or {}
+    track_data = snap.get(track_key) or pub.get(track_key)
     if not track_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -82,20 +98,40 @@ async def translate_publication(
     body_res = await localization_engine.translate(track_data.get("body", ""), req.target_language)
     summary_res = await localization_engine.translate(track_data.get("summary", ""), req.target_language)
 
+    existing_count = await db.translations.count_documents({
+        "publication_id": req.publication_id,
+        "track": track_key,
+        "target_language": req.target_language,
+    })
+    version_num = existing_count + 1
+
     now = datetime.now(timezone.utc).isoformat()
+    all_valid = title_res.validation_passed and body_res.validation_passed
+    review_status = "VERIFIED" if all_valid else "PENDING_REVIEW"
+
     translation_doc = {
         "id": f"trans_{uuid.uuid4().hex[:12]}",
         "publication_id": req.publication_id,
-        "track": req.track.lower(),
+        "track": track_key,
         "source_language": "en",
         "target_language": req.target_language,
         "target_language_name": SUPPORTED_LANGUAGES.get(req.target_language, req.target_language),
         "title": title_res.translated_text,
         "summary": summary_res.translated_text,
         "body": body_res.translated_text,
-        "provider": title_res.provider,
-        "validation_passed": title_res.validation_passed and body_res.validation_passed,
-        "review_status": "PENDING_REVIEW" if not (title_res.validation_passed and body_res.validation_passed) else "VERIFIED",
+        "translation": {
+            "title": title_res.translated_text,
+            "summary": summary_res.translated_text,
+            "body": body_res.translated_text,
+        },
+        "claim_segments": [s.model_dump() for s in body_res.claim_segments],
+        "provider": body_res.provider or title_res.provider,
+        "version": version_num,
+        "timestamp": now,
+        "terminology_validation_passed": title_res.terminology_validation_passed and body_res.terminology_validation_passed,
+        "numerical_preservation_passed": title_res.numerical_preservation_passed and body_res.numerical_preservation_passed,
+        "validation_passed": all_valid,
+        "review_status": review_status,
         "created_at": now,
         "created_by": current_user["email"]
     }
@@ -115,6 +151,7 @@ async def translate_publication(
         "details": {
             "publication_id": req.publication_id,
             "target_language": req.target_language,
+            "version": version_num,
             "validation_passed": translation_doc["validation_passed"]
         }
     })
@@ -134,14 +171,25 @@ async def approve_translation(
     req: ApproveTranslationRequest,
     current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"]))
 ):
-    """Allows an outreach editor to approve or reject a regional translation."""
+    """Allows an outreach editor to approve, publish, or reject a regional translation."""
     db = get_database()
     translation = await db.translations.find_one({"id": req.translation_id})
     if not translation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Translation not found")
 
+    if req.approved and not translation.get("validation_passed", True) and not req.notes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unverified translation requires explicit reviewer notes before approval."
+        )
+
     now = datetime.now(timezone.utc).isoformat()
-    new_status = "APPROVED" if req.approved else "REJECTED"
+    if not req.approved:
+        new_status = "REJECTED"
+    elif req.publish:
+        new_status = "PUBLISHED"
+    else:
+        new_status = "APPROVED"
 
     await db.translations.update_one(
         {"id": req.translation_id},
@@ -156,6 +204,8 @@ async def approve_translation(
     return {
         "translation_id": req.translation_id,
         "status": new_status,
+        "review_status": new_status,
         "reviewed_by": current_user["email"],
         "reviewed_at": now
     }
+

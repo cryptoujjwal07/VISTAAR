@@ -244,3 +244,34 @@ async def test_prompt_17_public_portal_isolation_and_published_feed():
         assert all(item["id"] not in unapproved_ids for item in pub_items)
 
 
+@pytest.mark.asyncio
+async def test_prompt_22_bhashini_localization_and_numerical_preservation():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        langs_res = await client.get("/api/v1/localization/languages")
+        assert langs_res.status_code == 200
+        langs_data = langs_res.json()
+        assert langs_data["translation_provider_abstraction"] == "TranslationProvider"
+        assert "hi" in langs_data["supported_languages"]
+        assert "ta" in langs_data["supported_languages"]
+
+        src_text = (
+            "National Centre for Polar and Ocean Research confirmed Temperature of -38.4 °C "
+            "and Pressure of 985.2 hPa at Maitri in Schirmacher Oasis from dataset ds_maitri_imd."
+        )
+        tr_res = await client.post(
+            "/api/v1/localization/translate",
+            json={"text": src_text, "target_language": "hi", "source_language": "en"},
+        )
+        assert tr_res.status_code == 200
+        tr_data = tr_res.json()
+        assert tr_data["validation_passed"] is True
+        assert tr_data["terminology_validation_passed"] is True
+        assert tr_data["numerical_preservation_passed"] is True
+        assert len(tr_data["claim_segments"]) >= 1
+        # Verify numbers, units, station, and dataset names are preserved intact
+        for token in ["-38.4 °C", "985.2 hPa", "Maitri", "Schirmacher Oasis", "ds_maitri_imd"]:
+            assert token in tr_data["translated_text"]
+
+
+
