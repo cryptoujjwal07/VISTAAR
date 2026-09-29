@@ -29,8 +29,14 @@ class Settings(BaseSettings):
     SUPER_ADMIN_EMAIL: str = Field(default="admin@vistaar.ncpor.res.in")
     SUPER_ADMIN_PASSWORD: str = Field(default="VistaarAdmin@2026!")
     
-    # AI Provider
+    # AI Provider Abstraction (Prompt 11)
     AI_PROVIDER: str = Field(default="gemini")
+    AI_MODEL_NAME: str = Field(default="gemini-2.5-flash")
+    AI_EMBEDDING_MODEL: str = Field(default="text-embedding-004")
+    AI_TIMEOUT_SECONDS: float = Field(default=15.0)
+    AI_MAX_RETRIES: int = Field(default=3)
+    AI_RATE_LIMIT_RPM: int = Field(default=60)
+    AI_LOG_SENSITIVE_PROMPTS: bool = Field(default=False)
     GEMINI_API_KEY: Optional[str] = Field(default=None)
     OPENAI_API_KEY: Optional[str] = Field(default=None)
     

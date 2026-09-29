@@ -1,189 +1,201 @@
-import re
-import math
 from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, status
-from pydantic import BaseModel
+from typing import Any, Dict, List, Literal, Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+
 from apps.api.core.database import get_database
 from apps.api.core.security import get_current_user, require_roles
+from apps.api.domains.audit.service import record_audit_event
+from apps.api.domains.claims.normalizer import (
+    compare_measurements,
+    extract_normalized_measurements,
+    normalize_unit,
+    parse_single_measurement,
+)
+from apps.api.domains.claims.verifier import verify_scientific_claim
 
-router = APIRouter(prefix="/claims", tags=["Deterministic Claim Verification Engine"])
+router = APIRouter(prefix="/claims", tags=["Deterministic Claim Verification & Numerical Normalization"])
+
 
 class ClaimVerificationRequest(BaseModel):
     claim_id: Optional[str] = None
     claim_text: str
-    metric: str                   # e.g., 'temperature', 'wind_speed', 'pressure', 'precipitation'
-    value: float                  # claimed numeric value
-    unit: str                     # claimed unit, e.g., '°C', 'm/s', 'hPa', 'mm/h'
-    location: str                 # 'Maitri', 'Bharati', 'Himadri', 'Himansh'
-    source_type: str              # 'DATASET' | 'PDF'
-    source_id: str                # dataset_id or document_id
-    field: Optional[str] = None   # field in dataset or chunk_id in PDF
+    metric: str
+    value: float
+    unit: str
+    location: str
+    source_type: str = "DATASET"  # 'DATASET' | 'PDF'
+    source_id: str
+    field: Optional[str] = None
+    qualifier: Optional[str] = "observed"
+    epistemic_type: Optional[str] = "OBSERVED"
 
-def normalize_unit(unit_str: str) -> str:
-    u = unit_str.strip().lower()
-    if u in ['°c', 'c', 'deg c', 'degrees c', 'celsius', 'centigrade']:
-        return "°C"
-    if u in ['m/s', 'ms-1', 'mps', 'meter/sec', 'meters per second']:
-        return "m/s"
-    if u in ['knots', 'kt', 'kts']:
-        return "knots"
-    if u in ['hpa', 'mbar', 'millibar', 'hectopascal']:
-        return "hPa"
-    if u in ['mm/h', 'mm/hr', 'millimeters per hour']:
-        return "mm/h"
-    if u in ['%', 'percent', 'percentage']:
-        return "%"
-    if u in ['w/m2', 'w/m²', 'watts per square meter']:
-        return "W/m²"
-    return unit_str.strip()
 
-def unit_compatible(u1: str, u2: str) -> bool:
-    norm1 = normalize_unit(u1)
-    norm2 = normalize_unit(u2)
-    if norm1 == norm2:
-        return True
-    # Knot to m/s conversion factor check: 1 knot = 0.514444 m/s
-    if (norm1 == "knots" and norm2 == "m/s") or (norm1 == "m/s" and norm2 == "knots"):
-        return True
-    return False
+class NormalizeRequest(BaseModel):
+    text: Optional[str] = None
+    expression_a: Optional[str] = None
+    expression_b: Optional[str] = None
+    location: Optional[str] = None
+    metric: Optional[str] = None
+    tolerance: float = 0.05
+
+
+class ClaimReviewActionRequest(BaseModel):
+    action: Literal["ACCEPT", "REJECT", "REQUEST_REVISION", "RESOLVE_CONFLICT", "EDIT"]
+    publication_id: Optional[str] = None
+    updated_claim_text: Optional[str] = None
+    updated_value: Optional[float] = None
+    updated_unit: Optional[str] = None
+    reviewer_notes: Optional[str] = None
+
+
+@router.post("/normalize")
+async def normalize_scientific_numbers(req: NormalizeRequest):
+    """
+    Scientific Numerical Normalization endpoint (Prompt 13).
+    Extracts normalized measurements from text and optionally compares two expressions
+    (e.g., '-38.4°C' vs '−38.4 °C' or '38.4 knots' vs '38.4°C').
+    """
+    extracted = []
+    if req.text:
+        measurements = extract_normalized_measurements(
+            req.text, default_location=req.location, default_metric=req.metric
+        )
+        extracted = [m.model_dump() for m in measurements]
+
+    comparison = None
+    if req.expression_a and req.expression_b:
+        ma = parse_single_measurement(req.expression_a, metric=req.metric, location=req.location)
+        mb = parse_single_measurement(req.expression_b, metric=req.metric, location=req.location)
+        comparison = {
+            "measurement_a": ma.model_dump(),
+            "measurement_b": mb.model_dump(),
+            **compare_measurements(ma, mb, tolerance=req.tolerance),
+        }
+
+    return {
+        "extracted_measurements": extracted,
+        "comparison": comparison,
+    }
+
 
 @router.post("/verify")
 async def verify_claim(req: ClaimVerificationRequest):
+    """
+    Deterministic Scientific Claim Verification Engine endpoint (Prompt 14).
+    Statuses: VERIFIED, NEEDS_REVIEW, UNSUPPORTED, CONFLICTING.
+    """
+    return await verify_scientific_claim(
+        claim_text=req.claim_text,
+        metric=req.metric,
+        value=req.value,
+        unit=req.unit,
+        location=req.location,
+        source_type=req.source_type,
+        source_id=req.source_id,
+        field=req.field,
+        qualifier=req.qualifier,
+        epistemic_type=req.epistemic_type,
+        claim_id=req.claim_id,
+        persist=True,
+    )
+
+
+@router.get("/verifications")
+async def list_claim_verifications(limit: int = 30):
+    """Lists recent deterministic claim verification records with rule traces (Prompt 14)."""
     db = get_database()
-    norm_claimed_unit = normalize_unit(req.unit)
-    norm_claimed_val = req.value
+    cursor = db.claim_verifications.find({}, {"_id": 0}).sort("verified_at", -1).limit(limit)
+    items = await cursor.to_list(length=limit)
+    return {"total": len(items), "items": items}
 
-    # Deterministic verification against real database evidence
-    verification_status = "UNSUPPORTED"
-    explanation = ""
-    evidence_details = {}
 
-    if req.source_type == "DATASET":
-        ds = await db.datasets.find_one({"dataset_id": req.source_id})
-        if not ds:
-            return {
-                "claim_id": req.claim_id or "claim_adhoc",
-                "status": "UNSUPPORTED",
-                "explanation": f"Referenced scientific dataset '{req.source_id}' does not exist in authoritative catalog.",
-                "verified_at": datetime.now(timezone.utc).isoformat()
-            }
+@router.post("/{claim_id}/review-action")
+async def execute_claim_review_action(
+    claim_id: str,
+    req: ClaimReviewActionRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR", "FIELD_SCIENTIST"]))
+):
+    """
+    Executes a reviewer governance action on an individual scientific claim (Prompt 15):
+    edit, accept, reject, request revision, resolve conflict.
+    Audits every action and updates both db.claims and the parent publication's claims array.
+    """
+    db = get_database()
+    now = datetime.now(timezone.utc).isoformat()
 
-        # Check parameter availability in dataset
-        params = ds.get("parameters", [])
-        target_param = req.field if (req.field and req.field in params) else None
-        if not target_param:
-            # Map metric to parameter
-            metric_map = {
-                "temperature": ["tempr", "airtemp_avg", "airtemp_max", "airtemp_min"],
-                "wind_speed": ["ws", "ws_avg", "ws_max"],
-                "pressure": ["ap"],
-                "humidity": ["rh", "rh_max", "rh_min"],
-                "precipitation": ["intensity"]
-            }
-            candidates = metric_map.get(req.metric.lower(), [])
-            for c in candidates:
-                if c in params:
-                    target_param = c
-                    break
+    status_map = {
+        "ACCEPT": "VERIFIED",
+        "RESOLVE_CONFLICT": "VERIFIED",
+        "REJECT": "UNSUPPORTED",
+        "REQUEST_REVISION": "NEEDS_REVIEW",
+        "EDIT": "NEEDS_REVIEW",
+    }
+    new_status = status_map[req.action]
 
-        if not target_param:
-            return {
-                "claim_id": req.claim_id or "claim_adhoc",
-                "status": "UNSUPPORTED",
-                "explanation": f"Dataset '{ds.get('title')}' does not record metric '{req.metric}'.",
-                "verified_at": datetime.now(timezone.utc).isoformat()
-            }
+    claim_doc = await db.claims.find_one({"claim_id": claim_id}, {"_id": 0})
+    update_fields: Dict[str, Any] = {
+        "status": new_status,
+        "verification_status": new_status,
+        "reviewer_action": req.action,
+        "reviewer_notes": req.reviewer_notes or f"Reviewer executed {req.action}",
+        "reviewed_by": current_user["email"],
+        "reviewed_at": now,
+    }
+    if req.updated_claim_text:
+        update_fields["claim_text"] = req.updated_claim_text
+    if req.updated_value is not None:
+        update_fields["value"] = req.updated_value
+    if req.updated_unit:
+        update_fields["unit"] = req.updated_unit
 
-        ds_unit = ds.get("units", {}).get(target_param, "")
-        if not unit_compatible(req.unit, ds_unit):
-            return {
-                "claim_id": req.claim_id or "claim_adhoc",
-                "status": "CONFLICTING",
-                "explanation": f"Unit mismatch: Claim asserts {req.unit}, but dataset '{req.source_id}' parameter '{target_param}' is calibrated in {ds_unit}.",
-                "verified_at": datetime.now(timezone.utc).isoformat()
-            }
+    if claim_doc:
+        await db.claims.update_one({"claim_id": claim_id}, {"$set": update_fields})
 
-        # Search for matching observation records
-        # Allow tolerance of +/- 0.5 for rounding discrepancies
-        tolerance = 0.5
-        cursor = db.dataset_records.find({
-            "dataset_id": req.source_id,
-            f"metrics.{target_param}": {
-                "$gte": norm_claimed_val - tolerance,
-                "$lte": norm_claimed_val + tolerance
-            }
-        }).limit(5)
-        matches = await cursor.to_list(length=5)
+    # Also update claim inside parent publication if publication_id is supplied or found
+    pub_query = {"id": req.publication_id} if req.publication_id else {"claims.claim_id": claim_id}
+    pub = await db.publications.find_one(pub_query)
+    if pub:
+        updated_claims = []
+        for c in pub.get("claims", []):
+            if c.get("claim_id") == claim_id:
+                c.update(update_fields)
+            updated_claims.append(c)
 
-        if matches:
-            best_match = matches[0]
-            actual_val = best_match["metrics"][target_param]
-            exact_match = abs(actual_val - norm_claimed_val) < 0.001
-            
-            verification_status = "VERIFIED" if exact_match else "NEEDS_REVIEW"
-            explanation = (
-                f"Deterministically confirmed by record '{best_match['record_id']}' at {best_match['timestamp']} UTC. "
-                f"Observed value: {actual_val} {ds_unit} (Quality flag: {best_match.get('quality_flags', {}).get(target_param, 'VALID')})."
-            )
-            evidence_details = {
-                "record_id": best_match["record_id"],
-                "timestamp": best_match["timestamp"],
-                "observed_value": actual_val,
-                "unit": ds_unit,
-                "source_file": best_match["provenance"].get("source_file"),
-                "source_line": best_match["provenance"].get("source_line"),
-                "sha256": best_match["provenance"].get("sha256")
-            }
-        else:
-            # Check if value is out of bounds of dataset min/max
-            cov = ds.get("quality_summary", {}).get("parameter_coverage", {}).get(target_param, {})
-            p_min = cov.get("min")
-            p_max = cov.get("max")
-            if p_min is not None and (norm_claimed_val < p_min or norm_claimed_val > p_max):
-                verification_status = "CONFLICTING"
-                explanation = f"Claimed value {norm_claimed_val} {req.unit} falls outside documented dataset bounds [{p_min} to {p_max} {ds_unit}]."
-            else:
-                verification_status = "UNSUPPORTED"
-                explanation = f"No record matching {norm_claimed_val} {req.unit} for parameter '{target_param}' found in dataset."
+        # Sync track-level claims as well
+        pub_update: Dict[str, Any] = {"claims": updated_claims, "updated_at": now}
+        for track_key in ["pib", "social", "education", "vernacular"]:
+            if track_key in pub and isinstance(pub[track_key], dict):
+                t_obj = dict(pub[track_key])
+                t_claims = []
+                for tc in t_obj.get("claims", []):
+                    if tc.get("claim_id") == claim_id:
+                        tc.update(update_fields)
+                    t_claims.append(tc)
+                t_obj["claims"] = t_claims
+                pub_update[track_key] = t_obj
 
-    elif req.source_type == "PDF":
-        doc = await db.documents.find_one({"document_id": req.source_id})
-        if not doc:
-            return {
-                "claim_id": req.claim_id or "claim_adhoc",
-                "status": "UNSUPPORTED",
-                "explanation": f"Document '{req.source_id}' not found in registry.",
-                "verified_at": datetime.now(timezone.utc).isoformat()
-            }
-        # Search chunks for numeric mentions
-        chunks_cursor = db.document_chunks.find({
-            "document_id": req.source_id,
-            "text": {"$regex": str(req.value), "$options": "i"}
-        }).limit(3)
-        chunks = await chunks_cursor.to_list(length=3)
+        await db.publications.update_one({"id": pub["id"]}, {"$set": pub_update})
 
-        if chunks:
-            match_chunk = chunks[0]
-            verification_status = "VERIFIED"
-            explanation = f"Found value '{req.value}' in chunk {match_chunk['chunk_id']} (Page {match_chunk['page_number']})."
-            evidence_details = {
-                "document_id": req.source_id,
-                "page_number": match_chunk["page_number"],
-                "chunk_id": match_chunk["chunk_id"],
-                "bounding_box": match_chunk["bounding_box"],
-                "context": match_chunk["text"][:180] + "..."
-            }
-        else:
-            verification_status = "UNSUPPORTED"
-            explanation = f"Numeric value '{req.value}' was not located within text chunks of document '{doc.get('title')}'."
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action=f"CLAIM_REVIEW_{req.action}",
+        resource_type="CLAIM",
+        resource_id=claim_id,
+        details={
+            "action": req.action,
+            "new_status": new_status,
+            "publication_id": req.publication_id or (pub["id"] if pub else None),
+            "reviewer_notes": req.reviewer_notes,
+        }
+    )
 
     return {
-        "claim_id": req.claim_id or "claim_adhoc",
-        "claim_text": req.claim_text,
-        "status": verification_status,
-        "explanation": explanation,
-        "evidence": evidence_details,
-        "verified_at": datetime.now(timezone.utc).isoformat(),
-        "verifier_version": "1.0.0-deterministic-npdc"
+        "claim_id": claim_id,
+        "action": req.action,
+        "new_status": new_status,
+        "reviewed_by": current_user["email"],
+        "reviewed_at": now,
+        "reviewer_notes": update_fields["reviewer_notes"],
     }
