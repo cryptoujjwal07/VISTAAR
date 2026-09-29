@@ -1,6 +1,6 @@
 import os
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, Depends
 from pydantic import BaseModel
 from apps.api.core.database import get_database
 from apps.api.core.queue import job_queue
@@ -65,11 +65,18 @@ class IngestDatasetRequest(BaseModel):
     dataset_id: str
     file_name: str
 
+from apps.api.core.security import require_roles
+from apps.api.domains.audit.service import record_audit_event
+
 @router.post("/ingest")
-async def trigger_async_ingestion(req: IngestDatasetRequest):
+async def trigger_async_ingestion(
+    req: IngestDatasetRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "FIELD_SCIENTIST"]))
+):
     """
     Triggers asynchronous dataset processing via background worker queue.
     Calculates SHA-256 cryptographic hashes and updates database catalog.
+    Requires SUPER_ADMIN or FIELD_SCIENTIST role (Prompt 07).
     """
     file_path = os.path.join(os.path.abspath("DATASETS"), req.file_name)
     if not os.path.exists(file_path):
@@ -83,6 +90,15 @@ async def trigger_async_ingestion(req: IngestDatasetRequest):
         process_dataset_background,
         dataset_id=req.dataset_id,
         file_path=file_path
+    )
+
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="TRIGGER_DATASET_INGESTION",
+        resource_type="DATASET",
+        resource_id=req.dataset_id,
+        details={"job_id": job_id, "file_name": req.file_name}
     )
 
     return {

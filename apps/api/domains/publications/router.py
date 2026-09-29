@@ -261,21 +261,20 @@ async def transition_status(
 
     await db.publications.update_one({"id": pub_id}, {"$set": update_fields})
 
-    await db.audit_events.insert_one({
-        "event_id": f"aud_{uuid.uuid4().hex[:12]}",
-        "actor_id": current_user["id"],
-        "actor_email": current_user["email"],
-        "action": f"TRANSITION_{new_status}",
-        "resource_type": "PUBLICATION",
-        "resource_id": pub_id,
-        "timestamp": now,
-        "details": {
-            "from_status": old_status,
-            "to_status": new_status,
-            "reason": req.reason,
+    from apps.api.domains.audit.service import record_audit_event
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action=f"TRANSITION_{new_status}",
+        resource_type="PUBLICATION",
+        resource_id=pub_id,
+        reason=req.reason,
+        before_version=old_status,
+        after_version=new_status,
+        details={
             "reviewer_notes": req.reviewer_notes
         }
-    })
+    )
 
     return {
         "id": pub_id,

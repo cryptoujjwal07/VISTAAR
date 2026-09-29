@@ -93,17 +93,15 @@ async def upload_document(
     if chunks_data:
         await db.document_chunks.insert_many(chunks_data)
 
-    # Audit log
-    await db.audit_events.insert_one({
-        "event_id": f"aud_{uuid.uuid4().hex[:12]}",
-        "actor_id": current_user["id"],
-        "actor_email": current_user["email"],
-        "action": "UPLOAD_DOCUMENT",
-        "resource_type": "DOCUMENT",
-        "resource_id": doc_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "details": {"title": doc_record["title"], "page_count": page_count, "chunks": len(chunks_data)}
-    })
+    from apps.api.domains.audit.service import record_audit_event
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="UPLOAD_DOCUMENT",
+        resource_type="DOCUMENT",
+        resource_id=doc_id,
+        details={"title": doc_record["title"], "page_count": page_count, "chunks": len(chunks_data)}
+    )
 
     return {
         "document_id": doc_id,
