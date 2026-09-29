@@ -27,7 +27,7 @@ async def process_dataset_background(dataset_id: str, file_path: str):
 
     db = get_database()
     now = datetime.now(timezone.utc).isoformat()
-    if db:
+    if db is not None:
         await db.datasets.update_one(
             {"dataset_id": dataset_id},
             {"$set": {

@@ -14,7 +14,7 @@ async def process_outreach_generation_background(job_id: str, publication_id: st
     
     db = get_database()
     now = datetime.now(timezone.utc).isoformat()
-    if db:
+    if db is not None:
         await db.publications.update_one(
             {"id": publication_id},
             {"$set": {
