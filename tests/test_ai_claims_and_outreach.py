@@ -95,9 +95,37 @@ async def test_prompt_13_scientific_numerical_normalization():
     assert extracted[0].numeric_value == -38.4
     assert extracted[0].canonical_unit == "°C"
     assert extracted[0].location == "Maitri"
+    assert extracted[0].qualifier == "minimum"
     assert extracted[0].source_position["start"] > 0
     assert extracted[1].numeric_value == 42.5
     assert extracted[1].canonical_unit == "knots"
+
+    # Thousand separators & pressure unit variants (1,013.25 hPa == 1013.25 mbar)
+    p1 = parse_single_measurement("1,013.25 hPa", location="Bharati")
+    p2 = parse_single_measurement("1013.25 mbar", location="Bharati")
+    assert compare_measurements(p1, p2)["equivalent"] is True
+
+    # Scientific notation (1.5 × 10^-3 m w.e. == 1.5e-3 m w.e.)
+    s1 = parse_single_measurement("1.5 × 10^-3 m w.e.", location="Himansh")
+    s2 = parse_single_measurement("1.5e-3 m w.e.", location="Himansh")
+    assert compare_measurements(s1, s2)["equivalent"] is True
+
+    # Verify HTTP endpoint POST /api/v1/claims/normalize
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        norm_res = await client.post(
+            "/api/v1/claims/normalize",
+            json={
+                "text": prose,
+                "expression_a": "-38.4°C",
+                "expression_b": "−38.4 °C",
+                "location": "Maitri",
+                "metric": "temperature",
+            },
+        )
+        assert norm_res.status_code == 200
+        n_data = norm_res.json()
+        assert len(n_data["extracted_measurements"]) == 2
+        assert n_data["comparison"]["equivalent"] is True
 
 
 @pytest.mark.asyncio
