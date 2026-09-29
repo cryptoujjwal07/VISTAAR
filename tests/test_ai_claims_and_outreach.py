@@ -256,6 +256,105 @@ async def test_prompt_12_and_14_four_track_and_claim_verification():
 
 
 @pytest.mark.asyncio
+async def test_prompt_14_deterministic_claim_verification_engine():
+    """
+    Prompt 14 Verification:
+    - Tests all 4 statuses: VERIFIED, NEEDS_REVIEW, UNSUPPORTED, CONFLICTING.
+    - Verifies semantic location conflict detection (e.g. claiming Himansh on a Maitri dataset).
+    - Verifies persistence of claim, evidence, verification_rule, explanation, trace_steps, verified_at, and verifier_version.
+    """
+    await connect_to_mongo()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # 1. VERIFIED (Exact Himansh observation: 4.086 °C on ds_himansh_aws)
+        v_res = await client.post(
+            "/api/v1/claims/verify",
+            json={
+                "claim_text": "Himansh station recorded an observed air temperature of 4.086 °C.",
+                "metric": "airtemp_avg",
+                "value": 4.086,
+                "unit": "°C",
+                "location": "Himansh",
+                "source_type": "DATASET",
+                "source_id": "ds_himansh_aws",
+                "field": "airtemp_avg",
+                "qualifier": "observed",
+                "epistemic_type": "OBSERVED",
+            },
+        )
+        assert v_res.status_code == 200
+        v_data = v_res.json()
+        assert v_data["status"] == "VERIFIED"
+        assert v_data["verification_rule"] == "RULE_EXACT_OBSERVATION_CONFIRMED"
+        assert "verifier_version" in v_data
+        assert "verified_at" in v_data
+        assert "explanation" in v_data
+        assert len(v_data["trace_steps"]) >= 3
+
+        # 2. NEEDS_REVIEW (Same valid evidence, but epistemic_type is INFERRED requiring human judgment)
+        nr_res = await client.post(
+            "/api/v1/claims/verify",
+            json={
+                "claim_text": "Inferred boundary-layer shift around 4.086 °C at Himansh.",
+                "metric": "airtemp_avg",
+                "value": 4.086,
+                "unit": "°C",
+                "location": "Himansh",
+                "source_type": "DATASET",
+                "source_id": "ds_himansh_aws",
+                "field": "airtemp_avg",
+                "qualifier": "inferred",
+                "epistemic_type": "INFERRED",
+            },
+        )
+        assert nr_res.status_code == 200
+        nr_data = nr_res.json()
+        assert nr_data["status"] == "NEEDS_REVIEW"
+        assert nr_data["verification_rule"] == "RULE_APPROXIMATE_OR_INFERRED_REVIEW"
+
+        # 3. CONFLICTING (Semantic Location Conflict: claiming Bharati station against Himansh dataset)
+        loc_conflict = await client.post(
+            "/api/v1/claims/verify",
+            json={
+                "claim_text": "Bharati station recorded 4.086 °C.",
+                "metric": "airtemp_avg",
+                "value": 4.086,
+                "unit": "°C",
+                "location": "Bharati",
+                "source_type": "DATASET",
+                "source_id": "ds_himansh_aws",
+                "field": "airtemp_avg",
+            },
+        )
+        assert loc_conflict.status_code == 200
+        assert loc_conflict.json()["status"] == "CONFLICTING"
+        assert loc_conflict.json()["verification_rule"] == "RULE_LOCATION_CONFLICT"
+
+        # 4. UNSUPPORTED (Missing parameter in dataset)
+        unsup_param = await client.post(
+            "/api/v1/claims/verify",
+            json={
+                "claim_text": "Himansh recorded ocean salinity of 35 PSU.",
+                "metric": "ocean_salinity_psu",
+                "value": 35.0,
+                "unit": "PSU",
+                "location": "Himansh",
+                "source_type": "DATASET",
+                "source_id": "ds_himansh_aws",
+            },
+        )
+        assert unsup_param.status_code == 200
+        assert unsup_param.json()["status"] == "UNSUPPORTED"
+        assert unsup_param.json()["verification_rule"] == "RULE_MISSING_METRIC_PARAMETER"
+
+        # 5. Verify stored audit trail in GET /api/v1/claims/verifications
+        hist_res = await client.get("/api/v1/claims/verifications?limit=10")
+        assert hist_res.status_code == 200
+        hist_items = hist_res.json()["items"]
+        assert len(hist_items) >= 4
+        assert all("verifier_version" in item and "verification_rule" in item for item in hist_items)
+
+
+@pytest.mark.asyncio
 async def test_prompt_16_weather_intelligence():
     """
     Prompt 16 Verification:
