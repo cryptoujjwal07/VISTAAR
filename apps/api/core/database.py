@@ -75,7 +75,7 @@ async def init_db_indexes():
         await db.documents.create_index("document_id", unique=True)
         # Document chunks
         await db.document_chunks.create_index([("document_id", 1), ("page_number", 1)])
-        await db.document_chunks.create_index("chunk_id", unique=True)
+        await db.document_chunks.create_index([("document_id", 1), ("chunk_id", 1)], unique=True)
         # Claims
         await db.claims.create_index("claim_id", unique=True)
         await db.claims.create_index("status")

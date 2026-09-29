@@ -50,6 +50,7 @@ yarn-error.log*
 DATASETS/*.zip
 data/raw/*.zip
 data/extracted/
+data/storage/
 *.tar.gz
 *.iso
 
