@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CloudSun, Database, Info, Calendar, Filter, FileCode2, ArrowDownUp, CheckCircle, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  CloudSun,
+  Filter,
+  FileCode2,
+  ShieldCheck,
+  Calendar,
+  Database,
+  Activity,
+  AlertTriangle
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { fetchApi } from "@/lib/api";
@@ -10,20 +18,20 @@ import { fetchApi } from "@/lib/api";
 export default function WeatherPage() {
   const [stations, setStations] = useState<any[]>([]);
   const [selectedStation, setSelectedStation] = useState<string>("himansh");
+  const [selectedDataset, setSelectedDataset] = useState<string>("");
   const [selectedParam, setSelectedParam] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPoint, setSelectedPoint] = useState<any>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<any>(null);
 
-  // Load available stations
   useEffect(() => {
     async function loadStations() {
       try {
         const res = await fetchApi("/weather/stations");
         setStations(res);
-        if (res.length > 0 && !selectedStation) {
-          setSelectedStation(res[0].id);
-        }
       } catch (e) {
         console.error("Failed to load stations", e);
       }
@@ -31,14 +39,18 @@ export default function WeatherPage() {
     loadStations();
   }, []);
 
-  // Load time series data when station or parameter changes
   useEffect(() => {
     if (!selectedStation) return;
     async function loadTimeSeries() {
       setLoading(true);
       try {
-        const query = selectedParam ? `?station_id=${selectedStation}&parameter=${selectedParam}` : `?station_id=${selectedStation}`;
-        const res = await fetchApi(`/weather/timeseries${query}`);
+        const params = new URLSearchParams({ station_id: selectedStation });
+        if (selectedDataset) params.set("dataset_id", selectedDataset);
+        if (selectedParam) params.set("parameter", selectedParam);
+        if (startDate) params.set("start_date", startDate);
+        if (endDate) params.set("end_date", endDate);
+
+        const res = await fetchApi(`/weather/timeseries?${params.toString()}`);
         setData(res);
         if (!selectedParam && res.parameter) {
           setSelectedParam(res.parameter);
@@ -53,55 +65,61 @@ export default function WeatherPage() {
       }
     }
     loadTimeSeries();
-  }, [selectedStation, selectedParam]);
+  }, [selectedStation, selectedDataset, selectedParam, startDate, endDate]);
 
-  // Compute SVG Polyline points
   const points = data?.points || [];
   const stats = data?.statistics;
   const minVal = stats?.min ?? 0;
   const maxVal = stats?.max ?? 100;
+  const avgVal = stats?.avg ?? 50;
   const range = maxVal - minVal || 1;
 
-  const svgWidth = 800;
-  const svgHeight = 240;
-  const padding = 30;
+  const svgWidth = 820;
+  const svgHeight = 250;
+  const padding = 36;
 
-  const polylineCoords = points.map((pt: any, idx: number) => {
-    const x = padding + (idx / Math.max(points.length - 1, 1)) * (svgWidth - 2 * padding);
-    const y = svgHeight - padding - ((pt.value - minVal) / range) * (svgHeight - 2 * padding);
-    return `${x},${y}`;
-  }).join(" ");
+  const polylineCoords = points
+    .map((pt: any, idx: number) => {
+      const x = padding + (idx / Math.max(points.length - 1, 1)) * (svgWidth - 2 * padding);
+      const y = svgHeight - padding - ((pt.value - minVal) / range) * (svgHeight - 2 * padding);
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  const meanY = svgHeight - padding - ((avgVal - minVal) / range) * (svgHeight - 2 * padding);
+  const activeInspect = hoveredPoint || selectedPoint;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 bg-[#FAF7F0] min-h-screen">
       {/* Page Header */}
-      <div className="border-b border-vistaar-border pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-5 rounded-lg border border-vistaar-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center space-x-1.5 text-xs font-semibold text-vistaar-scientific uppercase tracking-wide mb-1">
             <CloudSun className="w-4 h-4" />
-            <span>National Polar Data Centre (NPDC) Stream</span>
+            <span>National Polar Data Centre (NPDC) • Calibrated Instrument Stream</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-vistaar-text">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-vistaar-text">
             Polar Weather & Environmental Intelligence
           </h1>
-          <p className="text-sm text-vistaar-muted mt-1">
-            Dynamic, multi-station observation time series directly connected to calibrated instrumentation.
+          <p className="text-xs sm:text-sm text-vistaar-muted mt-1">
+            100% real ingested NPDC telemetry. Missing sensor observations are explicitly flagged and never replaced with zero.
           </p>
         </div>
 
-        {/* Station Selectors */}
+        {/* Station Selector Pills */}
         <div className="flex flex-wrap gap-2">
           {stations.map((st) => (
             <button
               key={st.id}
               onClick={() => {
                 setSelectedStation(st.id);
+                setSelectedDataset("");
                 setSelectedParam("");
               }}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-all ${
                 selectedStation === st.id
                   ? "bg-vistaar-primary text-white border-vistaar-primary shadow-sm"
-                  : "bg-white text-vistaar-text border-vistaar-border hover:bg-vistaar-bg"
+                  : "bg-[#FAF7F0] text-vistaar-text border-vistaar-border hover:bg-white"
               }`}
             >
               {st.name.replace(" Station", "").replace(" Research", "")}
@@ -110,35 +128,93 @@ export default function WeatherPage() {
         </div>
       </div>
 
-      {/* Control Bar: Parameter Selector & Summary Stats */}
+      {/* Filter & Provenance Metadata Bar (Prompt 16 Requirement) */}
+      <div className="bg-white p-4 rounded-lg border border-vistaar-border shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+        <div>
+          <label className="text-[10px] font-mono uppercase text-vistaar-muted block mb-1">
+            Dataset Selector
+          </label>
+          <select
+            value={selectedDataset || data?.dataset_id || ""}
+            onChange={(e) => setSelectedDataset(e.target.value)}
+            className="w-full px-2.5 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] font-mono text-xs"
+          >
+            {(data?.available_datasets || []).map((ds: any) => (
+              <option key={ds.dataset_id} value={ds.dataset_id}>
+                {ds.dataset_id} — {ds.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-mono uppercase text-vistaar-muted block mb-1">
+            Start Date (UTC)
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full px-2.5 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] font-mono text-xs"
+          />
+        </div>
+
+        <div>
+          <label className="text-[10px] font-mono uppercase text-vistaar-muted block mb-1">
+            End Date (UTC)
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full px-2.5 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] font-mono text-xs"
+          />
+        </div>
+
+        <div>
+          <label className="text-[10px] font-mono uppercase text-vistaar-muted block mb-1">
+            Authoritative Provider
+          </label>
+          <div className="px-2.5 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] font-semibold text-vistaar-scientific truncate">
+            {data?.provider || "NCPOR / NPDC"}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 space-y-6">
-          {/* Main Chart Card */}
-          <Card>
-            <CardHeader className="p-5 pb-3 border-b border-vistaar-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <Card className="bg-white border-vistaar-border shadow-sm">
+            <CardHeader className="p-5 pb-3 border-b border-vistaar-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#FAF7F0]/50">
               <div>
-                <CardTitle className="text-base flex items-center space-x-2">
+                <CardTitle className="text-base flex flex-wrap items-center gap-2">
                   <span>{data?.station_name || "Station"}</span>
-                  <Badge variant="scientific">{data?.unit || ""}</Badge>
+                  <Badge variant="scientific">
+                    {data?.parameter} ({data?.unit || "unit"})
+                  </Badge>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    Dataset: {data?.dataset_id}
+                  </Badge>
                 </CardTitle>
-                <CardDescription className="text-xs mt-0.5">
-                  Authoritative Dataset: <code className="font-mono text-vistaar-primary font-bold">{data?.dataset_id}</code>
+                <CardDescription className="text-xs mt-1 font-mono">
+                  Period: {data?.period?.start?.slice(0, 10) || "N/A"} → {data?.period?.end?.slice(0, 10) || "N/A"} UTC •{" "}
+                  Provider: {data?.provider}
                 </CardDescription>
               </div>
 
-              {/* Dynamic Parameter Pills */}
+              {/* Dynamic Parameter Selector Pills */}
               <div className="flex flex-wrap gap-1.5">
                 {data?.available_parameters?.map((p: string) => (
                   <button
                     key={p}
                     onClick={() => setSelectedParam(p)}
-                    className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                    className={`px-2.5 py-1 text-xs rounded border transition-colors font-mono ${
                       data.parameter === p
-                        ? "bg-vistaar-scientific text-white border-vistaar-scientific font-semibold"
-                        : "bg-vistaar-bg text-vistaar-text border-vistaar-border hover:bg-white"
+                        ? "bg-vistaar-scientific text-white border-vistaar-scientific font-bold"
+                        : "bg-white text-vistaar-text border-vistaar-border hover:bg-[#FAF7F0]"
                     }`}
                   >
-                    {p.replace("_", " ")}
+                    {p}
                   </button>
                 ))}
               </div>
@@ -147,38 +223,57 @@ export default function WeatherPage() {
             <CardContent className="p-5">
               {loading ? (
                 <div className="h-64 flex items-center justify-center text-sm text-vistaar-muted">
-                  Loading observation time series from MongoDB Atlas...
+                  Loading calibrated NPDC time series from MongoDB Atlas...
                 </div>
               ) : points.length === 0 ? (
                 <div className="h-64 flex items-center justify-center text-sm text-vistaar-muted">
-                  No observations recorded for the specified parameters.
+                  No observations recorded for the specified filter window.
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Interactive SVG Chart */}
-                  <div className="relative border border-vistaar-border rounded-lg bg-vistaar-bg/50 p-2 overflow-x-auto">
+                  {/* Interactive Hover Bar */}
+                  <div className="flex flex-wrap items-center justify-between bg-[#FAF7F0] px-3 py-2 rounded border border-vistaar-border text-xs font-mono">
+                    <span>
+                      Inspected Point:{" "}
+                      <strong className="text-vistaar-primary">
+                        {activeInspect?.value} {activeInspect?.unit}
+                      </strong>{" "}
+                      at {activeInspect?.timestamp}
+                    </span>
+                    <span>
+                      Record ID: <strong>{activeInspect?.record_id}</strong> • QC:{" "}
+                      <Badge variant={activeInspect?.quality === "VALID" ? "success" : "warning"}>
+                        {activeInspect?.quality || "VALID"}
+                      </Badge>
+                    </span>
+                  </div>
+
+                  {/* Interactive SVG Time-Series Chart */}
+                  <div className="relative border border-vistaar-border rounded-lg bg-[#FAF7F0]/40 p-2 overflow-x-auto">
                     <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-64 overflow-visible">
-                      {/* Grid Lines */}
                       <line x1={padding} y1={padding} x2={svgWidth - padding} y2={padding} stroke="#E7E0D5" strokeDasharray="3 3" />
-                      <line x1={padding} y1={svgHeight / 2} x2={svgWidth - padding} y2={svgHeight / 2} stroke="#E7E0D5" strokeDasharray="3 3" />
+                      <line x1={padding} y1={meanY} x2={svgWidth - padding} y2={meanY} stroke="#0E7490" strokeDasharray="4 4" strokeWidth="1" />
                       <line x1={padding} y1={svgHeight - padding} x2={svgWidth - padding} y2={svgHeight - padding} stroke="#E7E0D5" strokeDasharray="3 3" />
 
-                      {/* Y-Axis Value Labels */}
-                      <text x={padding - 5} y={padding + 4} textAnchor="end" fontSize="10" fill="#5F6B76">{maxVal}</text>
-                      <text x={padding - 5} y={svgHeight / 2 + 3} textAnchor="end" fontSize="10" fill="#5F6B76">{((maxVal + minVal) / 2).toFixed(1)}</text>
-                      <text x={padding - 5} y={svgHeight - padding + 4} textAnchor="end" fontSize="10" fill="#5F6B76">{minVal}</text>
+                      <text x={padding - 6} y={padding + 4} textAnchor="end" fontSize="10" fill="#5F6B76">
+                        {maxVal}
+                      </text>
+                      <text x={padding - 6} y={meanY + 3} textAnchor="end" fontSize="10" fill="#0E7490">
+                        μ={avgVal}
+                      </text>
+                      <text x={padding - 6} y={svgHeight - padding + 4} textAnchor="end" fontSize="10" fill="#5F6B76">
+                        {minVal}
+                      </text>
 
-                      {/* Polyline */}
                       <polyline
                         fill="none"
                         stroke="#2563EB"
-                        strokeWidth="2.5"
+                        strokeWidth="2.4"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         points={polylineCoords}
                       />
 
-                      {/* Data Points */}
                       {points.map((pt: any, i: number) => {
                         const cx = padding + (i / Math.max(points.length - 1, 1)) * (svgWidth - 2 * padding);
                         const cy = svgHeight - padding - ((pt.value - minVal) / range) * (svgHeight - 2 * padding);
@@ -188,10 +283,14 @@ export default function WeatherPage() {
                             key={pt.record_id}
                             cx={cx}
                             cy={cy}
-                            r={isSelected ? 6 : 3}
+                            r={isSelected ? 6 : 3.2}
                             className={`cursor-pointer transition-all ${
-                              isSelected ? "fill-vistaar-danger stroke-white stroke-2" : "fill-vistaar-scientific hover:fill-vistaar-primary"
+                              isSelected
+                                ? "fill-amber-600 stroke-white stroke-2"
+                                : "fill-vistaar-scientific hover:fill-vistaar-primary"
                             }`}
+                            onMouseEnter={() => setHoveredPoint(pt)}
+                            onMouseLeave={() => setHoveredPoint(null)}
                             onClick={() => setSelectedPoint(pt)}
                           />
                         );
@@ -199,12 +298,16 @@ export default function WeatherPage() {
                     </svg>
                   </div>
 
-                  <div className="flex justify-between items-center text-xs text-vistaar-muted font-mono px-1">
-                    <span>Earliest: {points[0]?.timestamp?.slice(0, 10)}</span>
-                    <span className="text-vistaar-scientific font-semibold">
-                      Click any point to inspect verifiable record provenance
-                    </span>
-                    <span>Latest: {points[points.length - 1]?.timestamp?.slice(0, 10)}</span>
+                  {/* Authoritative Source Citation Footer (Prompt 16 Requirement) */}
+                  <div className="p-3 bg-[#FAF7F0] rounded border border-vistaar-border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2">
+                      <ShieldCheck className="w-4 h-4 text-vistaar-scientific shrink-0" />
+                      <span className="font-mono text-[11px] text-vistaar-text">{data?.source_citation}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 shrink-0 font-mono text-[11px]">
+                      <Badge variant="success">VALID: {data?.quality_breakdown?.VALID || stats?.count || 0}</Badge>
+                      <Badge variant="warning">MISSING: {stats?.missing_count || 0} (Not zero-filled)</Badge>
+                    </div>
                   </div>
                 </div>
               )}
@@ -212,11 +315,10 @@ export default function WeatherPage() {
           </Card>
         </div>
 
-        {/* Right Sidebar: Statistics & Record Provenance */}
+        {/* Right Sidebar: Statistics & Original Record Provenance */}
         <div className="space-y-6">
-          {/* Summary Stats Card */}
-          <Card>
-            <CardHeader className="p-4 pb-2 border-b border-vistaar-border">
+          <Card className="bg-white border-vistaar-border shadow-sm">
+            <CardHeader className="p-4 pb-2 border-b border-vistaar-border bg-[#FAF7F0]/60">
               <CardTitle className="text-sm font-bold flex items-center space-x-1.5">
                 <Filter className="w-4 h-4 text-vistaar-primary" />
                 <span>Verified Metric Statistics</span>
@@ -224,8 +326,12 @@ export default function WeatherPage() {
             </CardHeader>
             <CardContent className="p-4 space-y-3 text-xs">
               <div className="flex justify-between py-1 border-b border-vistaar-border/60">
-                <span className="text-vistaar-muted">Observed Points:</span>
+                <span className="text-vistaar-muted">Valid Points:</span>
                 <span className="font-mono font-bold text-vistaar-text">{stats?.count?.toLocaleString() || 0}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-vistaar-border/60">
+                <span className="text-vistaar-muted">Missing Gaps (Unfilled):</span>
+                <span className="font-mono font-bold text-amber-700">{stats?.missing_count || 0}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-vistaar-border/60">
                 <span className="text-vistaar-muted">Minimum Value:</span>
@@ -240,7 +346,7 @@ export default function WeatherPage() {
                 </span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-vistaar-muted">Calculated Average:</span>
+                <span className="text-vistaar-muted">Calculated Mean (μ):</span>
                 <span className="font-mono font-bold text-vistaar-primary">
                   {stats?.avg !== undefined ? `${stats.avg} ${stats.unit}` : "N/A"}
                 </span>
@@ -248,15 +354,14 @@ export default function WeatherPage() {
             </CardContent>
           </Card>
 
-          {/* Point Provenance Card */}
-          <Card className="border-vistaar-primary/40 bg-vistaar-surface shadow-sm">
+          <Card className="border-vistaar-primary/40 bg-white shadow-sm">
             <CardHeader className="p-4 pb-2 border-b border-vistaar-border bg-blue-50/50">
               <CardTitle className="text-sm font-bold text-vistaar-primary flex items-center space-x-1.5">
                 <FileCode2 className="w-4 h-4" />
-                <span>Selected Record Provenance</span>
+                <span>Chart Point → Original Dataset Record</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 space-y-2 text-xs font-mono">
+            <CardContent className="p-4 space-y-2.5 text-xs font-mono">
               {selectedPoint ? (
                 <>
                   <div>
@@ -296,7 +401,7 @@ export default function WeatherPage() {
                 </>
               ) : (
                 <div className="text-vistaar-muted py-4 text-center">
-                  Click a data point on the chart to inspect its provenance.
+                  Click any data point on the chart to inspect its original dataset record.
                 </div>
               )}
             </CardContent>
