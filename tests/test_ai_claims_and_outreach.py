@@ -128,7 +128,9 @@ async def test_prompt_12_and_14_four_track_and_claim_verification():
         pkg = gen_res.json()
 
         assert pkg["status"] == "AI_GENERATED"
+        assert pkg["draft_status"] == "DRAFT"
         assert pkg["human_approval_required"] is True
+        assert pkg["can_publish_without_human_approval"] is False
         assert "[Quote to be provided by authorized official]" in pkg["pib"]["body"]
         assert "platforms" in pkg["social"]
         assert "x" in pkg["social"]["platforms"]
@@ -136,10 +138,16 @@ async def test_prompt_12_and_14_four_track_and_claim_verification():
         assert "instagram" in pkg["social"]["platforms"]
 
         claims = pkg["claims"]
-        assert len(claims) >= 2
+        assert len(claims) >= 4
         epistemic_types = {c["epistemic_type"] for c in claims}
         assert "OBSERVED" in epistemic_types
         assert "CALCULATED" in epistemic_types
+        assert "INFERRED" in epistemic_types
+        assert "CONTEXTUAL" in epistemic_types
+
+        inferred_claims = [c for c in claims if c["epistemic_type"] == "INFERRED"]
+        assert all(c.get("is_direct_observation") is False for c in inferred_claims)
+        assert all(c.get("qualifier") == "inferred" for c in inferred_claims)
 
         for c in claims:
             for req_key in [
