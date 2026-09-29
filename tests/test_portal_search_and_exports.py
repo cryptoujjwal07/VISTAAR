@@ -58,15 +58,47 @@ async def test_classroom_and_printable_teacher_export():
         assert res.status_code == 200
         lessons = res.json()
         assert isinstance(lessons, list)
-        assert len(lessons) >= 4
-        assert "key_terms" in lessons[0]
-        assert "sources" in lessons[0]
+        assert len(lessons) >= 5
+        # Classes 8-12 must all be supported (Prompt 19)
+        grades = {l["class_grade"] for l in lessons}
+        assert {8, 9, 10, 11, 12}.issubset(grades)
 
-        lesson_id = lessons[0]["id"]
+        first = lessons[0]
+        for field in [
+            "learning_objective",
+            "scientific_concept",
+            "explanation",
+            "real_indian_polar_example",
+            "real_data_visualization",
+            "activity",
+            "key_terms",
+            "quiz",
+            "sources",
+            "provenance",
+        ]:
+            assert field in first
+        assert len(first["quiz"]) == 3
+        assert first["provenance"]["controlled_quiz_source"] is True
+
+        lesson_id = first["id"]
+        # Submit quiz in student mode
+        quiz_res = await client.post(
+            "/api/v1/classroom/quiz/submit",
+            json={"lesson_id": lesson_id, "answers": [0, 1, 2]},
+        )
+        assert quiz_res.status_code == 200
+        quiz_data = quiz_res.json()
+        assert quiz_data["score"] == 3
+        assert quiz_data["percentage"] == 100.0
+        assert quiz_data["passed"] is True
+
+        # Printable teacher lesson plan & answer key export
         exp = await client.get(f"/api/v1/classroom/lessons/{lesson_id}/export")
         assert exp.status_code == 200
         assert "text/html" in exp.headers["content-type"]
         assert "NCPOR" in exp.text
+        assert "Real Data Visualization" in exp.text
+
 
 
 @pytest.mark.asyncio

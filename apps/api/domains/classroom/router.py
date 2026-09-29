@@ -252,11 +252,83 @@ CURATED_POLAR_LESSONS: List[Dict[str, Any]] = [
 ]
 
 
+async def _enrich_lesson_with_real_data(lesson: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Attaches live NPDC dataset records and SHA-256 provenance for the lesson's
+    station and visualization parameter (Prompt 19: real data visualization & provenance).
+    """
+    db = get_database()
+    sid = lesson.get("station_id", "himansh").lower()
+    param = lesson.get("visualization_parameter", "tempr")
+
+    ds = await db.datasets.find_one({"station_id": sid}, {"_id": 0})
+    records = await db.dataset_records.find(
+        {"station_id": sid}, {"_id": 0}
+    ).sort("timestamp", 1).limit(24).to_list(length=24)
+
+    available_params = (ds or {}).get("parameters", [])
+    if param not in available_params and available_params:
+        param = available_params[0]
+    unit = (ds or {}).get("units", {}).get(param, "°C" if param == "tempr" else "")
+
+    points = []
+    vals = []
+    for r in records:
+        v = r.get("metrics", {}).get(param)
+        if v is not None:
+            fv = float(v)
+            vals.append(fv)
+            points.append({
+                "timestamp": r.get("timestamp"),
+                "value": fv,
+                "unit": unit,
+                "record_id": r.get("record_id"),
+            })
+
+    stats = {
+        "count": len(vals),
+        "min": round(min(vals), 2) if vals else None,
+        "max": round(max(vals), 2) if vals else None,
+        "avg": round(sum(vals) / len(vals), 2) if vals else None,
+        "unit": unit,
+    }
+
+    dataset_id = (ds or {}).get("dataset_id", lesson.get("real_dataset_ref"))
+    sha256 = (ds or {}).get("sha256", "")
+
+    return {
+        **lesson,
+        "real_data_visualization": {
+            "station_id": sid,
+            "dataset_id": dataset_id,
+            "original_filename": (ds or {}).get("original_filename", ""),
+            "sha256": sha256,
+            "parameter": param,
+            "unit": unit,
+            "statistics": stats,
+            "points": points,
+        },
+        "provenance": {
+            "approval_status": "APPROVED_CURRICULUM",
+            "controlled_quiz_source": True,
+            "dataset_id": dataset_id,
+            "sha256": sha256,
+            "provider": (ds or {}).get("provider", "National Centre for Polar and Ocean Research (NCPOR) / NPDC"),
+        },
+    }
+
+
 @router.get("/lessons")
 async def list_lessons(class_grade: Optional[int] = Query(None, ge=8, le=12)):
-    if class_grade:
-        return [l for l in CURATED_POLAR_LESSONS if l["class_grade"] == class_grade]
-    return CURATED_POLAR_LESSONS
+    filtered = (
+        [l for l in CURATED_POLAR_LESSONS if l["class_grade"] == class_grade]
+        if class_grade
+        else CURATED_POLAR_LESSONS
+    )
+    enriched = []
+    for l in filtered:
+        enriched.append(await _enrich_lesson_with_real_data(l))
+    return enriched
 
 
 @router.get("/lessons/{lesson_id}")
@@ -264,15 +336,18 @@ async def get_lesson_detail(lesson_id: str):
     found = next((l for l in CURATED_POLAR_LESSONS if l["id"] == lesson_id), None)
     if not found:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson module not found")
-    return found
+    return await _enrich_lesson_with_real_data(found)
 
 
 @router.get("/lessons/{lesson_id}/export")
 async def export_teacher_lesson_plan(lesson_id: str):
     """Generates printable Teacher Lesson Plan with answer key and NPDC source references (Prompt 19 & 32)."""
-    found = next((l for l in CURATED_POLAR_LESSONS if l["id"] == lesson_id), None)
-    if not found:
+    raw = next((l for l in CURATED_POLAR_LESSONS if l["id"] == lesson_id), None)
+    if not raw:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson module not found")
+    found = await _enrich_lesson_with_real_data(raw)
+    viz = found.get("real_data_visualization", {})
+    stats = viz.get("statistics", {})
 
     terms_html = "".join(
         f"<li><strong>{t['term']}:</strong> {t['definition']}</li>" for t in found.get("key_terms", [])
@@ -302,7 +377,7 @@ async def export_teacher_lesson_plan(lesson_id: str):
   <div class="sheet">
     <span class="badge">NCPOR VISTAAR CLASSROOM STUDIO • NCERT CLASS {found['class_grade']} ({found['subject']})</span>
     <h1>{found['title']}</h1>
-    <p><strong>Observatory Station:</strong> {found['station']} | <strong>NPDC Dataset Reference:</strong> <code>{found['real_dataset_ref']}</code></p>
+    <p><strong>Observatory Station:</strong> {found['station']} | <strong>NPDC Dataset Reference:</strong> <code>{viz.get('dataset_id', found['real_dataset_ref'])}</code> (SHA-256: <code>{(viz.get('sha256') or '')[:16]}...</code>)</p>
     <h2>1. Learning Objective</h2>
     <p>{found['learning_objective']}</p>
     <h2>2. Scientific Concept & Explanation</h2>
@@ -310,8 +385,14 @@ async def export_teacher_lesson_plan(lesson_id: str):
     <p>{found['explanation']}</p>
     <h2>3. Real Indian Polar Observatory Case Study</h2>
     <div class="box">{found['real_indian_polar_example']}</div>
-    <h2>4. Student Data Activity</h2>
-    <div class="box">{found['activity']}</div>
+    <h2>4. Real Data Visualization & Student Activity</h2>
+    <div class="box">
+      <strong>Parameter:</strong> {viz.get('parameter')} ({viz.get('unit')}) |
+      <strong>Min:</strong> {stats.get('min')} {viz.get('unit')} |
+      <strong>Max:</strong> {stats.get('max')} {viz.get('unit')} |
+      <strong>Mean:</strong> {stats.get('avg')} {viz.get('unit')} ({stats.get('count')} NPDC observations)<br/>
+      <strong>Activity:</strong> {found['activity']}
+    </div>
     <h2>5. Key Scientific Terms</h2>
     <ul>{terms_html}</ul>
     <h2>6. Teacher Quiz & Verified Answer Key</h2>
@@ -343,14 +424,18 @@ async def evaluate_quiz(sub: QuizSubmission):
             "question_index": i,
             "is_correct": correct,
             "correct_index": q["correct_index"],
+            "correct_answer": q["options"][q["correct_index"]],
             "explanation": f"Verified scientific answer: '{q['options'][q['correct_index']]}' (Source: {found['real_dataset_ref']}).",
         })
 
+    pct = round((score / len(quiz)) * 100, 1)
     return {
         "lesson_id": sub.lesson_id,
         "total_questions": len(quiz),
         "score": score,
-        "percentage": round((score / len(quiz)) * 100, 1),
+        "percentage": pct,
+        "passed": score >= 2,
         "sources": found.get("sources", []),
         "feedback": feedback,
     }
+
