@@ -24,7 +24,13 @@ export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("katabatic wind");
   const [stationFilter, setStationFilter] = useState("");
   const [regionFilter, setRegionFilter] = useState("");
+  const [providerFilter, setProviderFilter] = useState("");
+  const [datasetFilter, setDatasetFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [topicFilter, setTopicFilter] = useState("");
   const [contentTypeFilter, setContentTypeFilter] = useState("all");
+  const [offset, setOffset] = useState(0);
+  const [limit] = useState(10);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<any>(null);
   const [ragResult, setRagResult] = useState<any>(null);
@@ -103,14 +109,23 @@ export default function ExplorePage() {
     },
   ];
 
-  async function executeUnifiedSearch(qOverride?: string) {
+  async function executeUnifiedSearch(qOverride?: string, nextOffset?: number) {
     const q = (qOverride ?? searchQuery).trim();
     if (!q) return;
+    const effectiveOffset = nextOffset ?? offset;
     setSearching(true);
     try {
-      const params = new URLSearchParams({ q });
+      const params = new URLSearchParams({
+        q,
+        limit: String(limit),
+        offset: String(effectiveOffset),
+      });
       if (stationFilter) params.set("station_id", stationFilter);
       if (regionFilter) params.set("region", regionFilter);
+      if (providerFilter) params.set("provider", providerFilter);
+      if (datasetFilter) params.set("dataset_id", datasetFilter);
+      if (dateFilter) params.set("date", dateFilter);
+      if (topicFilter) params.set("topic", topicFilter);
       if (contentTypeFilter && contentTypeFilter !== "all") params.set("content_type", contentTypeFilter);
 
       const [res, rag] = await Promise.all([
@@ -150,8 +165,8 @@ export default function ExplorePage() {
   }
 
   useEffect(() => {
-    executeUnifiedSearch("katabatic wind");
-  }, [stationFilter, regionFilter, contentTypeFilter]);
+    executeUnifiedSearch(searchQuery, offset);
+  }, [stationFilter, regionFilter, providerFilter, datasetFilter, dateFilter, topicFilter, contentTypeFilter, offset]);
 
   const current = EXPEDITIONS.find((e) => e.id === activeExpedition) || EXPEDITIONS[0];
 
@@ -168,10 +183,10 @@ export default function ExplorePage() {
             Explore India&apos;s Polar Knowledge Repository
           </CardTitle>
           <CardDescription className="text-xs text-vistaar-muted">
-            Search across NPDC datasets, expedition PDF monographs, stations, published bulletins, classroom modules, and accredited media.
+            Hybrid keyword + semantic search across NPDC datasets, expedition PDF monographs, polar stations, expeditions, published research bulletins, classroom modules, and accredited media.
           </CardDescription>
 
-          {/* Search Input & Filters */}
+          {/* Search Input & 7 Prompt-23 Filters */}
           <div className="pt-4 space-y-3">
             <div className="relative flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
@@ -180,8 +195,13 @@ export default function ExplorePage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => handleQueryChange(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && executeUnifiedSearch()}
-                  placeholder="Search polar datasets, katabatic winds, glacier mass balance, instruments..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setOffset(0);
+                      executeUnifiedSearch(searchQuery, 0);
+                    }
+                  }}
+                  placeholder="Search polar datasets, katabatic winds, glacier mass balance, 43-ISEA, instruments..."
                   className="w-full pl-9 pr-4 py-2 text-xs rounded-md border border-vistaar-border bg-white text-vistaar-text focus:outline-none focus:border-vistaar-primary"
                 />
                 {suggestions.length > 0 && (
@@ -192,7 +212,8 @@ export default function ExplorePage() {
                         onClick={() => {
                           setSearchQuery(sug);
                           setSuggestions([]);
-                          executeUnifiedSearch(sug);
+                          setOffset(0);
+                          executeUnifiedSearch(sug, 0);
                         }}
                         className="px-3 py-1.5 hover:bg-[#FAF7F0] cursor-pointer text-vistaar-text"
                       >
@@ -202,17 +223,27 @@ export default function ExplorePage() {
                   </div>
                 )}
               </div>
-              <Button size="sm" onClick={() => executeUnifiedSearch()} disabled={searching}>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setOffset(0);
+                  executeUnifiedSearch(searchQuery, 0);
+                }}
+                disabled={searching}
+              >
                 {searching ? "Searching..." : "Hybrid Search"}
               </Button>
             </div>
 
-            {/* Filter Selectors & Facet Pills */}
+            {/* 7 Filter Selectors (Region, Station, Provider, Dataset, Date, Topic, Content Type) */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <select
                   value={regionFilter}
-                  onChange={(e) => setRegionFilter(e.target.value)}
+                  onChange={(e) => {
+                    setOffset(0);
+                    setRegionFilter(e.target.value);
+                  }}
                   className="px-2.5 py-1.5 rounded border border-vistaar-border bg-white text-xs"
                 >
                   <option value="">All Polar Regions</option>
@@ -223,7 +254,10 @@ export default function ExplorePage() {
 
                 <select
                   value={stationFilter}
-                  onChange={(e) => setStationFilter(e.target.value)}
+                  onChange={(e) => {
+                    setOffset(0);
+                    setStationFilter(e.target.value);
+                  }}
                   className="px-2.5 py-1.5 rounded border border-vistaar-border bg-white text-xs"
                 >
                   <option value="">All Stations</option>
@@ -234,14 +268,77 @@ export default function ExplorePage() {
                 </select>
 
                 <select
+                  value={providerFilter}
+                  onChange={(e) => {
+                    setOffset(0);
+                    setProviderFilter(e.target.value);
+                  }}
+                  className="px-2.5 py-1.5 rounded border border-vistaar-border bg-white text-xs"
+                >
+                  <option value="">All Providers</option>
+                  <option value="IMD">India Meteorological Department (IMD)</option>
+                  <option value="NCPOR">NCPOR / NPDC</option>
+                </select>
+
+                <select
+                  value={datasetFilter}
+                  onChange={(e) => {
+                    setOffset(0);
+                    setDatasetFilter(e.target.value);
+                  }}
+                  className="px-2.5 py-1.5 rounded border border-vistaar-border bg-white text-xs"
+                >
+                  <option value="">All Datasets</option>
+                  <option value="ds_maitri_imd">ds_maitri_imd (Maitri Synoptic)</option>
+                  <option value="ds_bharati_radiometer">ds_bharati_radiometer (Bharati MWR)</option>
+                  <option value="ds_himadri_mrr">ds_himadri_mrr (Himadri Radar)</option>
+                  <option value="ds_himadri_parsivel">ds_himadri_parsivel (Himadri Disdrometer)</option>
+                  <option value="ds_himansh_aws">ds_himansh_aws (Himansh AWS)</option>
+                </select>
+
+                <select
+                  value={dateFilter}
+                  onChange={(e) => {
+                    setOffset(0);
+                    setDateFilter(e.target.value);
+                  }}
+                  className="px-2.5 py-1.5 rounded border border-vistaar-border bg-white text-xs"
+                >
+                  <option value="">All Dates / Seasons</option>
+                  <option value="2024">2024 Field Season</option>
+                  <option value="2023">2023 Field Season</option>
+                  <option value="2016">2016 – Present</option>
+                </select>
+
+                <select
+                  value={topicFilter}
+                  onChange={(e) => {
+                    setOffset(0);
+                    setTopicFilter(e.target.value);
+                  }}
+                  className="px-2.5 py-1.5 rounded border border-vistaar-border bg-white text-xs"
+                >
+                  <option value="">All Topics</option>
+                  <option value="wind">Katabatic Wind & Synoptic Meteorology</option>
+                  <option value="glacier">Glacier Mass Balance & Cryosphere</option>
+                  <option value="radiometer">Tropospheric Humidity & Radiometry</option>
+                  <option value="precipitation">Hydrometeor & Precipitation Physics</option>
+                </select>
+
+                <select
                   value={contentTypeFilter}
-                  onChange={(e) => setContentTypeFilter(e.target.value)}
+                  onChange={(e) => {
+                    setOffset(0);
+                    setContentTypeFilter(e.target.value);
+                  }}
                   className="px-2.5 py-1.5 rounded border border-vistaar-border bg-white text-xs"
                 >
                   <option value="all">All Content Types</option>
                   <option value="datasets">NPDC Datasets</option>
                   <option value="documents">PDF Technical Reports</option>
-                  <option value="publications">Published Bulletins</option>
+                  <option value="stations">Polar Stations</option>
+                  <option value="expeditions">Scientific Expeditions</option>
+                  <option value="publications">Published Research Bulletins</option>
                   <option value="education">Classroom Lessons</option>
                   <option value="media">Media Assets</option>
                 </select>
@@ -252,6 +349,9 @@ export default function ExplorePage() {
                   <Badge variant="scientific">Total Hits: {searchResults.total_count}</Badge>
                   <Badge variant="outline">Datasets: {searchResults.facets.datasets}</Badge>
                   <Badge variant="outline">PDFs: {searchResults.facets.documents}</Badge>
+                  <Badge variant="outline">Stations: {searchResults.facets.stations}</Badge>
+                  <Badge variant="outline">Expeditions: {searchResults.facets.expeditions}</Badge>
+                  <Badge variant="outline">Published: {searchResults.facets.publications}</Badge>
                   <Badge variant="outline">Education: {searchResults.facets.education}</Badge>
                   <Badge variant="outline">Media: {searchResults.facets.media}</Badge>
                 </div>
@@ -261,81 +361,180 @@ export default function ExplorePage() {
         </CardHeader>
 
         <CardContent className="p-6 space-y-6">
-          {/* AI Evidence Synthesis Banner */}
+          {/* AI Evidence Synthesis Banner with Verifiable Evidence Citations */}
           {ragResult && (
-            <div className="p-4 rounded-lg border border-blue-200 bg-blue-50/50 space-y-2">
-              <div className="flex items-center justify-between">
+            <div className="p-4 rounded-lg border border-blue-200 bg-blue-50/50 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase text-vistaar-primary flex items-center space-x-1.5">
                   <Sparkles className="w-4 h-4" />
-                  <span>Hybrid RAG Evidence Synthesis</span>
+                  <span>Hybrid RAG Evidence Synthesis (BM25 + Vector Retrieval)</span>
                 </span>
-                <Badge variant={ragResult.status === "GROUNDED" ? "success" : "warning"}>
-                  {ragResult.status || "GROUNDED"}
-                </Badge>
+                <div className="flex items-center space-x-2">
+                  {typeof ragResult.confidence_score === "number" && (
+                    <span className="text-[11px] font-mono text-vistaar-muted">
+                      Confidence: {(ragResult.confidence_score * 100).toFixed(0)}%
+                    </span>
+                  )}
+                  <Badge variant={ragResult.status === "GROUNDED" ? "success" : "warning"}>
+                    {ragResult.status || "GROUNDED"}
+                  </Badge>
+                </div>
               </div>
               <p className="text-xs text-vistaar-text leading-relaxed whitespace-pre-line">
                 {ragResult.answer}
               </p>
+              {Array.isArray(ragResult.citations) && ragResult.citations.length > 0 && (
+                <div className="pt-2 border-t border-blue-200/70 space-y-1">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-vistaar-scientific">
+                    Verified Evidence Citations ({ragResult.citations.length})
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                    {ragResult.citations.slice(0, 4).map((cit: string, idx: number) => (
+                      <div
+                        key={idx}
+                        className="text-[11px] font-mono bg-white/80 px-2.5 py-1.5 rounded border border-blue-100 text-vistaar-text truncate"
+                        title={cit}
+                      >
+                        {cit}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Unified Search Results Grid */}
+          {/* Unified Search Results Grid across all 7 domains with Provenance */}
           {searchResults && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              {/* Datasets Column */}
-              <div className="p-4 rounded-lg border border-vistaar-border bg-[#FAF7F0]/50 space-y-2.5">
-                <h4 className="font-bold uppercase tracking-wider text-vistaar-scientific flex items-center space-x-1.5">
-                  <Database className="w-3.5 h-3.5" />
-                  <span>NPDC Datasets ({searchResults.datasets?.length || 0})</span>
-                </h4>
-                {(searchResults.datasets || []).slice(0, 3).map((ds: any) => (
-                  <div key={ds.dataset_id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
-                    <div className="font-bold text-vistaar-text">{ds.title}</div>
-                    <div className="text-[10px] font-mono text-vistaar-muted">
-                      ID: {ds.dataset_id} • Station: {ds.station_name} • SHA-256: {ds.sha256?.slice(0, 10)}...
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                {/* 1. Datasets Column */}
+                <div className="p-4 rounded-lg border border-vistaar-border bg-[#FAF7F0]/50 space-y-2.5">
+                  <h4 className="font-bold uppercase tracking-wider text-vistaar-scientific flex items-center space-x-1.5">
+                    <Database className="w-3.5 h-3.5" />
+                    <span>NPDC Datasets ({searchResults.datasets?.length || 0})</span>
+                  </h4>
+                  {(searchResults.datasets || []).slice(0, 3).map((ds: any) => (
+                    <div key={ds.dataset_id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
+                      <div className="font-bold text-vistaar-text">{ds.title}</div>
+                      <div className="text-[10px] font-mono text-vistaar-muted">
+                        ID: {ds.dataset_id} • {ds.station_name} • Score: {ds.retrieval_scores?.hybrid_score ?? "1.0"}
+                      </div>
+                      <div className="text-[10px] font-mono text-emerald-700 flex items-center space-x-1">
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>Provenance SHA-256: {ds.sha256?.slice(0, 12)}...</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                {/* 2. PDF Documents Column */}
+                <div className="p-4 rounded-lg border border-vistaar-border bg-[#FAF7F0]/50 space-y-2.5">
+                  <h4 className="font-bold uppercase tracking-wider text-vistaar-primary flex items-center space-x-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Scientific PDFs ({searchResults.documents?.length || 0})</span>
+                  </h4>
+                  {(searchResults.documents || []).slice(0, 3).map((doc: any) => (
+                    <div key={doc.document_id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
+                      <div className="font-bold text-vistaar-text">{doc.title}</div>
+                      <div className="text-[10px] font-mono text-vistaar-muted">
+                        Doc ID: {doc.document_id} • Pages: {doc.page_count} • Chunks: {doc.chunk_count}
+                      </div>
+                      <div className="text-[10px] font-mono text-emerald-700 flex items-center space-x-1">
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>Provenance: {doc.provenance?.provider || "NCPOR / MoES"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 3. Stations, Expeditions & Published Research Column */}
+                <div className="p-4 rounded-lg border border-vistaar-border bg-[#FAF7F0]/50 space-y-2.5">
+                  <h4 className="font-bold uppercase tracking-wider text-amber-900 flex items-center space-x-1.5">
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>
+                      Stations, Expeditions & Research (
+                      {(searchResults.stations?.length || 0) +
+                        (searchResults.expeditions?.length || 0) +
+                        (searchResults.publications?.length || 0)}
+                      )
+                    </span>
+                  </h4>
+                  {(searchResults.stations || []).slice(0, 2).map((st: any) => (
+                    <div key={st.id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
+                      <div className="font-bold text-vistaar-text">{st.name}</div>
+                      <div className="text-[10px] font-mono text-vistaar-muted">
+                        Station • {st.region} ({st.location})
+                      </div>
+                    </div>
+                  ))}
+                  {(searchResults.expeditions || []).slice(0, 2).map((exp: any) => (
+                    <div key={exp.id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
+                      <div className="font-bold text-vistaar-text">{exp.name}</div>
+                      <div className="text-[10px] font-mono text-vistaar-muted">
+                        Expedition • {exp.period} • {exp.vessel_or_platform}
+                      </div>
+                    </div>
+                  ))}
+                  {(searchResults.publications || []).slice(0, 2).map((pub: any) => (
+                    <div key={pub.id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
+                      <div className="font-bold text-vistaar-text">{pub.title}</div>
+                      <div className="text-[10px] font-mono text-emerald-700">
+                        PUBLISHED • Station: {pub.station_id}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 4. Education & Media Column */}
+                <div className="p-4 rounded-lg border border-vistaar-border bg-[#FAF7F0]/50 space-y-2.5">
+                  <h4 className="font-bold uppercase tracking-wider text-emerald-800 flex items-center space-x-1.5">
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    <span>Classroom & Media ({(searchResults.education?.length || 0) + (searchResults.media?.length || 0)})</span>
+                  </h4>
+                  {(searchResults.education || []).slice(0, 2).map((les: any) => (
+                    <div key={les.id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
+                      <div className="font-bold text-vistaar-text">{les.title}</div>
+                      <div className="text-[10px] font-mono text-vistaar-muted">
+                        NCERT Class {les.class_grade} • {les.station}
+                      </div>
+                    </div>
+                  ))}
+                  {(searchResults.media || []).slice(0, 2).map((m: any) => (
+                    <div key={m.asset_id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
+                      <div className="font-bold text-vistaar-text">{m.title}</div>
+                      <div className="text-[10px] font-mono text-vistaar-muted">
+                        {m.media_type} • {m.provider} ({m.license})
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* PDF Documents Column */}
-              <div className="p-4 rounded-lg border border-vistaar-border bg-[#FAF7F0]/50 space-y-2.5">
-                <h4 className="font-bold uppercase tracking-wider text-vistaar-primary flex items-center space-x-1.5">
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Scientific PDFs ({searchResults.documents?.length || 0})</span>
-                </h4>
-                {(searchResults.documents || []).slice(0, 3).map((doc: any) => (
-                  <div key={doc.document_id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
-                    <div className="font-bold text-vistaar-text">{doc.title}</div>
-                    <div className="text-[10px] font-mono text-vistaar-muted">
-                      Doc ID: {doc.document_id} • Pages: {doc.page_count} • Chunks: {doc.chunk_count}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Education & Media Column */}
-              <div className="p-4 rounded-lg border border-vistaar-border bg-[#FAF7F0]/50 space-y-2.5">
-                <h4 className="font-bold uppercase tracking-wider text-emerald-800 flex items-center space-x-1.5">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  <span>Classroom & Media ({(searchResults.education?.length || 0) + (searchResults.media?.length || 0)})</span>
-                </h4>
-                {(searchResults.education || []).slice(0, 2).map((les: any) => (
-                  <div key={les.id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
-                    <div className="font-bold text-vistaar-text">{les.title}</div>
-                    <div className="text-[10px] font-mono text-vistaar-muted">
-                      NCERT Class {les.class_grade} • {les.station}
-                    </div>
-                  </div>
-                ))}
-                {(searchResults.media || []).slice(0, 2).map((m: any) => (
-                  <div key={m.asset_id} className="p-2.5 bg-white rounded border border-vistaar-border space-y-1">
-                    <div className="font-bold text-vistaar-text">{m.title}</div>
-                    <div className="text-[10px] font-mono text-vistaar-muted">
-                      {m.media_type} • {m.provider} ({m.license})
-                    </div>
-                  </div>
-                ))}
+              {/* Pagination Bar */}
+              <div className="flex items-center justify-between pt-2 border-t border-vistaar-border text-xs font-mono text-vistaar-muted">
+                <span>
+                  Retrieval Mode: <strong>{searchResults.retrieval_mode || "hybrid_keyword_and_semantic"}</strong> • Offset:{" "}
+                  {searchResults.pagination?.offset ?? offset} • Limit: {searchResults.pagination?.limit ?? limit}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={offset === 0 || searching}
+                    onClick={() => setOffset(Math.max(0, offset - limit))}
+                  >
+                    Previous Page
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!searchResults.pagination?.has_more || searching}
+                    onClick={() => setOffset(offset + limit)}
+                  >
+                    Next Page
+                  </Button>
+                </div>
               </div>
             </div>
           )}
