@@ -147,16 +147,19 @@ async def generate_four_track_outreach(
     await db.publications.insert_one(outreach_pkg)
     await db.claims.insert_one(claim_1)
 
+    # Remove BSON ObjectId before returning to client
+    outreach_pkg.pop("_id", None)
+    claim_1.pop("_id", None)
+
     # Audit log
-    await db.audit_events.insert_one({
-        "event_id": f"aud_{uuid.uuid4().hex[:12]}",
-        "actor_id": current_user["id"],
-        "actor_email": current_user["email"],
-        "action": "GENERATE_OUTREACH",
-        "resource_type": "PUBLICATION",
-        "resource_id": outreach_id,
-        "timestamp": now,
-        "details": {"station_id": sid, "status": "AI_GENERATED", "claims_count": 1}
-    })
+    from apps.api.domains.audit.service import record_audit_event
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="GENERATE_OUTREACH",
+        resource_type="PUBLICATION",
+        resource_id=outreach_id,
+        details={"station_id": sid, "status": "AI_GENERATED", "claims_count": 1}
+    )
 
     return outreach_pkg

@@ -40,14 +40,38 @@ async def list_publications(
 
 @router.get("/published")
 async def list_public_publications(station_id: Optional[str] = None, limit: int = 20):
-    """Public endpoint: only returns APPROVED/PUBLISHED content for the public portal"""
+    """
+    Public endpoint: strictly returns APPROVED/PUBLISHED content referencing immutable approved version (Prompt 08).
+    Prevents silent overwrites from subsequent unreviewed drafts.
+    """
     db = get_database()
     query = {"status": "PUBLISHED"}
     if station_id:
         query["station_id"] = station_id.lower()
     cursor = db.publications.find(query, {"_id": 0}).sort("published_at", -1).limit(limit)
     items = await cursor.to_list(length=limit)
-    return items
+
+    results = []
+    for item in items:
+        if "published_snapshot" in item and item["published_snapshot"]:
+            snap = item["published_snapshot"]
+            results.append({
+                "id": item.get("id"),
+                "status": item.get("status"),
+                "station_id": item.get("station_id"),
+                "dataset_id": item.get("dataset_id"),
+                "version": snap.get("version", item.get("version")),
+                "published_at": item.get("published_at"),
+                "pib": snap.get("pib", item.get("pib")),
+                "social": snap.get("social", item.get("social")),
+                "education": snap.get("education", item.get("education")),
+                "vernacular": snap.get("vernacular", item.get("vernacular")),
+                "claims_verification": snap.get("claims_verification", item.get("claims_verification")),
+                "approved_by": item.get("approved_by")
+            })
+        else:
+            results.append(item)
+    return results
 
 @router.get("/{pub_id}")
 async def get_publication(pub_id: str):
@@ -248,16 +272,45 @@ async def transition_status(
         )
 
     now = datetime.now(timezone.utc).isoformat()
+    current_version = pub.get("version", 1)
+
     update_fields = {
         "status": new_status,
         "updated_at": now,
         "last_reviewer": current_user["email"]
     }
-    if new_status == "PUBLISHED":
+
+    # Prompt 08: Published content references an immutable approved version
+    if new_status == "APPROVED":
+        update_fields["approved_by"] = current_user["email"]
+        update_fields["approved_version"] = current_version
+        update_fields["approved_snapshot"] = {
+            "version": current_version,
+            "approved_at": now,
+            "approved_by": current_user["email"],
+            "pib": pub.get("pib", {}),
+            "social": pub.get("social", {}),
+            "education": pub.get("education", {}),
+            "vernacular": pub.get("vernacular", {}),
+            "claims_verification": pub.get("claims_verification", {})
+        }
+    elif new_status == "PUBLISHED":
         update_fields["published_at"] = now
         update_fields["approved_by"] = current_user["email"]
-    elif new_status == "APPROVED":
-        update_fields["approved_by"] = current_user["email"]
+        # Point to the immutable approved snapshot
+        approved_version = pub.get("approved_version", current_version)
+        approved_snapshot = pub.get("approved_snapshot") or {
+            "version": approved_version,
+            "approved_at": now,
+            "approved_by": current_user["email"],
+            "pib": pub.get("pib", {}),
+            "social": pub.get("social", {}),
+            "education": pub.get("education", {}),
+            "vernacular": pub.get("vernacular", {}),
+            "claims_verification": pub.get("claims_verification", {})
+        }
+        update_fields["published_version"] = approved_version
+        update_fields["published_snapshot"] = approved_snapshot
 
     await db.publications.update_one({"id": pub_id}, {"$set": update_fields})
 
@@ -272,6 +325,8 @@ async def transition_status(
         before_version=old_status,
         after_version=new_status,
         details={
+            "version": current_version,
+            "approved_version": update_fields.get("approved_version", pub.get("approved_version")),
             "reviewer_notes": req.reviewer_notes
         }
     )
@@ -280,6 +335,8 @@ async def transition_status(
         "id": pub_id,
         "previous_status": old_status,
         "current_status": new_status,
+        "version": current_version,
+        "approved_version": update_fields.get("approved_version", pub.get("approved_version")),
         "transitioned_at": now
     }
 
@@ -289,22 +346,181 @@ async def update_publication_track(
     req: EditTrackRequest,
     current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"]))
 ):
+    """
+    Updates a publication track, increments version number, appends to immutable revisions history,
+    and logs before_version and after_version in audit trail (Prompt 08).
+    """
     db = get_database()
     pub = await db.publications.find_one({"id": pub_id})
     if not pub:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
 
+    old_version = pub.get("version", 1)
+    new_version = old_version + 1
     track_key = req.track.lower()
     now = datetime.now(timezone.utc).isoformat()
     
+    revision_entry = {
+        "revision_id": f"rev_{uuid.uuid4().hex[:12]}",
+        "version": new_version,
+        "track": req.track,
+        "title": req.title,
+        "summary": req.summary,
+        "body": req.body,
+        "author_id": current_user["id"],
+        "author_email": current_user["email"],
+        "timestamp": now,
+        "previous_version": old_version
+    }
+
     update_data = {
         f"{track_key}.title": req.title,
         f"{track_key}.summary": req.summary,
         f"{track_key}.body": req.body,
         "updated_at": now,
-        "version": pub.get("version", 1) + 1
+        "version": new_version
     }
 
-    await db.publications.update_one({"id": pub_id}, {"$set": update_data})
+    await db.publications.update_one(
+        {"id": pub_id},
+        {
+            "$set": update_data,
+            "$push": {"revisions": revision_entry}
+        }
+    )
 
-    return {"id": pub_id, "updated_track": req.track, "version": pub.get("version", 1) + 1}
+    from apps.api.domains.audit.service import record_audit_event
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="REVISE_PUBLICATION_TRACK",
+        resource_type="PUBLICATION",
+        resource_id=pub_id,
+        reason=f"Revised {req.track} track content",
+        before_version=old_version,
+        after_version=new_version,
+        details={
+            "track": req.track,
+            "title": req.title,
+            "revision_id": revision_entry["revision_id"]
+        }
+    )
+
+    return {
+        "id": pub_id,
+        "updated_track": req.track,
+        "previous_version": old_version,
+        "version": new_version,
+        "revision_id": revision_entry["revision_id"]
+    }
+
+class RollbackRequest(BaseModel):
+    target_version: int
+    reason: str
+
+@router.get("/{pub_id}/revisions")
+async def get_publication_revisions(
+    pub_id: str,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR", "FIELD_SCIENTIST"]))
+):
+    """
+    Returns full immutable revision history for a publication (Prompt 08).
+    """
+    db = get_database()
+    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    return {
+        "publication_id": pub_id,
+        "current_version": pub.get("version", 1),
+        "approved_version": pub.get("approved_version"),
+        "published_version": pub.get("published_version"),
+        "status": pub.get("status"),
+        "revisions": pub.get("revisions", [])
+    }
+
+@router.post("/{pub_id}/rollback")
+async def rollback_publication_revision(
+    pub_id: str,
+    req: RollbackRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"]))
+):
+    """
+    Rolls back publication to a designated historical revision, creating an audited next version.
+    """
+    db = get_database()
+    pub = await db.publications.find_one({"id": pub_id})
+    if not pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    revisions = pub.get("revisions", [])
+    matching_rev = next((r for r in revisions if r.get("version") == req.target_version), None)
+    if not matching_rev and req.target_version != 1:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Historical revision version {req.target_version} not found in publication history."
+        )
+
+    old_version = pub.get("version", 1)
+    new_version = old_version + 1
+    now = datetime.now(timezone.utc).isoformat()
+
+    track_key = matching_rev.get("track", "pib").lower() if matching_rev else "pib"
+    rollback_title = matching_rev.get("title", "") if matching_rev else pub.get("pib", {}).get("title", "")
+    rollback_summary = matching_rev.get("summary", "") if matching_rev else pub.get("pib", {}).get("summary", "")
+    rollback_body = matching_rev.get("body", "") if matching_rev else pub.get("pib", {}).get("body", "")
+
+    rollback_revision_entry = {
+        "revision_id": f"rev_{uuid.uuid4().hex[:12]}",
+        "version": new_version,
+        "track": track_key.upper(),
+        "title": rollback_title,
+        "summary": rollback_summary,
+        "body": rollback_body,
+        "author_id": current_user["id"],
+        "author_email": current_user["email"],
+        "timestamp": now,
+        "is_rollback": True,
+        "restored_from_version": req.target_version,
+        "previous_version": old_version
+    }
+
+    update_data = {
+        f"{track_key}.title": rollback_title,
+        f"{track_key}.summary": rollback_summary,
+        f"{track_key}.body": rollback_body,
+        "updated_at": now,
+        "version": new_version
+    }
+
+    await db.publications.update_one(
+        {"id": pub_id},
+        {
+            "$set": update_data,
+            "$push": {"revisions": rollback_revision_entry}
+        }
+    )
+
+    from apps.api.domains.audit.service import record_audit_event
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="ROLLBACK_PUBLICATION_VERSION",
+        resource_type="PUBLICATION",
+        resource_id=pub_id,
+        reason=req.reason,
+        before_version=old_version,
+        after_version=new_version,
+        details={
+            "restored_from_version": req.target_version,
+            "revision_id": rollback_revision_entry["revision_id"]
+        }
+    )
+
+    return {
+        "id": pub_id,
+        "restored_from_version": req.target_version,
+        "new_version": new_version,
+        "message": f"Successfully rolled back to version {req.target_version} as version {new_version}."
+    }

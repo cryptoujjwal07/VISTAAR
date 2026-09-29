@@ -1,4 +1,6 @@
 import os
+import uuid
+from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Query, status, Depends
 from pydantic import BaseModel
@@ -247,3 +249,96 @@ async def get_dataset_quality_report(dataset_id: str):
             "notes": "Zero silent mutations; non-destructive flagging conforms to Prompt 05 criteria."
         }
     }
+
+class UpdateDatasetMetadataRequest(BaseModel):
+    description: Optional[str] = None
+    parameters_summary: Optional[str] = None
+    citation: Optional[str] = None
+    reason: str
+
+@router.patch("/{dataset_id}/metadata")
+async def update_dataset_metadata(
+    dataset_id: str,
+    req: UpdateDatasetMetadataRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "FIELD_SCIENTIST"]))
+):
+    """
+    Updates dataset scientific metadata, increments metadata version,
+    and logs before_version and after_version in audit trail (Prompt 08).
+    """
+    db = get_database()
+    dataset = await db.datasets.find_one({"dataset_id": dataset_id})
+    if not dataset:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found")
+
+    old_version = dataset.get("metadata_version", 1)
+    new_version = old_version + 1
+    now = datetime.now(timezone.utc).isoformat()
+
+    update_fields = {
+        "metadata_version": new_version,
+        "updated_at": now,
+        "last_updated_by": current_user["email"]
+    }
+    if req.description:
+        update_fields["description"] = req.description
+    if req.parameters_summary:
+        update_fields["parameters_summary"] = req.parameters_summary
+    if req.citation:
+        update_fields["citation"] = req.citation
+
+    revision_entry = {
+        "revision_id": f"drev_{uuid.uuid4().hex[:12]}",
+        "version": new_version,
+        "author_email": current_user["email"],
+        "reason": req.reason,
+        "timestamp": now,
+        "changes": {k: v for k, v in update_fields.items() if k not in ["metadata_version", "updated_at", "last_updated_by"]}
+    }
+
+    await db.datasets.update_one(
+        {"dataset_id": dataset_id},
+        {
+            "$set": update_fields,
+            "$push": {"metadata_revisions": revision_entry}
+        }
+    )
+
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="UPDATE_DATASET_METADATA",
+        resource_type="DATASET",
+        resource_id=dataset_id,
+        reason=req.reason,
+        before_version=old_version,
+        after_version=new_version,
+        details={"changes": revision_entry["changes"]}
+    )
+
+    return {
+        "dataset_id": dataset_id,
+        "previous_version": old_version,
+        "version": new_version,
+        "updated_at": now
+    }
+
+@router.get("/{dataset_id}/revisions")
+async def get_dataset_metadata_revisions(
+    dataset_id: str,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR", "FIELD_SCIENTIST"]))
+):
+    """
+    Retrieves full audit and version history for dataset metadata.
+    """
+    db = get_database()
+    dataset = await db.datasets.find_one({"dataset_id": dataset_id}, {"_id": 0})
+    if not dataset:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found")
+
+    return {
+        "dataset_id": dataset_id,
+        "current_version": dataset.get("metadata_version", 1),
+        "revisions": dataset.get("metadata_revisions", [])
+    }
+
