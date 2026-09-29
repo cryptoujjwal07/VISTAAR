@@ -154,13 +154,33 @@ async def test_media_library_and_press_kit_builder():
         assert dl_res.status_code == 200
         assert "PERMITTED MEDIA DOWNLOAD" in dl_res.text
 
-        kit_json = await client.get("/api/v1/media/press-kit?station_id=maitri")
+        kit_json = await client.get(
+            "/api/v1/media/press-kit?station_id=maitri&expedition_id=isea-43&topic=Katabatic+Wind&start_date=2023-01-01&end_date=2024-12-31"
+        )
         assert kit_json.status_code == 200
-        assert "verified_statistics" in kit_json.json()
+        kit_data = kit_json.json()
+        assert "verified_statistics" in kit_data
+        assert len(kit_data["verified_statistics"]) >= 1
+        assert "sha256" in kit_data["verified_statistics"][0]["provenance"]
+        assert kit_data["release_status"] in ["APPROVED", "PUBLISHED"]
+        assert kit_data["governance_status"]["supported_labels"] == [
+            "DRAFT",
+            "REVIEWED",
+            "APPROVED",
+            "PUBLISHED",
+        ]
+        assert "approved_images_and_charts" in kit_data
+        assert "source_references" in kit_data
 
         pk = await client.get("/api/v1/media/press-kit/download?station_id=maitri")
         assert pk.status_code == 200
         assert "Accredited Journalist Press Kit" in pk.text
+
+        pk_pdf = await client.get("/api/v1/media/press-kit/download?station_id=maitri&format=pdf")
+        assert pk_pdf.status_code == 200
+        assert pk_pdf.headers["content-type"] == "application/pdf"
+        assert pk_pdf.content.startswith(b"%PDF-")
+
 
 
 

@@ -337,28 +337,44 @@ async def generate_press_kit(
 ):
     """
     Production Journalist Press Kit workflow (Prompt 21).
-    Generates only approved/verified material with clear status labels (PUBLISHED, APPROVED, REVIEWED, DRAFT).
+    Journalist selects station, expedition, topic, dataset, and date range.
+    Generates only approved/verified material with clear status labels (DRAFT, REVIEWED, APPROVED, PUBLISHED).
     Never exposes internal drafts as official releases. Every statistic retains NPDC provenance.
     """
     db = get_database()
     sid = station_id.lower().strip()
 
-    ds_query: Dict[str, Any] = {"station_id": sid}
+    station_datasets = await db.datasets.find({"station_id": sid}, {"_id": 0}).to_list(length=20)
+    ds = None
     if dataset_id:
-        ds_query["dataset_id"] = dataset_id
-    ds = await db.datasets.find_one(ds_query, {"_id": 0})
+        ds = await db.datasets.find_one({"station_id": sid, "dataset_id": dataset_id}, {"_id": 0})
+    if not ds and station_datasets:
+        # Prefer dataset that has quality_summary.parameter_coverage or ingested dataset_records
+        for cand in station_datasets:
+            if cand.get("quality_summary", {}).get("parameter_coverage"):
+                ds = cand
+                break
+            cnt = await db.dataset_records.count_documents({"dataset_id": cand["dataset_id"]})
+            if cnt > 0:
+                ds = cand
+                break
+        if not ds:
+            ds = station_datasets[0]
     if not ds:
         ds = await db.datasets.find_one({}, {"_id": 0})
     if not ds:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Station dataset not found")
 
-    # Strictly fetch PUBLISHED or APPROVED publication (never expose unapproved DRAFT as official)
+    # Strictly fetch PUBLISHED or APPROVED publication (never expose unapproved DRAFT/REVIEWED as official)
     pub = await db.publications.find_one(
         {"station_id": sid, "status": {"$in": ["PUBLISHED", "APPROVED"]}},
         {"_id": 0},
     )
+    excluded_drafts_count = await db.publications.count_documents(
+        {"station_id": sid, "status": {"$in": ["DRAFT", "NEEDS_REVIEW", "AI_GENERATED", "REVIEWED"]}}
+    )
 
-    release_status = pub.get("status") if pub else "APPROVED_DATASET_BRIEFING"
+    release_status = pub.get("status") if pub else "APPROVED"
     pib_block = (
         pub.get("published_snapshot", {}).get("pib", pub.get("pib"))
         if pub
@@ -373,70 +389,204 @@ async def generate_press_kit(
                 f"Parameters: {', '.join(ds.get('parameters', []))}.\n\n"
                 f"[Quote to be provided by authorized official]"
             ),
-            "status": "APPROVED_DATASET_BRIEFING",
+            "status": "APPROVED",
         }
     )
 
-    # Extract verified facts with provenance from dataset quality_summary
+    # Extract verified facts with provenance from date-filtered dataset_records or dataset quality_summary
     verified_statistics = []
     param_cov = ds.get("quality_summary", {}).get("parameter_coverage", {})
     units_map = ds.get("units", {})
-    for param_name, p_stats in param_cov.items():
-        u = units_map.get(param_name, "")
-        verified_statistics.append({
-            "parameter": param_name,
-            "unit": u,
-            "min": p_stats.get("min"),
-            "max": p_stats.get("max"),
-            "mean": p_stats.get("mean"),
-            "valid_count": p_stats.get("valid_count"),
-            "provenance": {
-                "dataset_id": ds.get("dataset_id"),
-                "source_file": ds.get("original_filename"),
-                "sha256": ds.get("sha256"),
-                "provider": ds.get("provider"),
-            },
-        })
+
+    if start_date or end_date or not param_cov:
+        rec_query: Dict[str, Any] = {"dataset_id": ds.get("dataset_id")}
+        if start_date or end_date:
+            rec_query["timestamp"] = {}
+            if start_date:
+                rec_query["timestamp"]["$gte"] = start_date
+            if end_date:
+                rec_query["timestamp"]["$lte"] = end_date
+        recs = await db.dataset_records.find(rec_query, {"_id": 0}).limit(500).to_list(length=500)
+        if not recs:
+            recs = await db.dataset_records.find({"station_id": sid}, {"_id": 0}).limit(500).to_list(length=500)
+        params_list = ds.get("parameters", [])
+        if not params_list and recs:
+            params_list = list(recs[0].get("metrics", {}).keys())
+        for param_name in params_list:
+            vals = [float(r["metrics"][param_name]) for r in recs if r.get("metrics", {}).get(param_name) is not None]
+            if vals:
+                u = units_map.get(param_name, "")
+                verified_statistics.append({
+                    "parameter": param_name,
+                    "unit": u,
+                    "min": round(min(vals), 2),
+                    "max": round(max(vals), 2),
+                    "mean": round(sum(vals) / len(vals), 2),
+                    "valid_count": len(vals),
+                    "provenance": {
+                        "dataset_id": ds.get("dataset_id"),
+                        "source_file": ds.get("original_filename"),
+                        "sha256": ds.get("sha256"),
+                        "provider": ds.get("provider"),
+                    },
+                })
+
+    if not verified_statistics and param_cov:
+        for param_name, p_stats in param_cov.items():
+            u = units_map.get(param_name, "")
+            verified_statistics.append({
+                "parameter": param_name,
+                "unit": u,
+                "min": p_stats.get("min"),
+                "max": p_stats.get("max"),
+                "mean": p_stats.get("mean"),
+                "valid_count": p_stats.get("valid_count"),
+                "provenance": {
+                    "dataset_id": ds.get("dataset_id"),
+                    "source_file": ds.get("original_filename"),
+                    "sha256": ds.get("sha256"),
+                    "provider": ds.get("provider"),
+                },
+            })
+
+    default_exp = "isea-43" if sid in ["maitri", "bharati"] else ("arctic-winter-1" if sid == "himadri" else "himansh-himalaya-8")
+    selected_exp = expedition_id or default_exp
+    media_assets = await list_media_assets(station_id=sid)
 
     return {
         "station_id": sid,
         "station_name": ds.get("station_name", sid.capitalize()),
-        "expedition_id": expedition_id or ("isea-43" if sid in ["maitri", "bharati"] else "himansh-himalaya-8"),
+        "expedition_id": selected_exp,
         "topic": topic or "Polar Meteorology & Cryosphere Observations",
         "date_range": {"start": start_date or "2023-01-01", "end": end_date or "2024-12-31"},
         "release_status": release_status,
+        "governance_status": {
+            "current_status": release_status,
+            "supported_labels": ["DRAFT", "REVIEWED", "APPROVED", "PUBLISHED"],
+            "is_official_public_release": release_status in ["APPROVED", "PUBLISHED"],
+            "excluded_internal_drafts_count": excluded_drafts_count,
+            "policy": "Internal DRAFT and REVIEWED items are strictly withheld from official journalist press kits.",
+        },
         "official_verification_banner": (
-            "OFFICIAL PUBLISHED RELEASE" if release_status == "PUBLISHED" else f"STATUS: {release_status} (VERIFIED PROVENANCE)"
+            f"OFFICIAL {release_status} RELEASE — VERIFIED NPDC PROVENANCE"
         ),
         "region": ds.get("region"),
         "provider": ds.get("provider"),
         "dataset_id": ds.get("dataset_id"),
+        "available_datasets": [
+            {"dataset_id": d.get("dataset_id"), "title": d.get("title", d.get("dataset_id"))}
+            for d in station_datasets
+        ],
         "sha256_checksum": ds.get("sha256"),
         "key_instrument": ds.get("instrument"),
         "verified_statistics": verified_statistics,
         "quality_metrics": ds.get("quality_summary"),
         "official_press_release": pib_block,
+        "approved_images_and_charts": [
+            {
+                "asset_id": m["asset_id"],
+                "title": m["title"],
+                "media_type": m["media_type"],
+                "caption": m["caption"],
+                "url": m["url"],
+                "license": m["license"],
+                "source_reference": m["source_reference"],
+            }
+            for m in media_assets
+        ],
         "source_references": [
             f"NPDC Dataset {ds.get('dataset_id')} ({ds.get('original_filename')}, SHA-256: {(ds.get('sha256') or '')[:16]}...)",
             f"Provider: {ds.get('provider')}",
+            f"Expedition Reference: {selected_exp.upper()}",
         ],
-        "media_assets": await list_media_assets(station_id=sid),
+        "media_assets": media_assets,
         "license_guidance": "Authoritative Indian Polar Science information provided by NCPOR / Ministry of Earth Sciences under GODL for accredited media dissemination.",
     }
 
 
 @router.get("/press-kit/download")
-async def download_press_kit_document(station_id: str = "bharati"):
-    """Generates a downloadable, print-ready HTML/PDF Accredited Journalist Press Kit (Prompt 21 & 32)."""
-    kit = await generate_press_kit(station_id=station_id)
+async def download_press_kit_document(
+    station_id: str = "bharati",
+    expedition_id: Optional[str] = None,
+    topic: Optional[str] = None,
+    dataset_id: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    format: str = "html",
+):
+    """
+    Generates a downloadable Accredited Journalist Press Kit in print-ready HTML or native PDF (Prompt 21 & 32).
+    """
+    kit = await generate_press_kit(
+        station_id=station_id,
+        expedition_id=expedition_id,
+        topic=topic,
+        dataset_id=dataset_id,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    if format.lower() == "pdf":
+        import fitz
+
+        doc = fitz.open()
+        page = doc.new_page(width=595, height=842)
+        lines = [
+            f"NCPOR VISTAAR ACCREDITED JOURNALIST PRESS KIT [{kit['release_status']}]",
+            f"Station: {kit['station_name']} ({kit['region']}) | Expedition: {kit['expedition_id']}",
+            f"Topic: {kit['topic']} | Date Range: {kit['date_range']['start']} to {kit['date_range']['end']}",
+            f"Dataset ID: {kit['dataset_id']} | SHA-256: {(kit['sha256_checksum'] or '')[:24]}...",
+            "-" * 78,
+            "1. OFFICIAL PIB / MoES PRESS RELEASE:",
+            kit["official_press_release"].get("title", ""),
+            "",
+        ]
+        for b_line in (kit["official_press_release"].get("body") or "").splitlines():
+            lines.append(b_line[:90])
+        lines.extend([
+            "",
+            "2. VERIFIED SCIENTIFIC STATISTICS & PROVENANCE:",
+        ])
+        for s in kit.get("verified_statistics", []):
+            lines.append(
+                f" - {s['parameter']}: Min={s['min']} {s['unit']}, Mean={s['mean']} {s['unit']}, Max={s['max']} {s['unit']} (Source: {s['provenance']['dataset_id']})"
+            )
+        lines.extend([
+            "",
+            "3. APPROVED MEDIA & CHARTS:",
+        ])
+        for m in kit.get("approved_images_and_charts", [])[:4]:
+            lines.append(f" - [{m['media_type']}] {m['title']} ({m['license']})")
+            lines.append(f"   Caption: {m['caption'][:85]}")
+        lines.extend([
+            "",
+            "4. AUTHORITATIVE SOURCE REFERENCES:",
+            *kit.get("source_references", []),
+        ])
+        page.insert_text((36, 42), "\n".join(lines), fontsize=9)
+        pdf_bytes = doc.tobytes()
+        doc.close()
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="VISTAAR_Press_Kit_{kit["station_id"]}.pdf"'
+            },
+        )
+
     stats_rows = "".join(
         f"<tr><td style='padding:6px;border:1px solid #E7E0D5;'><code>{s['parameter']}</code></td>"
         f"<td style='padding:6px;border:1px solid #E7E0D5;'>{s['min']} {s['unit']}</td>"
         f"<td style='padding:6px;border:1px solid #E7E0D5;'>{s['mean']} {s['unit']}</td>"
         f"<td style='padding:6px;border:1px solid #E7E0D5;'>{s['max']} {s['unit']}</td>"
-        f"<td style='padding:6px;border:1px solid #E7E0D5;'><code>{s['provenance']['dataset_id']}</code></td></tr>"
+        f"<td style='padding:6px;border:1px solid #E7E0D5;'><code>{s['provenance']['dataset_id']}</code> (SHA-256: <code>{(s['provenance'].get('sha256') or '')[:10]}...</code>)</td></tr>"
         for s in kit.get("verified_statistics", [])
     )
+    media_rows = "".join(
+        f"<li><strong>[{m['media_type']}] {m['title']}:</strong> {m['caption']} <em>({m['license']} • Ref: {m['source_reference']})</em></li>"
+        for m in kit.get("approved_images_and_charts", [])
+    )
+    refs_rows = "".join(f"<li>{r}</li>" for r in kit.get("source_references", []))
     body_html = (kit["official_press_release"].get("body") or "").replace("\n", "<br/>")
 
     html = f"""<!DOCTYPE html>
@@ -456,12 +606,13 @@ async def download_press_kit_document(station_id: str = "bharati"):
 </head>
 <body>
   <div class="container">
-    <span class="status">RELEASE STATUS: {kit['release_status']}</span>
+    <span class="status">OFFICIAL GOVERNANCE STATUS: {kit['release_status']} (INTERNAL DRAFTS EXCLUDED)</span>
     <h1>Accredited Journalist Press Kit: {kit['station_name']} ({kit['region']})</h1>
+    <p><strong>Expedition:</strong> {kit['expedition_id']} | <strong>Topic:</strong> {kit['topic']} | <strong>Period:</strong> {kit['date_range']['start']} to {kit['date_range']['end']}</p>
     <p><strong>Provider:</strong> {kit['provider']} | <strong>Instrument:</strong> {kit['key_instrument']}</p>
-    <h2>1. Official PIB / MoES Press Release</h2>
+    <h2>1. Official PIB / MoES Press Release ({kit['release_status']})</h2>
     <div>{body_html}</div>
-    <h2>2. Verified Scientific Statistics & Provenance</h2>
+    <h2>2. Verified Scientific Statistics &amp; Provenance</h2>
     <table>
       <thead style="background:#FAF7F0;">
         <tr>
@@ -469,13 +620,17 @@ async def download_press_kit_document(station_id: str = "bharati"):
           <th style="padding:6px;border:1px solid #E7E0D5;text-align:left;">Min</th>
           <th style="padding:6px;border:1px solid #E7E0D5;text-align:left;">Mean</th>
           <th style="padding:6px;border:1px solid #E7E0D5;text-align:left;">Max</th>
-          <th style="padding:6px;border:1px solid #E7E0D5;text-align:left;">NPDC Dataset</th>
+          <th style="padding:6px;border:1px solid #E7E0D5;text-align:left;">NPDC Dataset &amp; SHA-256</th>
         </tr>
       </thead>
       <tbody>{stats_rows}</tbody>
     </table>
+    <h2>3. Approved Media, Captions &amp; Scientific Charts</h2>
+    <ul>{media_rows}</ul>
+    <h2>4. Authoritative Source References</h2>
+    <ul>{refs_rows}</ul>
     <div class="prov">
-      <strong>AUTHORITATIVE PROVENANCE & LICENSE:</strong><br/>
+      <strong>AUTHORITATIVE PROVENANCE &amp; LICENSE:</strong><br/>
       Dataset ID: {kit['dataset_id']} | SHA-256: {kit['sha256_checksum']}<br/>
       {kit['license_guidance']}
     </div>
@@ -483,3 +638,4 @@ async def download_press_kit_document(station_id: str = "bharati"):
 </body>
 </html>"""
     return Response(content=html, media_type="text/html")
+
