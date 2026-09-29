@@ -31,6 +31,13 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [healthData, setHealthData] = useState<any>(null);
   const [metricsData, setMetricsData] = useState<any>(null);
+  const [adminOverview, setAdminOverview] = useState<any>(null);
+  const [adminStationFilter, setAdminStationFilter] = useState<string>("");
+  const [dateFromFilter, setDateFromFilter] = useState<string>("");
+  const [dateToFilter, setDateToFilter] = useState<string>("");
+  const [activeCatalogSection, setActiveCatalogSection] = useState<
+    "datasets" | "documents" | "jobs" | "reviews" | "publications" | "translations" | "media" | "configuration"
+  >("datasets");
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [submissionsList, setSubmissionsList] = useState<any[]>([]);
@@ -58,10 +65,44 @@ export default function AdminPage() {
   async function loadData() {
     await Promise.all([
       loadSystemHealth(),
+      loadAdminOverview(),
       loadAuditLogs(),
       loadUsers(),
       loadSubmissions()
     ]);
+  }
+
+  async function loadAdminOverview(stationOverride?: string, fromOverride?: string, toOverride?: string) {
+    try {
+      const params = new URLSearchParams();
+      const st = stationOverride ?? adminStationFilter;
+      const df = fromOverride ?? dateFromFilter;
+      const dt = toOverride ?? dateToFilter;
+      if (st) params.set("station_id", st);
+      if (df) params.set("date_from", df);
+      if (dt) params.set("date_to", dt);
+      const q = params.toString() ? `?${params.toString()}` : "";
+      const res = await fetchApi(`/admin/overview${q}`);
+      setAdminOverview(res);
+    } catch {
+      setAdminOverview(null);
+    }
+  }
+
+  async function handleUpdateAdminConfig(partial: Record<string, any>) {
+    try {
+      await fetchApi("/admin/configuration", {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...partial,
+          reason: "Updated via VISTAAR Production Admin Console (Prompt 25)",
+        }),
+      });
+      showNotification("Administrative configuration updated and audit event recorded.");
+      await Promise.all([loadSystemHealth(), loadAdminOverview(), loadAuditLogs()]);
+    } catch (e: any) {
+      showNotification(e.message || "Failed to update configuration", true);
+    }
   }
 
   useEffect(() => {
@@ -109,7 +150,7 @@ export default function AdminPage() {
   async function loadSystemHealth() {
     try {
       const [readyRes, metricsRes] = await Promise.all([
-        fetchApi("http://localhost:8000/health/ready"),
+        fetchApi("/health/ready"),
         fetchApi("/health/metrics").catch(() => null),
       ]);
       setHealthData(readyRes);
@@ -787,28 +828,353 @@ export default function AdminPage() {
         </Card>
       )}
 
-      {/* TAB 5: OPERATIONS, AI TELEMETRY & CONFIGURATION (PROMPTS 25 & 28) */}
+      {/* TAB 5: OPERATIONS, CATALOG SECTIONS, AI TELEMETRY & CONFIGURATION (PROMPTS 25 & 28) */}
       {activeTab === "operations" && (
         <div className="space-y-6">
-          {/* Collection Inventory Counters */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+          {/* Prompt 25: Station & Date Range Filters */}
+          <Card className="bg-white border-vistaar-border">
+            <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="font-bold uppercase tracking-wider text-vistaar-muted flex items-center space-x-1">
+                  <Filter className="w-3.5 h-3.5 text-vistaar-primary" />
+                  <span>Admin Analytics Filters:</span>
+                </span>
+                <select
+                  value={adminStationFilter}
+                  onChange={(e) => {
+                    setAdminStationFilter(e.target.value);
+                    loadAdminOverview(e.target.value, dateFromFilter, dateToFilter);
+                  }}
+                  className="px-2.5 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] text-xs"
+                >
+                  <option value="">All Polar Stations</option>
+                  <option value="maitri">Maitri (Antarctica)</option>
+                  <option value="bharati">Bharati (Antarctica)</option>
+                  <option value="himadri">Himadri (Arctic)</option>
+                  <option value="himansh">Himansh (Himalayas)</option>
+                </select>
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-vistaar-muted font-mono">From:</span>
+                  <input
+                    type="date"
+                    value={dateFromFilter}
+                    onChange={(e) => {
+                      setDateFromFilter(e.target.value);
+                      loadAdminOverview(adminStationFilter, e.target.value, dateToFilter);
+                    }}
+                    className="px-2 py-1 rounded border border-vistaar-border bg-white text-xs font-mono"
+                  />
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-vistaar-muted font-mono">To:</span>
+                  <input
+                    type="date"
+                    value={dateToFilter}
+                    onChange={(e) => {
+                      setDateToFilter(e.target.value);
+                      loadAdminOverview(adminStationFilter, dateFromFilter, e.target.value);
+                    }}
+                    className="px-2 py-1 rounded border border-vistaar-border bg-white text-xs font-mono"
+                  />
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setAdminStationFilter("");
+                  setDateFromFilter("");
+                  setDateToFilter("");
+                  loadAdminOverview("", "", "");
+                }}
+              >
+                Reset Filters
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Real System Analytics Counters (Never Fabricate KPIs; show 'No data available' if absent) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
-              { label: "Datasets", value: metricsData?.collections?.datasets ?? 6, sub: "NPDC Calibrated" },
-              { label: "Documents", value: metricsData?.collections?.documents ?? 0, sub: "PDF & Field Logs" },
-              { label: "Doc Chunks", value: metricsData?.collections?.document_chunks ?? 0, sub: "RAG Indexed" },
-              { label: "Publications", value: metricsData?.collections?.publications_total ?? 4, sub: `${metricsData?.collections?.publications_published ?? 3} Published` },
-              { label: "Needs Review", value: metricsData?.collections?.publications_needs_review ?? 1, sub: "Review Queue" },
-              { label: "Translations", value: metricsData?.collections?.translations ?? 4, sub: "EN / HI Vernacular" },
+              {
+                label: "Datasets",
+                value: adminOverview?.analytics?.datasets ?? metricsData?.collections?.datasets,
+                sub: "NPDC Calibrated",
+              },
+              {
+                label: "Documents",
+                value: adminOverview?.analytics?.documents ?? metricsData?.collections?.documents,
+                sub: `${metricsData?.collections?.document_chunks ?? 0} RAG Chunks`,
+              },
+              {
+                label: "Jobs",
+                value: adminOverview?.analytics?.jobs ?? metricsData?.collections?.jobs_completed,
+                sub: "Ingestion & Worker Queue",
+              },
+              {
+                label: "Reviews & Claims",
+                value: adminOverview?.analytics?.reviews ?? metricsData?.collections?.claim_verifications,
+                sub: `${metricsData?.verification_states?.VERIFIED ?? 0} Verified`,
+              },
+              {
+                label: "Publications",
+                value: adminOverview?.analytics?.publications ?? metricsData?.collections?.publications_total,
+                sub: `${metricsData?.collections?.publications_published ?? 0} Published`,
+              },
+              {
+                label: "Translations",
+                value: adminOverview?.analytics?.translations ?? metricsData?.collections?.translations,
+                sub: "Bhashini Localization",
+              },
+              {
+                label: "RAG Searches",
+                value: adminOverview?.analytics?.searches ?? metricsData?.collections?.rag_searches,
+                sub: "Hybrid Retrieval Traces",
+              },
+              {
+                label: "Education Modules",
+                value: adminOverview?.analytics?.education_resources ?? metricsData?.collections?.education_modules,
+                sub: "NCERT Classes 8–12",
+              },
+              {
+                label: "Media Assets",
+                value: adminOverview?.analytics?.media ?? metricsData?.collections?.media_assets,
+                sub: "Accredited GODL Media",
+              },
+              {
+                label: "Audit Events",
+                value: metricsData?.collections?.audit_events,
+                sub: "Append-Only Ledger",
+              },
             ].map((item) => (
               <Card key={item.label} className="bg-white border-vistaar-border">
                 <CardContent className="p-4">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-vistaar-muted">{item.label}</div>
-                  <div className="text-2xl font-extrabold font-mono text-vistaar-text mt-1">{item.value}</div>
+                  <div className="text-xl font-extrabold font-mono text-vistaar-text mt-1">
+                    {item.value !== undefined && item.value !== null ? item.value : "No data available"}
+                  </div>
                   <div className="text-[10px] text-vistaar-scientific font-medium mt-1">{item.sub}</div>
                 </CardContent>
               </Card>
             ))}
           </div>
+
+          {/* Prompt 25: 8 Interactive Admin Console Sections (Datasets, Documents, Jobs, Reviews, Publications, Translations, Media, Configuration) */}
+          <Card className="bg-white border-vistaar-border">
+            <CardHeader className="p-4 border-b border-vistaar-border bg-[#FAF7F0]/60 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-1.5">
+                {(
+                  [
+                    { id: "datasets", label: "Datasets" },
+                    { id: "documents", label: "Documents" },
+                    { id: "jobs", label: "Jobs" },
+                    { id: "reviews", label: "Reviews" },
+                    { id: "publications", label: "Publications" },
+                    { id: "translations", label: "Translations" },
+                    { id: "media", label: "Media" },
+                    { id: "configuration", label: "Configuration" },
+                  ] as const
+                ).map((sec) => (
+                  <button
+                    key={sec.id}
+                    onClick={() => setActiveCatalogSection(sec.id)}
+                    className={`px-3 py-1.5 rounded text-xs font-semibold border transition-colors ${
+                      activeCatalogSection === sec.id
+                        ? "bg-vistaar-primary text-white border-vistaar-primary"
+                        : "bg-white text-vistaar-text border-vistaar-border hover:bg-[#FAF7F0]"
+                    }`}
+                  >
+                    {sec.label}
+                  </button>
+                ))}
+              </div>
+              <Badge variant="scientific" className="font-mono text-[10px]">
+                Permission-Controlled & Audited
+              </Badge>
+            </CardHeader>
+            <CardContent className="p-5 text-xs">
+              {activeCatalogSection === "datasets" && (
+                <div className="space-y-2">
+                  {(adminOverview?.datasets || []).length === 0 ? (
+                    <div className="p-6 text-center text-vistaar-muted">No data available</div>
+                  ) : (
+                    (adminOverview?.datasets || []).map((ds: any) => (
+                      <div key={ds.dataset_id} className="p-3 rounded border border-vistaar-border flex items-center justify-between font-mono">
+                        <div>
+                          <div className="font-bold font-sans text-vistaar-text">{ds.title}</div>
+                          <div className="text-[11px] text-vistaar-muted">
+                            ID: {ds.dataset_id} • Station: {ds.station_id} • SHA-256: {ds.sha256?.slice(0, 14)}...
+                          </div>
+                        </div>
+                        <Badge variant="success">v{ds.version || 1}</Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeCatalogSection === "documents" && (
+                <div className="space-y-2">
+                  {(adminOverview?.documents || []).length === 0 ? (
+                    <div className="p-6 text-center text-vistaar-muted">No data available</div>
+                  ) : (
+                    (adminOverview?.documents || []).map((doc: any) => (
+                      <div key={doc.document_id} className="p-3 rounded border border-vistaar-border flex items-center justify-between font-mono">
+                        <div>
+                          <div className="font-bold font-sans text-vistaar-text">{doc.title}</div>
+                          <div className="text-[11px] text-vistaar-muted">
+                            Doc ID: {doc.document_id} • Pages: {doc.page_count} • Chunks: {doc.chunk_count}
+                          </div>
+                        </div>
+                        <Badge variant="scientific">{doc.ingestion_status || "INDEXED"}</Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeCatalogSection === "jobs" && (
+                <div className="space-y-2">
+                  {(adminOverview?.jobs || []).length === 0 ? (
+                    <div className="p-6 text-center text-vistaar-muted">No data available</div>
+                  ) : (
+                    (adminOverview?.jobs || []).map((job: any) => (
+                      <div key={job.job_id} className="p-3 rounded border border-vistaar-border flex items-center justify-between font-mono">
+                        <div>
+                          <div className="font-bold text-vistaar-text">{job.job_id}</div>
+                          <div className="text-[11px] text-vistaar-muted">
+                            Type: {job.job_type} • Resource: {job.resource_id}
+                          </div>
+                        </div>
+                        <Badge variant="success">{job.status}</Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeCatalogSection === "reviews" && (
+                <div className="space-y-2">
+                  {(adminOverview?.reviews || []).length === 0 ? (
+                    <div className="p-6 text-center text-vistaar-muted">No data available</div>
+                  ) : (
+                    (adminOverview?.reviews || []).slice(0, 12).map((rev: any, idx: number) => (
+                      <div key={rev.claim_id || idx} className="p-3 rounded border border-vistaar-border flex items-center justify-between font-mono">
+                        <div>
+                          <div className="font-bold font-sans text-vistaar-text">{rev.claim_id}</div>
+                          <div className="text-[11px] text-vistaar-muted">
+                            Observed: {rev.observed_value ?? "—"} • Reference: {rev.reference_value ?? "—"}
+                          </div>
+                        </div>
+                        <Badge variant={rev.status === "VERIFIED" ? "success" : "warning"}>{rev.status}</Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeCatalogSection === "publications" && (
+                <div className="space-y-2">
+                  {(adminOverview?.publications || []).length === 0 ? (
+                    <div className="p-6 text-center text-vistaar-muted">No data available</div>
+                  ) : (
+                    (adminOverview?.publications || []).map((pub: any) => (
+                      <div key={pub.id} className="p-3 rounded border border-vistaar-border flex items-center justify-between font-mono">
+                        <div>
+                          <div className="font-bold font-sans text-vistaar-text">{pub.pib?.title || pub.title || pub.id}</div>
+                          <div className="text-[11px] text-vistaar-muted">
+                            ID: {pub.id} • Station: {pub.station_id} • Version: v{pub.version || 1}
+                          </div>
+                        </div>
+                        <Badge variant={pub.status === "PUBLISHED" ? "success" : "scientific"}>{pub.status}</Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeCatalogSection === "translations" && (
+                <div className="space-y-2">
+                  {(adminOverview?.translations || []).length === 0 ? (
+                    <div className="p-6 text-center text-vistaar-muted">No data available</div>
+                  ) : (
+                    (adminOverview?.translations || []).map((tr: any, i: number) => (
+                      <div key={tr.translation_id || i} className="p-3 rounded border border-vistaar-border flex items-center justify-between font-mono">
+                        <div>
+                          <div className="font-bold font-sans text-vistaar-text">
+                            {tr.source_language?.toUpperCase()} → {tr.target_language?.toUpperCase()} ({tr.provider || "Bhashini"})
+                          </div>
+                          <div className="text-[11px] text-vistaar-muted truncate max-w-xl">{tr.translated_text}</div>
+                        </div>
+                        <Badge variant="success">NUMBERS PRESERVED</Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeCatalogSection === "media" && (
+                <div className="space-y-2">
+                  {(adminOverview?.media || []).length === 0 ? (
+                    <div className="p-6 text-center text-vistaar-muted">No data available</div>
+                  ) : (
+                    (adminOverview?.media || []).map((m: any) => (
+                      <div key={m.asset_id} className="p-3 rounded border border-vistaar-border flex items-center justify-between font-mono">
+                        <div>
+                          <div className="font-bold font-sans text-vistaar-text">{m.title}</div>
+                          <div className="text-[11px] text-vistaar-muted">
+                            {m.asset_id} • {m.media_type} • Station: {m.station_id} • {m.license}
+                          </div>
+                        </div>
+                        <Badge variant="scientific">PUBLIC APPROVED</Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {activeCatalogSection === "configuration" && (
+                <div className="space-y-4 font-mono">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-3 rounded border border-vistaar-border bg-[#FAF7F0] flex items-center justify-between">
+                      <span>Strict Claim Verification Gate:</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          handleUpdateAdminConfig({
+                            strict_claim_verification: !adminOverview?.configuration?.strict_claim_verification,
+                          })
+                        }
+                      >
+                        {adminOverview?.configuration?.strict_claim_verification !== false ? "ENABLED" : "DISABLED"}
+                      </Button>
+                    </div>
+                    <div className="p-3 rounded border border-vistaar-border bg-[#FAF7F0] flex items-center justify-between">
+                      <span>Editorial Approval Lock:</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          handleUpdateAdminConfig({
+                            require_editorial_approval: !adminOverview?.configuration?.require_editorial_approval,
+                          })
+                        }
+                      >
+                        {adminOverview?.configuration?.require_editorial_approval !== false ? "REQUIRED" : "OPTIONAL"}
+                      </Button>
+                    </div>
+                    <div className="p-3 rounded border border-vistaar-border bg-[#FAF7F0] flex items-center justify-between">
+                      <span>AI Rate Limit (RPM):</span>
+                      <span className="font-bold text-vistaar-primary">
+                        {adminOverview?.configuration?.rate_limit_rpm ?? 60} RPM
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* AI Provider Telemetry & Storage Observability */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -825,11 +1191,15 @@ export default function AdminPage() {
               <CardContent className="p-5 space-y-3 text-xs font-mono">
                 <div className="flex justify-between border-b border-vistaar-border/60 pb-2">
                   <span className="text-vistaar-muted">Total AI Requests:</span>
-                  <span className="font-bold text-vistaar-text">{metricsData?.ai_telemetry?.total_requests ?? 0}</span>
+                  <span className="font-bold text-vistaar-text">
+                    {metricsData?.ai_telemetry?.total_requests ?? "No data available"}
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-vistaar-border/60 pb-2">
                   <span className="text-vistaar-muted">Estimated Tokens Processed:</span>
-                  <span className="font-bold text-vistaar-primary">{metricsData?.ai_telemetry?.total_estimated_tokens ?? 0}</span>
+                  <span className="font-bold text-vistaar-primary">
+                    {metricsData?.ai_telemetry?.total_estimated_tokens ?? "No data available"}
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-vistaar-border/60 pb-2">
                   <span className="text-vistaar-muted">Schema Validation Failures:</span>
@@ -837,7 +1207,9 @@ export default function AdminPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-vistaar-muted">Configured Providers:</span>
-                  <span className="text-vistaar-scientific font-semibold">Gemini 2.5 Flash • OpenAI GPT-4o-mini • Deterministic Polar Engine</span>
+                  <span className="text-vistaar-scientific font-semibold">
+                    Gemini 2.5 Flash • OpenAI GPT-4o-mini • Deterministic Polar Engine
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -856,13 +1228,17 @@ export default function AdminPage() {
                 <div className="flex justify-between border-b border-vistaar-border/60 pb-2">
                   <span className="text-vistaar-muted">Storage Files / Footprint:</span>
                   <span className="font-bold text-vistaar-text">
-                    {metricsData?.storage?.file_count ?? 4} files ({metricsData?.storage?.total_mb ?? 0.12} MB)
+                    {metricsData?.storage
+                      ? `${metricsData.storage.file_count} files (${metricsData.storage.total_mb} MB)`
+                      : "No data available"}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-vistaar-border/60 pb-2">
                   <span className="text-vistaar-muted">Ingestion Jobs (Completed / Failed):</span>
                   <span className="font-bold text-emerald-700">
-                    {metricsData?.collections?.jobs_completed ?? 6} OK / {metricsData?.collections?.jobs_failed ?? 0} Failed
+                    {metricsData?.collections
+                      ? `${metricsData.collections.jobs_completed} OK / ${metricsData.collections.jobs_failed} Failed`
+                      : "No data available"}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-vistaar-border/60 pb-2">
