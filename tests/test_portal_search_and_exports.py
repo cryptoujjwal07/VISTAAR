@@ -191,8 +191,34 @@ async def test_unified_search_autocomplete_and_rag():
         s_res = await client.get("/api/v1/search?q=Maitri")
         assert s_res.status_code == 200
         s_data = s_res.json()
+        assert s_data["retrieval_mode"] == "hybrid_keyword_and_semantic"
         assert s_data["total_matches"] >= 1
         assert "facets" in s_data
+        for domain_key in ["datasets", "publications", "documents", "stations", "expeditions", "media", "education"]:
+            assert domain_key in s_data["facets"]
+            assert domain_key in s_data
+        assert len(s_data["stations"]) >= 1
+        assert len(s_data["expeditions"]) >= 1
+        assert s_data["datasets"][0]["provenance"]["verified"] is True
+        assert "hybrid_score" in s_data["datasets"][0]["retrieval_scores"]
+        assert "pagination" in s_data
+        assert s_data["pagination"]["limit"] == 20
+        assert s_data["pagination"]["offset"] == 0
+
+        # Test Prompt 23 filters (region, station_id, provider, dataset_id, date, topic, content_type) and pagination
+        filtered = await client.get(
+            "/api/v1/search?q=wind&region=Antarctica&station_id=maitri&provider=IMD&dataset_id=ds_maitri_imd&date=2024&topic=wind&content_type=datasets&limit=5&offset=0"
+        )
+        assert filtered.status_code == 200
+        f_data = filtered.json()
+        assert f_data["filters_applied"]["region"] == "Antarctica"
+        assert f_data["filters_applied"]["station_id"] == "maitri"
+        assert f_data["filters_applied"]["provider"] == "IMD"
+        assert f_data["filters_applied"]["dataset_id"] == "ds_maitri_imd"
+        assert f_data["filters_applied"]["date"] == "2024"
+        assert f_data["filters_applied"]["topic"] == "wind"
+        assert f_data["filters_applied"]["content_type"] == "datasets"
+        assert f_data["pagination"]["limit"] == 5
 
         auto = await client.get("/api/v1/search/autocomplete?q=mait")
         assert auto.status_code == 200
@@ -203,6 +229,9 @@ async def test_unified_search_autocomplete_and_rag():
         rag_data = rag.json()
         assert "answer" in rag_data
         assert "citations" in rag_data
+        assert "evidence" in rag_data
+        assert len(rag_data["evidence"]) >= 1
+
 
 
 @pytest.mark.asyncio
