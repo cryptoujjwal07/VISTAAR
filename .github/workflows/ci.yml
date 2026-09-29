@@ -28,11 +28,15 @@ jobs:
 
       - name: Run Backend Integration & Health Tests
         env:
+          PYTHONPATH: .
           MONGODB_URI: ${{ secrets.MONGODB_URI || 'mongodb+srv://ayushmang06_db_user:1234567890@polarbearvistaar.qmtf9h5.mongodb.net/?appName=polarbearVISTAAR' }}
-          MONGODB_DB_NAME: vistaar_test
+          MONGODB_DB_NAME: vistaar_production
           USE_IN_MEMORY_QUEUE: "true"
+          JWT_SECRET: vistaar_secure_production_secret_key_polar_science_2026_ncpor
+          SUPER_ADMIN_EMAIL: admin@vistaar.ncpor.res.in
+          SUPER_ADMIN_PASSWORD: VistaarAdmin@2026!
         run: |
-          python -m pytest tests/
+          python -m pytest -v tests/
 
   frontend-build:
     name: Frontend Lint, Typecheck & Production Build
@@ -45,12 +49,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install Frontend Dependencies
         working-directory: ./apps/web
-        run: npm ci
+        run: npm install
 
       - name: Typecheck & Build Next.js Application
         working-directory: ./apps/web
