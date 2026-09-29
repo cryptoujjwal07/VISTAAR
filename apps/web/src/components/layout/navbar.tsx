@@ -32,11 +32,12 @@ import { fetchApi } from "@/lib/api";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/explore", label: "Explorations", icon: Compass },
+  { href: "/explore", label: "Explore", icon: Compass },
   { href: "/stations", label: "Stations", icon: Building2 },
   { href: "/datasets", label: "NPDC Data", icon: Database },
+  { href: "/research", label: "Research", icon: BookOpen },
   { href: "/documents", label: "Document AI", icon: FileSearch },
-  { href: "/weather", label: "Live Weather", icon: CloudSun },
+  { href: "/weather", label: "Weather", icon: CloudSun },
   { href: "/education", label: "Classroom", icon: GraduationCap },
   { href: "/media", label: "Media & Press", icon: ImageIcon },
 ];

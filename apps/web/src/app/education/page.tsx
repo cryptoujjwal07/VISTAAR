@@ -1,14 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GraduationCap, BookOpen, CheckCircle, XCircle, Award, HelpCircle, User, Users } from "lucide-react";
+import {
+  GraduationCap,
+  CheckCircle,
+  XCircle,
+  Award,
+  User,
+  Users,
+  Download,
+  BookOpen,
+  ShieldCheck
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, API_BASE_URL } from "@/lib/api";
 
 export default function EducationPage() {
   const [lessons, setLessons] = useState<any[]>([]);
+  const [gradeFilter, setGradeFilter] = useState<string>("");
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [quizResult, setQuizResult] = useState<any>(null);
@@ -17,12 +28,15 @@ export default function EducationPage() {
 
   useEffect(() => {
     async function loadLessons() {
+      setLoading(true);
       try {
-        const res = await fetchApi("/classroom/lessons");
+        const q = gradeFilter ? `?class_grade=${gradeFilter}` : "";
+        const res = await fetchApi(`/classroom/lessons${q}`);
         setLessons(res);
         if (res.length > 0) {
           setSelectedLesson(res[0]);
           setUserAnswers(new Array(res[0].quiz?.length || 3).fill(-1));
+          setQuizResult(null);
         }
       } catch (e) {
         console.error("Failed to load lessons", e);
@@ -31,7 +45,7 @@ export default function EducationPage() {
       }
     }
     loadLessons();
-  }, []);
+  }, [gradeFilter]);
 
   function handleSelectLesson(les: any) {
     setSelectedLesson(les);
@@ -62,51 +76,66 @@ export default function EducationPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 bg-[#FAF7F0] min-h-screen">
       {/* Header */}
-      <div className="border-b border-vistaar-border pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-lg border border-vistaar-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center space-x-1.5 text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1">
             <GraduationCap className="w-4 h-4" />
-            <span>NCERT Aligned Polar Science Platform</span>
+            <span>NCERT Aligned Polar Science Platform (Classes 8–12)</span>
           </div>
           <h1 className="text-3xl font-extrabold text-vistaar-text">
-            VISTAAR Classroom Studio (Classes 8–12)
+            VISTAAR Classroom Studio
           </h1>
           <p className="text-sm text-vistaar-muted mt-1">
-            Interactive inquiry-based learning powered by genuine NPDC meteorological and cryospheric measurements.
+            Interactive inquiry-based lessons grounded in real NPDC meteorological and cryospheric observations.
           </p>
         </div>
 
-        {/* Student vs Teacher Mode Switch */}
-        <div className="flex items-center bg-vistaar-surface border border-vistaar-border rounded-lg p-1 shadow-sm">
-          <button
-            onClick={() => setIsTeacherMode(false)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              !isTeacherMode ? "bg-vistaar-primary text-white" : "text-vistaar-muted hover:text-vistaar-text"
-            }`}
+        {/* Grade Filter & Student/Teacher Mode Switch */}
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={gradeFilter}
+            onChange={(e) => setGradeFilter(e.target.value)}
+            className="text-xs font-semibold px-3 py-2 rounded-md border border-vistaar-border bg-[#FAF7F0] text-vistaar-text"
           >
-            <User className="w-3.5 h-3.5" />
-            <span>Student Mode</span>
-          </button>
-          <button
-            onClick={() => setIsTeacherMode(true)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              isTeacherMode ? "bg-vistaar-scientific text-white" : "text-vistaar-muted hover:text-vistaar-text"
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Teacher Mode</span>
-          </button>
+            <option value="">All Grades (Classes 8–12)</option>
+            <option value="8">Class 8</option>
+            <option value="9">Class 9</option>
+            <option value="10">Class 10</option>
+            <option value="11">Class 11</option>
+            <option value="12">Class 12</option>
+          </select>
+
+          <div className="flex items-center bg-[#FAF7F0] border border-vistaar-border rounded-lg p-1 shadow-xs">
+            <button
+              onClick={() => setIsTeacherMode(false)}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                !isTeacherMode ? "bg-vistaar-primary text-white" : "text-vistaar-muted hover:text-vistaar-text"
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Student Mode</span>
+            </button>
+            <button
+              onClick={() => setIsTeacherMode(true)}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                isTeacherMode ? "bg-vistaar-scientific text-white" : "text-vistaar-muted hover:text-vistaar-text"
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Teacher Mode</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Main Grid: Lesson Browser & Active Module */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left: Lessons List (4 cols) */}
         <div className="lg:col-span-4 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-vistaar-muted">
-            Curriculum Lesson Modules
+          <h2 className="text-xs font-bold uppercase tracking-wider text-vistaar-muted">
+            Curriculum Lesson Modules ({lessons.length})
           </h2>
           <div className="space-y-3">
             {lessons.map((les) => (
@@ -116,7 +145,7 @@ export default function EducationPage() {
                 className={`p-4 rounded-lg border transition-all cursor-pointer ${
                   selectedLesson?.id === les.id
                     ? "border-vistaar-primary bg-white shadow-md ring-1 ring-vistaar-primary/30"
-                    : "border-vistaar-border bg-vistaar-surface hover:bg-vistaar-bg"
+                    : "border-vistaar-border bg-white/80 hover:bg-white"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
@@ -130,71 +159,105 @@ export default function EducationPage() {
           </div>
         </div>
 
-        {/* Right: Active Lesson & Quiz (8 cols) */}
+        {/* Right: Active Lesson, Key Terms, Sources & Quiz (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
           {selectedLesson ? (
-            <Card>
-              <CardHeader className="p-6 border-b border-vistaar-border bg-white">
-                <div className="flex items-center justify-between mb-2">
-                  <Badge variant="scientific">NCERT Class {selectedLesson.class_grade} Science</Badge>
-                  <span className="text-xs font-mono text-vistaar-primary font-bold">
-                    Dataset: {selectedLesson.real_dataset_ref}
-                  </span>
+            <Card className="bg-white border-vistaar-border shadow-sm">
+              <CardHeader className="p-6 border-b border-vistaar-border bg-[#FAF7F0]/50">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="scientific">NCERT Class {selectedLesson.class_grade}</Badge>
+                    <span className="text-xs font-mono text-vistaar-primary font-bold">
+                      Dataset: {selectedLesson.real_dataset_ref}
+                    </span>
+                  </div>
+                  {isTeacherMode && (
+                    <a
+                      href={`${API_BASE_URL}/classroom/lessons/${selectedLesson.id}/export`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Button size="sm" variant="outline" className="text-xs flex items-center space-x-1.5">
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Teacher Lesson Plan & Key</span>
+                      </Button>
+                    </a>
+                  )}
                 </div>
-                <CardTitle className="text-xl font-bold">{selectedLesson.title}</CardTitle>
+                <CardTitle className="text-xl font-bold text-vistaar-text">{selectedLesson.title}</CardTitle>
                 <CardDescription className="text-xs text-vistaar-muted mt-1">
-                  Station: <strong>{selectedLesson.station}</strong>
+                  Observatory Station: <strong>{selectedLesson.station}</strong> • Concept:{" "}
+                  <strong>{selectedLesson.scientific_concept || selectedLesson.subject}</strong>
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="p-6 space-y-6">
-                {/* Learning Objective */}
-                <div className="p-4 bg-blue-50/70 border border-blue-200/60 rounded-md">
+              <CardContent className="p-6 space-y-6 text-xs">
+                {/* 1. Learning Objective */}
+                <div className="p-4 bg-blue-50/70 border border-blue-200/80 rounded-md">
                   <span className="block text-xs font-bold text-vistaar-primary uppercase tracking-wide">
-                    Learning Objective
+                    1. Learning Objective
                   </span>
-                  <p className="text-xs text-vistaar-text mt-1 leading-relaxed">
-                    {selectedLesson.learning_objective}
-                  </p>
+                  <p className="text-vistaar-text mt-1 leading-relaxed">{selectedLesson.learning_objective}</p>
                 </div>
 
-                {/* Concept Summary */}
+                {/* 2. Scientific Concept & Explanation */}
                 <div className="space-y-2">
-                  <h4 className="text-sm font-bold text-vistaar-text">Scientific Concept</h4>
-                  <p className="text-xs text-vistaar-muted leading-relaxed">
-                    {selectedLesson.concept_summary}
-                  </p>
+                  <h4 className="text-sm font-bold text-vistaar-text">2. Scientific Concept & Explanation</h4>
+                  <p className="text-vistaar-text leading-relaxed">{selectedLesson.concept_summary}</p>
+                  {selectedLesson.explanation && (
+                    <p className="text-vistaar-muted leading-relaxed">{selectedLesson.explanation}</p>
+                  )}
                 </div>
 
-                {/* Real Polar Observation Activity */}
-                <div className="p-4 bg-vistaar-bg border border-vistaar-border rounded-md space-y-2">
+                {/* 3. Real Indian Polar Example */}
+                {selectedLesson.real_indian_polar_example && (
+                  <div className="p-4 bg-[#FAF7F0] border border-vistaar-border rounded-md space-y-1">
+                    <span className="block text-xs font-bold text-vistaar-scientific uppercase tracking-wide">
+                      3. Real Indian Polar Observatory Case Study
+                    </span>
+                    <p className="text-vistaar-text leading-relaxed">{selectedLesson.real_indian_polar_example}</p>
+                  </div>
+                )}
+
+                {/* 4. Hands-On Polar Data Activity */}
+                <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-md space-y-1">
                   <span className="block text-xs font-bold text-emerald-800 uppercase tracking-wide">
-                    Hands-On Polar Data Activity
+                    4. Hands-On Polar Data Activity
                   </span>
-                  <p className="text-xs text-vistaar-text leading-relaxed">
-                    {selectedLesson.activity}
-                  </p>
+                  <p className="text-vistaar-text leading-relaxed">{selectedLesson.activity}</p>
                 </div>
 
-                {/* Interactive 3-Question Quiz */}
-                <div className="pt-4 border-t border-vistaar-border space-y-6">
+                {/* 5. Key Terms Glossary */}
+                {selectedLesson.key_terms && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-bold text-vistaar-text">5. Key Scientific Terms</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {selectedLesson.key_terms.map((kt: any, i: number) => (
+                        <div key={i} className="p-3 rounded border border-vistaar-border bg-[#FAF7F0]">
+                          <strong className="block text-vistaar-primary mb-1">{kt.term}</strong>
+                          <span className="text-[11px] text-vistaar-muted leading-snug block">{kt.definition}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 6. Interactive 3-Question Quiz */}
+                <div className="pt-4 border-t border-vistaar-border space-y-5">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-bold text-vistaar-text flex items-center space-x-1.5">
                       <Award className="w-4 h-4 text-vistaar-primary" />
-                      <span>Observation Comprehension Quiz (3 Questions)</span>
+                      <span>6. Observation Comprehension Quiz (3 Questions)</span>
                     </h4>
-                    {isTeacherMode && (
-                      <Badge variant="warning">Teacher Answer Key Enabled</Badge>
-                    )}
+                    {isTeacherMode && <Badge variant="warning">Teacher Answer Key Enabled</Badge>}
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     {selectedLesson.quiz?.map((q: any, qIdx: number) => (
-                      <div key={qIdx} className="space-y-3 bg-vistaar-bg/40 p-4 rounded-lg border border-vistaar-border">
+                      <div key={qIdx} className="space-y-2.5 bg-[#FAF7F0]/60 p-4 rounded-lg border border-vistaar-border">
                         <span className="text-xs font-bold text-vistaar-text block">
                           Q{qIdx + 1}. {q.question}
                         </span>
-
                         <div className="space-y-2">
                           {q.options?.map((opt: string, optIdx: number) => {
                             const isSelected = userAnswers[qIdx] === optIdx;
@@ -206,8 +269,8 @@ export default function EducationPage() {
                                   isSelected
                                     ? "border-vistaar-primary bg-blue-50 font-semibold text-vistaar-primary"
                                     : isCorrectAnswer
-                                    ? "border-green-400 bg-green-50 font-semibold text-green-900"
-                                    : "border-vistaar-border bg-white text-vistaar-text hover:bg-vistaar-bg"
+                                    ? "border-emerald-400 bg-emerald-50 font-semibold text-emerald-900"
+                                    : "border-vistaar-border bg-white text-vistaar-text hover:bg-[#FAF7F0]"
                                 }`}
                               >
                                 <input
@@ -215,12 +278,11 @@ export default function EducationPage() {
                                   name={`question_${qIdx}`}
                                   checked={isSelected}
                                   onChange={() => handleOptionSelect(qIdx, optIdx)}
-                                  className="text-vistaar-primary focus:ring-vistaar-primary"
                                 />
                                 <span>{opt}</span>
                                 {isCorrectAnswer && (
-                                  <span className="ml-auto text-[10px] uppercase font-bold text-green-700">
-                                    Correct Key
+                                  <span className="ml-auto text-[10px] uppercase font-bold text-emerald-700">
+                                    Verified Answer Key
                                   </span>
                                 )}
                               </label>
@@ -233,42 +295,47 @@ export default function EducationPage() {
 
                   {!isTeacherMode && (
                     <div className="flex justify-end">
-                      <Button
-                        size="md"
-                        onClick={handleSubmitQuiz}
-                        disabled={userAnswers.includes(-1)}
-                      >
+                      <Button size="md" onClick={handleSubmitQuiz} disabled={userAnswers.includes(-1)}>
                         Submit Quiz for Verification
                       </Button>
                     </div>
                   )}
 
-                  {/* Quiz Results Card */}
                   {quizResult && (
-                    <div className="p-4 rounded-lg border border-green-200 bg-green-50 space-y-3">
+                    <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-green-900">
+                        <span className="font-bold text-sm text-emerald-900">
                           Quiz Score: {quizResult.score} / {quizResult.total_questions} ({quizResult.percentage}%)
                         </span>
-                        <Badge variant="success">Graded</Badge>
+                        <Badge variant="success">Verified</Badge>
                       </div>
-                      <div className="space-y-2 text-xs text-green-950">
+                      <div className="space-y-2 text-xs text-emerald-950">
                         {quizResult.feedback?.map((fb: any, idx: number) => (
                           <div key={idx} className="flex items-start space-x-2">
                             {fb.is_correct ? (
-                              <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                              <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
                             ) : (
-                              <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                              <XCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
                             )}
-                            <div>
-                              <span>Question {idx + 1}: {fb.explanation}</span>
-                            </div>
+                            <span>
+                              Question {idx + 1}: {fb.explanation}
+                            </span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
+
+                {/* 7. Authoritative Sources */}
+                {selectedLesson.sources && (
+                  <div className="pt-3 border-t border-vistaar-border text-[11px] font-mono text-vistaar-muted space-y-1">
+                    <strong className="uppercase text-vistaar-text block">Authoritative Scientific Sources:</strong>
+                    {selectedLesson.sources.map((src: string, idx: number) => (
+                      <div key={idx}>• {src}</div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : (
