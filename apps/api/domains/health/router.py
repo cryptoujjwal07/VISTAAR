@@ -29,6 +29,7 @@ async def readiness_check():
     db_latency_ms = None
 
     try:
+        get_database()
         if db_manager.client:
             await db_manager.client.admin.command("ping")
             db_latency_ms = round((time.time() - start_time) * 1000, 2)

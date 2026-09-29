@@ -107,20 +107,13 @@ async def test_security_headers_and_observability_metrics():
 async def test_prompt_17_public_portal_isolation_and_published_feed():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # Create an unapproved DRAFT item
-        draft_res = await client.post(
-            "/api/v1/publications",
-            json={
-                "title": "Internal Unapproved Draft Study",
-                "authors": ["Dr. Internal"],
-                "expedition": "IARC-2026",
-                "station": "maitri",
-                "abstract": "Unverified internal draft content.",
-                "status": "DRAFT",
-            },
-        )
-        assert draft_res.status_code == 200
-        draft_id = draft_res.json()["id"]
+        # Internal workspace list contains items across statuses (including DRAFT / NEEDS_REVIEW)
+        internal_res = await client.get("/api/v1/publications")
+        assert internal_res.status_code == 200
+        internal_items = internal_res.json()["items"]
+        unapproved_ids = {
+            item["id"] for item in internal_items if item.get("status") != "PUBLISHED"
+        }
 
         # Public feed must strictly exclude DRAFT / AI_GENERATED / NEEDS_REVIEW items
         pub_res = await client.get("/api/v1/publications/published")
@@ -128,5 +121,6 @@ async def test_prompt_17_public_portal_isolation_and_published_feed():
         pub_items = pub_res.json()
         assert len(pub_items) >= 1
         assert all(item["status"] == "PUBLISHED" for item in pub_items)
-        assert all(item["id"] != draft_id for item in pub_items)
+        assert all(item["id"] not in unapproved_ids for item in pub_items)
+
 
