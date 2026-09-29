@@ -57,6 +57,13 @@ export default function DocumentIntelligencePage() {
   const [uploadSync, setUploadSync] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Prompt 10 RAG Knowledge Engine State
+  const [ragQuestion, setRagQuestion] = useState("What was the minimum temperature and atmospheric pressure recorded at Maitri Station in July?");
+  const [ragContentType, setRagContentType] = useState("ALL");
+  const [ragLoading, setRagLoading] = useState(false);
+  const [ragResult, setRagResult] = useState<any>(null);
+  const [showRagTrace, setShowRagTrace] = useState(false);
+
   // Fetch document list
   async function loadDocuments() {
     try {
@@ -158,6 +165,48 @@ export default function DocumentIntelligencePage() {
     setTimeout(() => setCopiedHash(null), 2000);
   }
 
+  async function handleExecuteRag(customQuestion?: string) {
+    const q = customQuestion || ragQuestion;
+    if (!q.trim()) return;
+    if (customQuestion) setRagQuestion(customQuestion);
+    setRagLoading(true);
+    try {
+      const res = await fetchApi("/rag/query", {
+        method: "POST",
+        body: JSON.stringify({
+          question: q,
+          station_id: stationFilter || undefined,
+          content_type: ragContentType,
+          top_k: 4
+        })
+      });
+      setRagResult(res);
+      if (res.evidence && res.evidence.length > 0) {
+        const firstEv = res.evidence[0];
+        if (firstEv.document_id && firstEv.page_number) {
+          setSelectedDocId(firstEv.document_id);
+          setSelectedPage(firstEv.page_number);
+          if (firstEv.chunk_id) {
+            setSelectedChunkId(firstEv.chunk_id);
+          }
+        }
+      }
+    } catch (e: any) {
+      setActionMessage(`RAG Query Error: ${e.message}`);
+    } finally {
+      setRagLoading(false);
+    }
+  }
+
+  function jumpToEvidenceChunk(ev: any) {
+    if (ev.document_id) {
+      setSelectedDocId(ev.document_id);
+      if (ev.page_number) setSelectedPage(ev.page_number);
+      if (ev.chunk_id) setSelectedChunkId(ev.chunk_id);
+      setActiveTab("chunks");
+    }
+  }
+
   // Active page metadata
   const currentPageInfo = documentDetail?.pages?.find((p: any) => p.page_number === selectedPage) || {
     width: 595,
@@ -182,16 +231,16 @@ export default function DocumentIntelligencePage() {
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-xs font-mono uppercase tracking-wider text-vistaar-scientific font-bold">
-              PyMuPDF Document Intelligence Studio
+              PyMuPDF Document Intelligence & RAG Studio
             </span>
             <span className="text-vistaar-border">•</span>
-            <Badge variant="scientific">Prompt 09 Ingestion Pipeline</Badge>
+            <Badge variant="scientific">Prompt 09 & 10 Engine</Badge>
             <Badge variant="outline" className="font-mono text-[10px]">
-              768-dim Embeddings Indexed
+              768-dim Embeddings + Hybrid BM25
             </Badge>
           </div>
           <h1 className="text-2xl font-bold text-vistaar-text mt-1">
-            Scientific PDF Layout, Table & Provenance Inspector
+            Scientific PDF Layout, Table & RAG Knowledge Engine
           </h1>
         </div>
 
@@ -214,6 +263,178 @@ export default function DocumentIntelligencePage() {
           <button onClick={() => setActionMessage(null)} className="font-bold ml-2">×</button>
         </div>
       )}
+
+      {/* Prompt 10: Hybrid RAG Scientific Knowledge Engine */}
+      <Card className="border-vistaar-primary/30 shadow-sm bg-white">
+        <CardHeader className="p-4 pb-3 border-b border-vistaar-border bg-vistaar-bg/40 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-vistaar-primary" />
+            <CardTitle className="text-sm font-bold">
+              Hybrid Scientific Knowledge & RAG Engine (Prompt 10)
+            </CardTitle>
+            <Badge variant="outline" className="text-[10px] font-mono">
+              Zero-Hallucination Guardrail Active
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+            <span className="text-vistaar-muted font-semibold uppercase mr-1">Quick Queries:</span>
+            <button
+              onClick={() => handleExecuteRag("What was the minimum temperature and atmospheric pressure recorded at Maitri Station in July?")}
+              className="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-vistaar-primary border border-blue-200 font-medium transition"
+            >
+              Maitri July Temp & Pressure
+            </button>
+            <button
+              onClick={() => handleExecuteRag("What are the benchmark glacier mass balances and SWE measured in Chandra Basin at Himansh?")}
+              className="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-vistaar-primary border border-blue-200 font-medium transition"
+            >
+              Himansh Glacier Mass Balance
+            </button>
+            <button
+              onClick={() => handleExecuteRag("What is the winter ice thickness and dissolved oxygen in Lake Priyadarshini?")}
+              className="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-vistaar-primary border border-blue-200 font-medium transition"
+            >
+              Lake Priyadarshini Limnology
+            </button>
+            <button
+              onClick={() => handleExecuteRag("What is the population of cybernetic radioactive dolphins on the moons of Jupiter?")}
+              className="px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-medium transition"
+            >
+              Test Insufficient Evidence Guardrail
+            </button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-vistaar-muted absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={ragQuestion}
+                onChange={(e) => setRagQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleExecuteRag()}
+                placeholder="Ask a scientific question across NPDC telemetry and ingested polar PDFs..."
+                className="w-full pl-9 pr-3 py-2 text-xs border border-vistaar-border rounded-md bg-white text-vistaar-text focus:outline-none focus:ring-1 focus:ring-vistaar-primary"
+              />
+            </div>
+            <select
+              value={ragContentType}
+              onChange={(e) => setRagContentType(e.target.value)}
+              className="px-3 py-2 text-xs font-semibold border border-vistaar-border rounded-md bg-white text-vistaar-text"
+            >
+              <option value="ALL">All Sources (PDF + NPDC)</option>
+              <option value="PDF_CHUNK">PDF Chunks Only</option>
+              <option value="TABLE">Extracted Tables Only</option>
+              <option value="DATASET_RECORD">NPDC Telemetry Only</option>
+            </select>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => handleExecuteRag()}
+              disabled={ragLoading}
+              className="flex items-center space-x-1.5 px-4"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{ragLoading ? "Retrieving Evidence..." : "Execute Hybrid RAG"}</span>
+            </Button>
+          </div>
+
+          {/* RAG Answer & Citations Panel */}
+          {ragResult && (
+            <div className="p-4 rounded-lg border border-vistaar-border bg-vistaar-bg/30 space-y-4 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-vistaar-border pb-2.5">
+                <div className="flex items-center space-x-2">
+                  <Badge variant={ragResult.status === "ANSWERED" ? "success" : "warning"}>
+                    {ragResult.status}
+                  </Badge>
+                  <span className="font-mono text-[11px] text-vistaar-muted">
+                    Confidence: <strong className="text-vistaar-text">{(ragResult.confidence_score * 100).toFixed(1)}%</strong>
+                  </span>
+                  <span className="text-vistaar-border">•</span>
+                  <span className="font-mono text-[11px] text-vistaar-muted">
+                    Latency: <strong className="text-vistaar-text">{ragResult.retrieval_trace?.execution_time_ms} ms</strong>
+                  </span>
+                  <span className="text-vistaar-border">•</span>
+                  <span className="font-mono text-[11px] text-vistaar-muted">
+                    Evaluated: <strong className="text-vistaar-text">{ragResult.retrieval_trace?.candidates_evaluated} candidates</strong>
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowRagTrace(!showRagTrace)}
+                  className="text-[11px] font-mono text-vistaar-primary hover:underline"
+                >
+                  {showRagTrace ? "Hide Retrieval Trace" : "Inspect Retrieval Trace"}
+                </button>
+              </div>
+
+              <div className="p-3.5 bg-white rounded border border-vistaar-border text-vistaar-text leading-relaxed whitespace-pre-line font-sans">
+                {ragResult.answer}
+              </div>
+
+              {/* Citations & Evidence Cards */}
+              {ragResult.evidence && ragResult.evidence.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-vistaar-muted block">
+                    Primary Evidence Citations (Click any PDF citation to highlight its bounding box on the canvas below):
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {ragResult.evidence.map((ev: any, idx: number) => (
+                      <div
+                        key={ev.evidence_id}
+                        onClick={() => jumpToEvidenceChunk(ev)}
+                        className="p-2.5 rounded border border-vistaar-border bg-white hover:border-vistaar-primary cursor-pointer transition flex flex-col justify-between space-y-1.5 shadow-sm"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-1.5">
+                            <span className="px-1.5 py-0.5 bg-vistaar-primary text-white font-mono font-bold text-[10px] rounded">
+                              [{idx + 1}]
+                            </span>
+                            <Badge variant="scientific" className="text-[9px]">
+                              {ev.source_type}
+                            </Badge>
+                            <span className="font-mono font-bold text-vistaar-primary text-[11px]">
+                              {ev.chunk_id || ev.record_id}
+                            </span>
+                          </div>
+                          <span className="font-mono text-[10px] text-emerald-700 font-semibold">
+                            Score: {(ev.relevance_score * 100).toFixed(1)}% (Lex: {ev.lexical_score}, Sem: {ev.semantic_score})
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-vistaar-text line-clamp-2 font-sans">
+                          {ev.text_snippet}
+                        </p>
+
+                        <div className="flex items-center justify-between text-[10px] text-vistaar-muted font-mono pt-1 border-t border-vistaar-border/50">
+                          <span>
+                            {ev.document_title
+                              ? `${ev.document_title} (Page ${ev.page_number})`
+                              : `Dataset: ${ev.dataset_id} (${ev.station_id?.toUpperCase()})`}
+                          </span>
+                          {ev.bounding_box && (
+                            <span className="text-vistaar-primary font-sans font-semibold">
+                              Jump to BBox →
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {showRagTrace && (
+                <div className="p-3 bg-slate-900 text-slate-100 rounded font-mono text-[10px] overflow-x-auto">
+                  <div className="text-emerald-400 font-bold mb-1">
+                    // Deterministic Retrieval Trace & Prompt Injection XML Data Encapsulation Proof
+                  </div>
+                  <pre>{JSON.stringify(ragResult.retrieval_trace, null, 2)}</pre>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Filter and Document Selection Bar */}
       <div className="p-3 bg-white border border-vistaar-border rounded-lg shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
