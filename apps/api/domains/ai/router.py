@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from apps.api.core.database import get_database
 from apps.api.core.security import get_current_user, require_roles
 from apps.api.core.config import settings
+from apps.api.domains.ai.provider import get_outreach_content
 
 router = APIRouter(prefix="/ai", tags=["AI Outreach Studio & Four-Track Generation"])
 
@@ -76,81 +77,51 @@ async def generate_four_track_outreach(
         }
     }
 
-    # Track 1: PIB Press Release
-    pib_body = (
-        f"PRESS INFORMATION BUREAU (GOVERNMENT OF INDIA)\n"
-        f"MINISTRY OF EARTH SCIENCES / NATIONAL CENTRE FOR POLAR AND OCEAN RESEARCH\n\n"
-        f"SCIENTIFIC OBSERVATION BULLETIN: {st_name.upper()}\n\n"
-        f"In ongoing scientific monitoring under India's Polar Research Programme, {st_name} recorded a {key_param.replace('_', ' ')} "
-        f"measurement of {key_val} {key_unit} on {first_rec.get('timestamp')[:10]}.\n\n"
-        f"Continuous automated environmental data collection is conducted in accordance with NPDC / MoES scientific standards.\n\n"
-        f"[Quote to be provided by authorized official]\n\n"
-        f"Authoritative Provenance: Dataset ID {dataset['dataset_id']} (Checksum: {dataset['sha256'][:16]})."
+    # Generate content using configured AI provider (Gemini with deterministic fallback)
+    content_tracks = await get_outreach_content(
+        station_name=st_name,
+        region=dataset.get("region", "Polar"),
+        observed_metric=key_param,
+        observed_value=key_val,
+        unit=key_unit,
+        timestamp=first_rec.get("timestamp", ""),
+        dataset_id=dataset["dataset_id"],
+        record_id=first_rec.get("record_id", ""),
+        checksum=dataset.get("sha256", "")
     )
 
     pib_track = {
         "track": "PIB",
         "title": f"Scientific Bulletin: Environmental Observations at {st_name}",
         "summary": f"Official observational bulletin detailing meteorological measurements recorded at {st_name}.",
-        "body": pib_body,
+        "body": content_tracks.get("pib_body", ""),
         "claims": [claim_1],
         "target_audience": "Press, Media & Policy Makers"
     }
-
-    # Track 2: Social Media (X / LinkedIn)
-    social_body = (
-        f"❄️ Scientific Update from {st_name} ({dataset.get('region')}):\n\n"
-        f"India's polar research station logged a {key_param.replace('_', ' ')} of {key_val} {key_unit} ({first_rec.get('timestamp')[:10]}).\n\n"
-        f"Verified via @MoESGoI & @NCPOR_GoI National Polar Data Centre.\n"
-        f"#PolarScience #IndiaAtPoles #NCPOR #ScienceOutreach"
-    )
 
     social_track = {
         "track": "SOCIAL",
         "title": f"Social Dispatch: {st_name}",
         "summary": "Concise factual update prepared for social media broadcast.",
-        "body": social_body,
+        "body": content_tracks.get("social_body", ""),
         "claims": [claim_1],
         "target_audience": "General Public & Social Followers"
     }
-
-    # Track 3: Education (Class 8-12)
-    edu_body = (
-        f"LEARNING MODULE: POLAR CLIMATOLOGY & MEASUREMENTS\n\n"
-        f"Concept: How Indian Scientists Measure Atmospheric Parameters at {st_name}.\n\n"
-        f"Case Study:\n"
-        f"On {first_rec.get('timestamp')[:10]}, automatic calibrated instruments recorded {key_val} {key_unit} for {key_param.replace('_', ' ')}.\n\n"
-        f"Curriculum Relevance (NCERT Classes 8-12 Science):\n"
-        f"- Thermal dynamics and weather instruments in extreme polar environments.\n"
-        f"- The role of polar research in global climate teleconnections.\n\n"
-        f"Activity: Compare {st_name}'s observed {key_param.replace('_', ' ')} with the average conditions of peninsular India."
-    )
 
     edu_track = {
         "track": "EDUCATION",
         "title": f"Classroom Module: Understanding Polar Weather at {st_name}",
         "summary": "NCERT-aligned science educational explainer with real observational evidence.",
-        "body": edu_body,
+        "body": content_tracks.get("education_body", ""),
         "claims": [claim_1],
         "target_audience": "Students and Educators (Classes 8-12)"
     }
-
-    # Track 4: Vernacular (Hindi)
-    vernacular_body = (
-        f"राष्ट्रीय ध्रुवीय एवं महासागर अनुसंधान केंद्र (NCPOR)\n"
-        f"पृथ्वी विज्ञान मंत्रालय, भारत सरकार\n\n"
-        f"वैज्ञानिक अवलोकन बुलेटिन: {st_name}\n\n"
-        f"भारत के ध्रुवीय अनुसंधान कार्यक्रम के अंतर्गत, {st_name} ने {first_rec.get('timestamp')[:10]} को {key_param.replace('_', ' ')} "
-        f"का मान {key_val} {key_unit} दर्ज किया।\n\n"
-        f"यह डेटा राष्ट्रीय ध्रुवीय डेटा केंद्र (NPDC) के माध्यम से सत्यापित है।\n\n"
-        f"[Quote to be provided by authorized official]"
-    )
 
     vernacular_track = {
         "track": "VERNACULAR",
         "title": f"{st_name}: ध्रुवीय विज्ञान अवलोकन",
         "summary": "हिंदी में अनुवादित और वैज्ञानिक दृष्टि से सत्यापित बुलेटिन।",
-        "body": vernacular_body,
+        "body": content_tracks.get("vernacular_body", ""),
         "claims": [claim_1],
         "language": "hi",
         "target_audience": "Regional Media & Hindi Readers"
