@@ -467,13 +467,15 @@ async def test_prompt_16_weather_intelligence():
         stations = st_res.json()
         assert len(stations) > 0
 
-        ts_res = await client.get("/api/v1/weather/timeseries?station_id=himansh")
+        ts_res = await client.get("/api/v1/weather/timeseries?station_id=himansh&provider=NCPOR")
         assert ts_res.status_code == 200
         ts = ts_res.json()
         for req_field in [
             "station_id",
             "dataset_id",
+            "available_datasets",
             "provider",
+            "available_providers",
             "period",
             "parameter",
             "available_parameters",
@@ -482,6 +484,7 @@ async def test_prompt_16_weather_intelligence():
             "quality_breakdown",
             "statistics",
             "points",
+            "missing_points",
         ]:
             assert req_field in ts
 

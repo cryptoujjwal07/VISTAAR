@@ -72,6 +72,7 @@ async def list_weather_stations():
 async def get_weather_timeseries(
     station_id: str,
     dataset_id: Optional[str] = None,
+    provider: Optional[str] = None,
     parameter: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
@@ -89,8 +90,13 @@ async def get_weather_timeseries(
     ds_query: Dict[str, Any] = {"station_id": sid}
     if dataset_id:
         ds_query["dataset_id"] = dataset_id
+    if provider:
+        ds_query["provider"] = {"$regex": provider, "$options": "i"}
 
     candidate_datasets = await db.datasets.find(ds_query, {"_id": 0}).to_list(length=20)
+    if not candidate_datasets and provider:
+        # Fallback if provider filter didn't match station's subset
+        candidate_datasets = await db.datasets.find({"station_id": sid}, {"_id": 0}).to_list(length=20)
     if not candidate_datasets:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -104,6 +110,10 @@ async def get_weather_timeseries(
         if cnt > 0:
             ds = cand
             break
+
+    available_providers = sorted(
+        list({c.get("provider", "NCPOR / NPDC") for c in candidate_datasets if c.get("provider")})
+    ) or ["NCPOR / National Polar Data Centre (NPDC)"]
 
     available_params = ds.get("parameters", [])
     if not available_params:
@@ -126,11 +136,12 @@ async def get_weather_timeseries(
     records = await cursor.to_list(length=limit)
 
     points = []
+    missing_points = []
     values = []
     missing_count = 0
     quality_counts: Dict[str, int] = {"VALID": 0, "MISSING": 0, "SUSPECT": 0}
 
-    for r in records:
+    for idx, r in enumerate(records):
         val = r.get("metrics", {}).get(param)
         q_flag = r.get("quality_flags", {}).get(param, "VALID" if val is not None else "MISSING")
         quality_counts[q_flag] = quality_counts.get(q_flag, 0) + 1
@@ -138,6 +149,13 @@ async def get_weather_timeseries(
         if val is None:
             # Never replace missing values with zero (Prompt 16 strict rule)
             missing_count += 1
+            missing_points.append({
+                "index": idx,
+                "timestamp": r.get("timestamp"),
+                "record_id": r.get("record_id"),
+                "quality_flag": "MISSING",
+                "value": None,
+            })
             continue
 
         values.append(float(val))
@@ -180,6 +198,7 @@ async def get_weather_timeseries(
             for c in candidate_datasets
         ],
         "provider": provider_name,
+        "available_providers": available_providers,
         "period": period,
         "parameter": param,
         "available_parameters": available_params,
@@ -188,6 +207,7 @@ async def get_weather_timeseries(
         "quality_breakdown": quality_counts,
         "statistics": stats,
         "points": points,
+        "missing_points": missing_points,
         "series": points,
     }
 
