@@ -21,6 +21,11 @@ import { fetchApi, API_BASE_URL } from "@/lib/api";
 export default function MediaPage() {
   const [assets, setAssets] = useState<any[]>([]);
   const [pressKitStation, setPressKitStation] = useState<string>("bharati");
+  const [pressKitExpedition, setPressKitExpedition] = useState<string>("");
+  const [pressKitTopic, setPressKitTopic] = useState<string>("");
+  const [pressKitDataset, setPressKitDataset] = useState<string>("");
+  const [pressKitStartDate, setPressKitStartDate] = useState<string>("2023-01-01");
+  const [pressKitEndDate, setPressKitEndDate] = useState<string>("2024-12-31");
   const [stationAssetFilter, setStationAssetFilter] = useState<string>("");
   const [expeditionFilter, setExpeditionFilter] = useState<string>("");
   const [topicFilter, setTopicFilter] = useState<string>("");
@@ -43,9 +48,16 @@ export default function MediaPage() {
         if (dateFilter) assetParams.set("date", dateFilter);
         if (sourceFilter) assetParams.set("source", sourceFilter);
 
+        const kitParams = new URLSearchParams({ station_id: pressKitStation });
+        if (pressKitExpedition) kitParams.set("expedition_id", pressKitExpedition);
+        if (pressKitTopic) kitParams.set("topic", pressKitTopic);
+        if (pressKitDataset) kitParams.set("dataset_id", pressKitDataset);
+        if (pressKitStartDate) kitParams.set("start_date", pressKitStartDate);
+        if (pressKitEndDate) kitParams.set("end_date", pressKitEndDate);
+
         const [assetRes, kitRes] = await Promise.all([
           fetchApi(`/media/assets?${assetParams.toString()}`),
-          fetchApi(`/media/press-kit?station_id=${pressKitStation}`),
+          fetchApi(`/media/press-kit?${kitParams.toString()}`),
         ]);
         const list = Array.isArray(assetRes) ? assetRes : [];
         setAssets(list);
@@ -62,6 +74,11 @@ export default function MediaPage() {
     loadMedia();
   }, [
     pressKitStation,
+    pressKitExpedition,
+    pressKitTopic,
+    pressKitDataset,
+    pressKitStartDate,
+    pressKitEndDate,
     stationAssetFilter,
     expeditionFilter,
     topicFilter,
@@ -395,37 +412,117 @@ export default function MediaPage() {
 
       {/* Journalist Press Kit Workflow (Prompt 21) */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-bold text-vistaar-text">
-              Accredited Journalist Press Kit Generator
-            </h2>
-            <p className="text-xs text-vistaar-muted">
-              Compiles strictly verified statistics with NPDC provenance and approved PIB releases. Never exposes internal drafts as official.
-            </p>
+        <div className="bg-white p-5 rounded-xl border border-vistaar-border shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-xl font-bold text-vistaar-text">
+                Accredited Journalist Press Kit Generator
+              </h2>
+              <p className="text-xs text-vistaar-muted">
+                Select station, expedition, topic, NPDC dataset, and date range to compile verified statistics, approved images/charts, and official PIB releases. Internal DRAFT and REVIEWED items are strictly withheld.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-mono">
+              {(["DRAFT", "REVIEWED", "APPROVED", "PUBLISHED"] as const).map((st) => {
+                const isCurr = pressKit?.release_status === st;
+                const isAllowed = st === "APPROVED" || st === "PUBLISHED";
+                return (
+                  <span
+                    key={st}
+                    className={`px-2 py-0.5 rounded border ${
+                      isCurr
+                        ? "bg-emerald-600 text-white border-emerald-700 font-bold"
+                        : isAllowed
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                        : "bg-slate-100 text-slate-400 border-slate-200 line-through"
+                    }`}
+                  >
+                    {st}
+                  </span>
+                );
+              })}
+            </div>
           </div>
 
-          <select
-            value={pressKitStation}
-            onChange={(e) => setPressKitStation(e.target.value)}
-            className="text-xs font-semibold px-3 py-2 rounded-md border border-vistaar-border bg-white text-vistaar-text shadow-xs"
-          >
-            <option value="bharati">Bharati Station (Antarctica)</option>
-            <option value="maitri">Maitri Station (Antarctica)</option>
-            <option value="himadri">Himadri Base (Arctic)</option>
-            <option value="himansh">Himansh Station (Himalayas)</option>
-          </select>
+          {/* 5 Required Journalist Selectors: Station, Expedition, Topic, Dataset, Date Range */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
+            <select
+              value={pressKitStation}
+              onChange={(e) => {
+                setPressKitStation(e.target.value);
+                setPressKitDataset("");
+              }}
+              className="px-2.5 py-2 rounded border border-vistaar-border bg-[#FAF7F0] text-vistaar-text font-semibold"
+            >
+              <option value="bharati">Bharati Station (Antarctica)</option>
+              <option value="maitri">Maitri Station (Antarctica)</option>
+              <option value="himadri">Himadri Base (Arctic)</option>
+              <option value="himansh">Himansh Station (Himalayas)</option>
+            </select>
+
+            <select
+              value={pressKitExpedition}
+              onChange={(e) => setPressKitExpedition(e.target.value)}
+              className="px-2.5 py-2 rounded border border-vistaar-border bg-[#FAF7F0] text-vistaar-text font-medium"
+            >
+              <option value="">Default Station Expedition</option>
+              <option value="isea-43">43-ISEA (Antarctica)</option>
+              <option value="arctic-winter-1">1st Winter Arctic</option>
+              <option value="himansh-himalaya-8">8th Himalaya Campaign</option>
+            </select>
+
+            <select
+              value={pressKitTopic}
+              onChange={(e) => setPressKitTopic(e.target.value)}
+              className="px-2.5 py-2 rounded border border-vistaar-border bg-[#FAF7F0] text-vistaar-text font-medium"
+            >
+              <option value="">All Scientific Topics</option>
+              <option value="Katabatic Wind & Synoptic Meteorology">Katabatic Wind &amp; Meteorology</option>
+              <option value="Glacier Mass Balance & Cryosphere">Glacier Mass Balance</option>
+              <option value="Arctic Amplification & Disdrometry">Arctic Amplification</option>
+              <option value="Tropospheric Radiometry">Tropospheric Radiometry</option>
+            </select>
+
+            <select
+              value={pressKitDataset}
+              onChange={(e) => setPressKitDataset(e.target.value)}
+              className="px-2.5 py-2 rounded border border-vistaar-border bg-[#FAF7F0] text-vistaar-text font-medium"
+            >
+              <option value="">Primary Station NPDC Dataset</option>
+              {(pressKit?.available_datasets || []).map((d: any) => (
+                <option key={d.dataset_id} value={d.dataset_id}>
+                  {d.dataset_id} — {d.title}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="date"
+              value={pressKitStartDate}
+              onChange={(e) => setPressKitStartDate(e.target.value)}
+              className="px-2.5 py-2 rounded border border-vistaar-border bg-[#FAF7F0] text-vistaar-text font-mono"
+              aria-label="Press Kit Start Date"
+            />
+
+            <input
+              type="date"
+              value={pressKitEndDate}
+              onChange={(e) => setPressKitEndDate(e.target.value)}
+              className="px-2.5 py-2 rounded border border-vistaar-border bg-[#FAF7F0] text-vistaar-text font-mono"
+              aria-label="Press Kit End Date"
+            />
+          </div>
         </div>
 
         {pressKit && (
           <Card className="border-vistaar-border bg-white shadow-xs">
             <CardHeader className="p-6 border-b border-vistaar-border bg-[#FAF7F0]/70">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center space-x-2">
-                  <Badge variant="success">Status: {pressKit.release_status}</Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="success">{pressKit.official_verification_banner || `Status: ${pressKit.release_status}`}</Badge>
                   <Badge variant="scientific">{pressKit.region}</Badge>
                   <span className="text-xs font-mono text-vistaar-muted">
-                    Expedition: {pressKit.expedition_id}
+                    Expedition: {pressKit.expedition_id} • Period: {pressKit.date_range?.start} → {pressKit.date_range?.end}
                   </span>
                 </div>
                 <span className="text-xs font-mono font-bold text-vistaar-scientific">
@@ -433,27 +530,31 @@ export default function MediaPage() {
                 </span>
               </div>
               <CardTitle className="text-xl font-bold mt-2">
-                Press Briefing: {pressKit.station_name}
+                Press Briefing: {pressKit.station_name} — {pressKit.topic}
               </CardTitle>
               <CardDescription className="text-xs text-vistaar-muted font-mono">
                 Primary Instrument: <strong>{pressKit.key_instrument}</strong> • Dataset:{" "}
-                <strong>{pressKit.dataset_id}</strong> (SHA-256: {pressKit.sha256_checksum?.slice(0, 14)}...)
+                <strong>{pressKit.dataset_id}</strong> (SHA-256: {pressKit.sha256_checksum?.slice(0, 16)}...) •{" "}
+                Withheld Internal Drafts: <strong>{pressKit.governance_status?.excluded_internal_drafts_count ?? 0}</strong>
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6 space-y-5">
-              {/* Official PIB Release Body */}
+            <CardContent className="p-6 space-y-6">
+              {/* 1. Official PIB Release Body */}
               <div className="p-4 bg-[#FAF7F0] rounded-lg border border-vistaar-border text-xs leading-relaxed whitespace-pre-line font-sans text-vistaar-text">
-                <strong className="block text-sm mb-2 text-vistaar-text">
-                  {pressKit.official_press_release?.title}
-                </strong>
+                <div className="flex items-center justify-between mb-2">
+                  <strong className="text-sm text-vistaar-text">
+                    1. {pressKit.official_press_release?.title}
+                  </strong>
+                  <Badge variant="outline">Approved PIB Release</Badge>
+                </div>
                 {pressKit.official_press_release?.body}
               </div>
 
-              {/* Verified Statistics Table with Provenance */}
+              {/* 2. Verified Statistics Table with Provenance */}
               {pressKit.verified_statistics?.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-vistaar-text">
-                    Verified Dataset Statistics &amp; Provenance
+                    2. Verified Dataset Statistics &amp; Cryptographic Provenance
                   </h4>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs font-mono border border-vistaar-border">
@@ -464,7 +565,7 @@ export default function MediaPage() {
                           <th className="p-2">Mean</th>
                           <th className="p-2">Max</th>
                           <th className="p-2">Valid Records</th>
-                          <th className="p-2">Provenance Source</th>
+                          <th className="p-2">Provenance Source &amp; SHA-256</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-vistaar-border/60">
@@ -482,7 +583,7 @@ export default function MediaPage() {
                             </td>
                             <td className="p-2">{st.valid_count}</td>
                             <td className="p-2 text-[10px] text-vistaar-muted">
-                              {st.provenance?.dataset_id} ({st.provenance?.source_file})
+                              {st.provenance?.dataset_id} ({st.provenance?.source_file} • SHA-256: {st.provenance?.sha256?.slice(0, 10)}...)
                             </td>
                           </tr>
                         ))}
@@ -492,18 +593,68 @@ export default function MediaPage() {
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 text-xs text-vistaar-muted">
+              {/* 3. Approved Images, Captions & Charts + 4. Source References */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
+                <div className="p-4 rounded-lg bg-[#FAF7F0] border border-vistaar-border space-y-2">
+                  <h4 className="font-bold uppercase tracking-wider text-vistaar-primary">
+                    3. Approved Images, Captions &amp; Charts ({pressKit.approved_images_and_charts?.length || 0})
+                  </h4>
+                  <div className="space-y-2">
+                    {(pressKit.approved_images_and_charts || []).map((m: any) => (
+                      <div key={m.asset_id} className="p-2.5 bg-white rounded border border-vistaar-border">
+                        <div className="font-bold text-vistaar-text">
+                          [{m.media_type}] {m.title}
+                        </div>
+                        <div className="text-[11px] text-vistaar-muted mt-0.5">{m.caption}</div>
+                        <div className="text-[10px] font-mono text-emerald-700 mt-1">
+                          {m.license} • Ref: {m.source_reference}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-[#FAF7F0] border border-vistaar-border space-y-2">
+                  <h4 className="font-bold uppercase tracking-wider text-vistaar-scientific">
+                    4. Authoritative Source References &amp; Governance Policy
+                  </h4>
+                  <ul className="space-y-1.5 font-mono text-[11px] text-vistaar-text">
+                    {(pressKit.source_references || []).map((ref: string, idx: number) => (
+                      <li key={idx} className="p-2 bg-white rounded border border-vistaar-border">
+                        • {ref}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded text-[11px] text-emerald-900">
+                    <strong>Governance Policy:</strong> {pressKit.governance_status?.policy}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-vistaar-border text-xs text-vistaar-muted">
                 <span className="italic">{pressKit.license_guidance}</span>
-                <a
-                  href={`${API_BASE_URL}/media/press-kit/download?station_id=${pressKitStation}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Button size="sm" variant="primary" className="flex items-center space-x-1.5">
-                    <Download className="w-4 h-4" />
-                    <span>Download Verified Press Kit (HTML / PDF)</span>
-                  </Button>
-                </a>
+                <div className="flex flex-wrap items-center gap-2">
+                  <a
+                    href={`${API_BASE_URL}/media/press-kit/download?station_id=${pressKitStation}&format=html`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Button size="sm" variant="outline" className="flex items-center space-x-1.5">
+                      <Download className="w-4 h-4" />
+                      <span>Printable Press Kit (HTML)</span>
+                    </Button>
+                  </a>
+                  <a
+                    href={`${API_BASE_URL}/media/press-kit/download?station_id=${pressKitStation}&format=pdf`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Button size="sm" variant="primary" className="flex items-center space-x-1.5">
+                      <Download className="w-4 h-4" />
+                      <span>Download Official Press Kit (PDF)</span>
+                    </Button>
+                  </a>
+                </div>
               </div>
             </CardContent>
           </Card>
