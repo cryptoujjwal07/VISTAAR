@@ -29,14 +29,14 @@ jobs:
       - name: Run Backend Integration & Health Tests
         env:
           PYTHONPATH: .
-          MONGODB_URI: ${{ secrets.MONGODB_URI || 'mongodb+srv://ayushmang06_db_user:1234567890@polarbearvistaar.qmtf9h5.mongodb.net/?appName=polarbearVISTAAR' }}
-          MONGODB_DB_NAME: vistaar_production
+          MONGODB_URI: "mongodb+srv://ayushmang06_db_user:1234567890@polarbearvistaar.qmtf9h5.mongodb.net/?appName=polarbearVISTAAR"
+          MONGODB_DB_NAME: "vistaar_production"
           USE_IN_MEMORY_QUEUE: "true"
-          JWT_SECRET: vistaar_secure_production_secret_key_polar_science_2026_ncpor
-          SUPER_ADMIN_EMAIL: admin@vistaar.ncpor.res.in
-          SUPER_ADMIN_PASSWORD: VistaarAdmin@2026!
+          JWT_SECRET: "vistaar_secure_production_secret_key_polar_science_2026_ncpor"
+          SUPER_ADMIN_EMAIL: "admin@vistaar.ncpor.res.in"
+          SUPER_ADMIN_PASSWORD: "VistaarAdmin@2026!"
         run: |
-          python -m pytest -v tests/
+          python -m pytest -v --tb=short tests/
 
   frontend-build:
     name: Frontend Lint, Typecheck & Production Build
@@ -56,4 +56,6 @@ jobs:
 
       - name: Typecheck & Build Next.js Application
         working-directory: ./apps/web
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
         run: npm run build

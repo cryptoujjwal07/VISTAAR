@@ -31,7 +31,7 @@ def get_database() -> AsyncIOMotorDatabase:
     if needs_reinit:
         db_manager.client = AsyncIOMotorClient(
             settings.MONGODB_URI,
-            serverSelectionTimeoutMS=5000,
+            serverSelectionTimeoutMS=15000,
             maxPoolSize=50,
             minPoolSize=10
         )
