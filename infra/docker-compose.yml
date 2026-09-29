@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # Redis Cache & Background Queue
+  redis:
+    image: redis:7-alpine
+    container_name: vistaar-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-vistaar_redis_2026}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # VISTAAR FastAPI Backend
+  api:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.api
+    container_name: vistaar-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DB_NAME=${MONGODB_DB_NAME:-vistaar_production}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-vistaar_redis_2026}@redis:6379/0
+      - JWT_SECRET=${JWT_SECRET}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # VISTAAR Asynchronous Worker
+  worker:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.api
+    container_name: vistaar-worker
+    command: python -m apps.worker.main
+    environment:
+      - ENVIRONMENT=production
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DB_NAME=${MONGODB_DB_NAME:-vistaar_production}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-vistaar_redis_2026}@redis:6379/0
+      - JWT_SECRET=${JWT_SECRET}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # VISTAAR Next.js Web Frontend
+  web:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.web
+    container_name: vistaar-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NODE_ENV=production
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  redis_data:
