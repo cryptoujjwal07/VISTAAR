@@ -9,9 +9,15 @@ from apps.api.core.security import get_current_user, require_roles
 router = APIRouter(prefix="/publications", tags=["Publishing Governance & Review Workspace"])
 
 class StatusTransitionRequest(BaseModel):
-    new_status: Literal['DRAFT', 'NEEDS_REVIEW', 'REVIEWED', 'APPROVED', 'PUBLISHED', 'ARCHIVED']
+    new_status: Literal['DRAFT', 'AI_GENERATED', 'NEEDS_REVIEW', 'REVIEWED', 'APPROVED', 'PUBLISHED', 'ARCHIVED']
     reason: Optional[str] = None
     reviewer_notes: Optional[str] = None
+
+
+class GovernanceActionRequest(BaseModel):
+    reason: Optional[str] = "Editorial governance action"
+    reviewer_notes: Optional[str] = None
+
 
 class EditTrackRequest(BaseModel):
     track: Literal['PIB', 'SOCIAL', 'EDUCATION', 'VERNACULAR', 'pib', 'social', 'education', 'vernacular']
@@ -299,20 +305,22 @@ async def transition_status(
     old_status = pub.get("status")
     new_status = req.new_status
 
+    # Prompt 24 Lifecycle: DRAFT → AI_GENERATED → NEEDS_REVIEW → REVIEWED → APPROVED → PUBLISHED → ARCHIVED
+    # AI cannot directly publish (AI_GENERATED -> PUBLISHED is prohibited).
     valid_transitions = {
         "DRAFT": ["AI_GENERATED", "NEEDS_REVIEW"],
-        "AI_GENERATED": ["NEEDS_REVIEW", "REVIEWED"],
+        "AI_GENERATED": ["NEEDS_REVIEW", "REVIEWED", "DRAFT"],
         "NEEDS_REVIEW": ["REVIEWED", "DRAFT"],
-        "REVIEWED": ["APPROVED", "NEEDS_REVIEW"],
-        "APPROVED": ["PUBLISHED", "NEEDS_REVIEW"],
-        "PUBLISHED": ["ARCHIVED", "NEEDS_REVIEW"],
-        "ARCHIVED": ["NEEDS_REVIEW"]
+        "REVIEWED": ["APPROVED", "NEEDS_REVIEW", "DRAFT"],
+        "APPROVED": ["PUBLISHED", "NEEDS_REVIEW", "DRAFT", "ARCHIVED"],
+        "PUBLISHED": ["ARCHIVED", "NEEDS_REVIEW", "APPROVED"],
+        "ARCHIVED": ["NEEDS_REVIEW", "DRAFT"]
     }
 
     if new_status not in valid_transitions.get(old_status, []):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid publishing transition from '{old_status}' to '{new_status}'."
+            detail=f"Invalid publishing transition from '{old_status}' to '{new_status}'. AI or unapproved content cannot directly publish."
         )
 
     now = datetime.now(timezone.utc).isoformat()
@@ -324,7 +332,7 @@ async def transition_status(
         "last_reviewer": current_user["email"]
     }
 
-    # Prompt 08: Published content references an immutable approved version
+    # Prompt 08 & 24: Published content references an immutable approved version
     if new_status == "APPROVED":
         update_fields["approved_by"] = current_user["email"]
         update_fields["approved_version"] = current_version
@@ -355,8 +363,32 @@ async def transition_status(
         }
         update_fields["published_version"] = approved_version
         update_fields["published_snapshot"] = approved_snapshot
+    elif new_status == "ARCHIVED":
+        update_fields["archived_at"] = now
+        update_fields["archived_by"] = current_user["email"]
+    elif new_status == "DRAFT" and old_status in ["AI_GENERATED", "NEEDS_REVIEW", "REVIEWED", "APPROVED"]:
+        update_fields["rejected_at"] = now
+        update_fields["rejected_by"] = current_user["email"]
+        update_fields["rejection_reason"] = req.reason or req.reviewer_notes or "Rejected by reviewer"
 
-    await db.publications.update_one({"id": pub_id}, {"$set": update_fields})
+    governance_entry = {
+        "event_id": f"gov_{uuid.uuid4().hex[:10]}",
+        "from_status": old_status,
+        "to_status": new_status,
+        "version": current_version,
+        "actor_email": current_user["email"],
+        "reason": req.reason,
+        "reviewer_notes": req.reviewer_notes,
+        "timestamp": now,
+    }
+
+    await db.publications.update_one(
+        {"id": pub_id},
+        {
+            "$set": update_fields,
+            "$push": {"governance_history": governance_entry},
+        },
+    )
 
     from apps.api.domains.audit.service import record_audit_event
     await record_audit_event(
@@ -371,6 +403,7 @@ async def transition_status(
         details={
             "version": current_version,
             "approved_version": update_fields.get("approved_version", pub.get("approved_version")),
+            "published_version": update_fields.get("published_version", pub.get("published_version")),
             "reviewer_notes": req.reviewer_notes
         }
     )
@@ -381,8 +414,82 @@ async def transition_status(
         "current_status": new_status,
         "version": current_version,
         "approved_version": update_fields.get("approved_version", pub.get("approved_version")),
+        "published_version": update_fields.get("published_version", pub.get("published_version")),
         "transitioned_at": now
     }
+
+
+@router.post("/{pub_id}/unpublish")
+async def unpublish_publication(
+    pub_id: str,
+    req: GovernanceActionRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"]))
+):
+    """Unpublishes a PUBLISHED publication back to APPROVED (removing it from live portal while preserving immutable snapshot)."""
+    return await transition_status(
+        pub_id=pub_id,
+        req=StatusTransitionRequest(
+            new_status="APPROVED",
+            reason=req.reason or "Unpublished from public portal",
+            reviewer_notes=req.reviewer_notes,
+        ),
+        current_user=current_user,
+    )
+
+
+@router.post("/{pub_id}/archive")
+async def archive_publication(
+    pub_id: str,
+    req: GovernanceActionRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"]))
+):
+    """Archives an APPROVED or PUBLISHED publication into the immutable archive."""
+    return await transition_status(
+        pub_id=pub_id,
+        req=StatusTransitionRequest(
+            new_status="ARCHIVED",
+            reason=req.reason or "Archived by editorial governance",
+            reviewer_notes=req.reviewer_notes,
+        ),
+        current_user=current_user,
+    )
+
+
+@router.post("/{pub_id}/reject")
+async def reject_publication(
+    pub_id: str,
+    req: GovernanceActionRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"]))
+):
+    """Rejects a publication in review and returns it to DRAFT status with audit event."""
+    return await transition_status(
+        pub_id=pub_id,
+        req=StatusTransitionRequest(
+            new_status="DRAFT",
+            reason=req.reason or "Publication rejected by reviewer",
+            reviewer_notes=req.reviewer_notes,
+        ),
+        current_user=current_user,
+    )
+
+
+@router.post("/{pub_id}/request-revision")
+async def request_publication_revision(
+    pub_id: str,
+    req: GovernanceActionRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"]))
+):
+    """Requests editorial/scientific revision and transitions publication to NEEDS_REVIEW."""
+    return await transition_status(
+        pub_id=pub_id,
+        req=StatusTransitionRequest(
+            new_status="NEEDS_REVIEW",
+            reason=req.reason or "Revision requested by reviewer",
+            reviewer_notes=req.reviewer_notes,
+        ),
+        current_user=current_user,
+    )
+
 
 @router.put("/{pub_id}/tracks")
 @router.patch("/{pub_id}/tracks")

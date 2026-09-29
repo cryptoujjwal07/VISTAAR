@@ -171,3 +171,106 @@ async def test_dataset_metadata_versioning():
             revs_res = await client.get(f"/api/v1/datasets/{target_ds}/revisions", headers=headers)
             assert revs_res.status_code == 200
             assert len(revs_res.json()["revisions"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_prompt_24_publishing_governance_lifecycle():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        editor_login = await client.post("/api/v1/auth/login", json={
+            "email": "editor@vistaar.ncpor.res.in",
+            "password": "Editor@Vistaar2026!"
+        })
+        token = editor_login.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 1. Generate AI outreach draft -> starts in AI_GENERATED or DRAFT
+        gen_res = await client.post("/api/v1/ai/generate-outreach", json={"station_id": "maitri"}, headers=headers)
+        assert gen_res.status_code == 200
+        pub_id = gen_res.json()["id"]
+
+        # 2. Enforce at API layer: AI cannot directly publish (AI_GENERATED/DRAFT -> PUBLISHED must fail 400)
+        illegal_pub = await client.post(
+            f"/api/v1/publications/{pub_id}/transition",
+            json={"new_status": "PUBLISHED", "reason": "Bypassing approval"},
+            headers=headers,
+        )
+        assert illegal_pub.status_code == 400
+
+        # 3. Reject to DRAFT -> then transition DRAFT -> AI_GENERATED -> NEEDS_REVIEW -> REVIEWED -> APPROVED -> PUBLISHED
+        rej_res = await client.post(
+            f"/api/v1/publications/{pub_id}/reject",
+            json={"reason": "Initial draft rejected for calibration check"},
+            headers=headers,
+        )
+        assert rej_res.status_code == 200
+        assert rej_res.json()["current_status"] == "DRAFT"
+
+        ai_gen_res = await client.post(
+            f"/api/v1/publications/{pub_id}/transition",
+            json={"new_status": "AI_GENERATED", "reason": "AI synthesis pass completed"},
+            headers=headers,
+        )
+        assert ai_gen_res.status_code == 200
+        assert ai_gen_res.json()["current_status"] == "AI_GENERATED"
+
+        rev_req = await client.post(
+            f"/api/v1/publications/{pub_id}/request-revision",
+            json={"reason": "Submit for scientific review"},
+            headers=headers,
+        )
+        assert rev_req.status_code == 200
+        assert rev_req.json()["current_status"] == "NEEDS_REVIEW"
+
+        reviewed_res = await client.post(
+            f"/api/v1/publications/{pub_id}/transition",
+            json={"new_status": "REVIEWED", "reason": "Verified against Maitri AWS telemetry"},
+            headers=headers,
+        )
+        assert reviewed_res.status_code == 200
+        assert reviewed_res.json()["current_status"] == "REVIEWED"
+
+        approved_res = await client.post(
+            f"/api/v1/publications/{pub_id}/transition",
+            json={"new_status": "APPROVED", "reason": "Approved by NCPOR Editorial Board"},
+            headers=headers,
+        )
+        assert approved_res.status_code == 200
+        assert approved_res.json()["current_status"] == "APPROVED"
+        assert approved_res.json()["approved_version"] is not None
+
+        published_res = await client.post(
+            f"/api/v1/publications/{pub_id}/transition",
+            json={"new_status": "PUBLISHED", "reason": "Published to public portal"},
+            headers=headers,
+        )
+        assert published_res.status_code == 200
+        assert published_res.json()["current_status"] == "PUBLISHED"
+        assert published_res.json()["published_version"] == approved_res.json()["approved_version"]
+
+        # 4. Unpublish -> removes from public feed and returns to APPROVED
+        unpub_res = await client.post(
+            f"/api/v1/publications/{pub_id}/unpublish",
+            json={"reason": "Temporarily unpublished for embargoes check"},
+            headers=headers,
+        )
+        assert unpub_res.status_code == 200
+        assert unpub_res.json()["current_status"] == "APPROVED"
+
+        pub_feed = await client.get("/api/v1/publications/published")
+        assert all(item["id"] != pub_id for item in pub_feed.json())
+
+        # 5. Archive -> transitions to ARCHIVED
+        arch_res = await client.post(
+            f"/api/v1/publications/{pub_id}/archive",
+            json={"reason": "Season concluded; moved to permanent archive"},
+            headers=headers,
+        )
+        assert arch_res.status_code == 200
+        assert arch_res.json()["current_status"] == "ARCHIVED"
+
+        # 6. Verify every transition created an audit event
+        hist_res = await client.get(f"/api/v1/audit/resource/PUBLICATION/{pub_id}", headers=headers)
+        assert hist_res.status_code == 200
+        assert hist_res.json()["event_count"] >= 7
+
