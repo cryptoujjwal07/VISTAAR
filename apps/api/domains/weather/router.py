@@ -199,3 +199,81 @@ async def get_observation_provenance(record_id: str):
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Observation record not found")
     return record
+
+
+@router.get("/stations/{station_id}/explorer")
+async def get_station_relational_explorer(station_id: str):
+    """
+    Production Station & Expedition Relational Explorer (Prompt 18).
+    Uses live MongoDB database relationships across datasets, documents, published research,
+    classroom modules, and media assets while preserving source provenance.
+    """
+    db = get_database()
+    sid = station_id.lower().strip()
+    all_stations = await list_weather_stations()
+    station_info = next((s for s in all_stations if s["id"] == sid), None)
+    if not station_info:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Station '{station_id}' not found")
+
+    datasets = await db.datasets.find({"station_id": sid}, {"_id": 0}).to_list(length=25)
+    documents = await db.documents.find({"station_id": sid}, {"_id": 0}).to_list(length=25)
+    published_research = await db.publications.find(
+        {"station_id": sid, "status": "PUBLISHED"}, {"_id": 0}
+    ).to_list(length=15)
+
+    from apps.api.domains.classroom.router import list_lessons
+    from apps.api.domains.media.router import list_media_assets
+
+    all_lessons = await list_lessons()
+    related_education = [l for l in all_lessons if l.get("station_id") == sid or sid in l.get("station", "").lower()]
+    related_media = await list_media_assets(station_id=sid)
+
+    expedition_map = {
+        "maitri": [
+            {
+                "id": "isea-43",
+                "name": "43rd Indian Scientific Expedition to Antarctica (43-ISEA)",
+                "season": "2023–2024",
+                "vessel": "MV Vasiliy Golovnin",
+                "topics": ["Katabatic Wind Dynamics", "Ice-Core Paleoclimate", "Geomagnetism"],
+            }
+        ],
+        "bharati": [
+            {
+                "id": "isea-43",
+                "name": "43rd Indian Scientific Expedition to Antarctica (43-ISEA)",
+                "season": "2023–2024",
+                "vessel": "MV Vasiliy Golovnin",
+                "topics": ["Tropospheric Radiometry", "Prydz Bay Oceanography", "Sea-Ice Albedo"],
+            }
+        ],
+        "himadri": [
+            {
+                "id": "arctic-winter-1",
+                "name": "1st Indian Winter Arctic Scientific Expedition",
+                "season": "2023–2024",
+                "vessel": "Svalbard Polar Airlift & Kongsfjorden Mooring",
+                "topics": ["Arctic Amplification", "Hydrometeor Disdrometry", "IndARC Sub-surface Mooring"],
+            }
+        ],
+        "himansh": [
+            {
+                "id": "himansh-himalaya-8",
+                "name": "8th Cryosphere Field Campaign (Chandra Basin, Spiti)",
+                "season": "2023–2024",
+                "vessel": "High-Altitude Terrestrial Convoy",
+                "topics": ["Glacier Mass Balance", "Sutri Dhaka & Batal Ablation", "Third Pole AWS Telemetry"],
+            }
+        ],
+    }
+
+    return {
+        "station": station_info,
+        "expeditions": expedition_map.get(sid, []),
+        "datasets": datasets,
+        "documents": documents,
+        "published_research": published_research,
+        "education_modules": related_education,
+        "media_assets": related_media,
+    }
+

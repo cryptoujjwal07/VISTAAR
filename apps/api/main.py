@@ -72,6 +72,10 @@ async def request_logging_middleware(request: Request, call_next):
         duration_ms = round((time.time() - start_time) * 1000, 2)
         response.headers["X-Request-ID"] = req_id
         response.headers["X-Response-Time-MS"] = str(duration_ms)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         
         # Suppress routine health check log spam
         if request.url.path not in ["/health", "/health/ready"]:

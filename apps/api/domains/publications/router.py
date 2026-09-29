@@ -9,7 +9,7 @@ from apps.api.core.security import get_current_user, require_roles
 router = APIRouter(prefix="/publications", tags=["Publishing Governance & Review Workspace"])
 
 class StatusTransitionRequest(BaseModel):
-    new_status: Literal['NEEDS_REVIEW', 'REVIEWED', 'APPROVED', 'PUBLISHED', 'ARCHIVED']
+    new_status: Literal['DRAFT', 'NEEDS_REVIEW', 'REVIEWED', 'APPROVED', 'PUBLISHED', 'ARCHIVED']
     reason: Optional[str] = None
     reviewer_notes: Optional[str] = None
 
@@ -240,6 +240,50 @@ async def export_social_cards(pub_id: str):
         "linkedin_post": f"Official Scientific Outreach | National Centre for Polar and Ocean Research (NCPOR)\n\n{title}\n\n{soc.get('body', summary)}\n\nVerified scientific dataset: {pub.get('dataset_id')}\nExplore more polar intelligence: https://vistaar.ncpor.res.in",
         "key_hashtags": ["#NCPOR", "#MoES", "#Antarctica", "#Arctic", "#Himansh", "#PolarScience", "#IndiaInAntarctica"]
     }
+
+@router.get("/{pub_id}/export/vernacular-html")
+async def export_vernacular_html(pub_id: str):
+    """Generates formatted printable Hindi/Vernacular outreach sheet conforming to Prompt 32"""
+    db = get_database()
+    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    vern = pub.get("vernacular", {})
+    title = vern.get("title", "ध्रुवीय विज्ञान बुलेटिन")
+    summary = vern.get("summary", "")
+    body_html = vern.get("body", "").replace("\n", "<br/>")
+
+    html = f"""<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<title>{title}</title>
+<style>
+  body {{ font-family: 'Noto Sans Devanagari', 'Segoe UI', sans-serif; margin: 40px; color: #17202A; line-height: 1.8; background: #FAF7F0; }}
+  .container {{ max-width: 820px; margin: auto; background: #FFFFFF; padding: 36px; border: 1px solid #E7E0D5; border-radius: 8px; }}
+  .header {{ text-align: center; border-bottom: 2px solid #0E7490; padding-bottom: 12px; margin-bottom: 20px; }}
+  h1 {{ color: #2563EB; font-size: 22px; margin-bottom: 12px; }}
+  .summary {{ background: #F8FAFC; border-left: 4px solid #0E7490; padding: 12px; margin-bottom: 20px; font-weight: 600; }}
+  .footer {{ margin-top: 28px; border-top: 1px solid #E7E0D5; padding-top: 12px; font-size: 11px; font-family: monospace; color: #5F6B76; }}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <strong>भारत सरकार • पृथ्वी विज्ञान मंत्रालय (MoES)</strong><br/>
+      राष्ट्रीय ध्रुवीय एवं समुद्री अनुसंधान केंद्र (NCPOR), गोवा
+    </div>
+    <h1>{title}</h1>
+    <div class="summary">{summary}</div>
+    <div class="content">{body_html}</div>
+    <div class="footer">
+      Dataset ID: {pub.get('dataset_id')} | Status: {pub.get('status')} | Approved Version: v{pub.get('version', 1)}
+    </div>
+  </div>
+</body>
+</html>"""
+    return Response(content=html, media_type="text/html")
 
 @router.post("/{pub_id}/transition")
 async def transition_status(
