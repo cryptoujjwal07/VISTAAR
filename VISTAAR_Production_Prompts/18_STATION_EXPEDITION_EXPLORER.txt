@@ -1,0 +1,9 @@
+Build production Station and Expedition Explorer.
+
+Stations: Maitri, Bharati, Himadri, Himansh. Do not invent metadata.
+
+Station pages connect station information, expeditions, scientific documents, datasets, weather, media, education and research topics.
+
+Expedition pages: overview, timeline, documents, datasets, media, scientific topics, related education and related public content.
+
+Use database relationships, not hardcoded frontend relationships. Preserve source provenance.

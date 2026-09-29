@@ -1,0 +1,7 @@
+Implement VISTAAR AI Outreach Studio.
+
+Generate: 1) Administrative/PIB, 2) Social (X/Instagram/LinkedIn), 3) Education (Class 8–12), 4) Vernacular.
+
+Evidence-first. Use structured schemas, not unconstrained internal prose. Every factual claim includes claim_id, claim_text, source_refs, metric, value, unit, location, qualifier, numbers_claimed, verification_status.
+
+Distinguish OBSERVED, CALCULATED, INFERRED, CONTEXTUAL. Never present inference as observation. Never invent measurements, dates, people, quotes, statistics or scientific conclusions. Official quote placeholder: [Quote to be provided by authorized official]. AI content starts as DRAFT and cannot be published without human approval.

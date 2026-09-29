@@ -1,0 +1,5 @@
+Build production Journalist/Press Kit workflow.
+
+Journalist selects station, expedition, topic, dataset and date range. Generate only approved/verified material: verified facts/statistics, approved images/captions/charts, approved PIB release, source references and downloadable PDF.
+
+Clearly label DRAFT, REVIEWED, APPROVED, PUBLISHED. Never expose internal drafts as official. Every statistic retains provenance.

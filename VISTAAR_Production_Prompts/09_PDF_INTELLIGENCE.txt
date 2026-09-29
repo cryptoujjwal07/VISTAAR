@@ -1,0 +1,7 @@
+Build production scientific document intelligence using PyMuPDF.
+
+Pipeline: PDF upload → checksum → metadata → pages → text/layout → table awareness → chunking → embeddings → indexing.
+
+Pages retain document_id, page_number, dimensions, text and layout. Chunks retain document_id, page_number, deterministic chunk_id (e.g. p14_c02), text, bounding boxes, character offsets, heading/context, token estimate and embedding.
+
+Support normal PDFs, scanned/OCR pages, tables, headers/footers, multi-column layouts and malformed documents. Do not destroy source coordinates. Heavy processing asynchronous with status and retries.

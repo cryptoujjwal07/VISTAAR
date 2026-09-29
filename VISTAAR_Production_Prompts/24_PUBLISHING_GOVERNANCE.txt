@@ -1,0 +1,5 @@
+Build production publishing governance.
+
+Lifecycle: DRAFT → AI_GENERATED → NEEDS_REVIEW → REVIEWED → APPROVED → PUBLISHED → ARCHIVED.
+
+Require authorized approval, revision history, publication version, unpublish, archive, rejection and revision requests. Published content references immutable approved version. AI cannot directly publish. Every transition creates audit event. Enforce transitions at API layer, not only frontend.

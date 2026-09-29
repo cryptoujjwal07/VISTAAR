@@ -1,0 +1,5 @@
+Optimize VISTAAR for production scale. Measure first; do not optimize from guesses.
+
+Optimize API latency, DB queries/indexes, search, vector retrieval, PDF processing, dataset ingestion, AI requests, frontend rendering, large tables, charts, PDF viewer and object storage.
+
+Heavy work asynchronous. Implement pagination/cursor pagination where appropriate, caching, request/job deduplication, idempotency, retries, timeouts and backoff. Do not load huge datasets into browser memory. Use streaming/chunking where appropriate. Do not introduce microservices merely for appearance.

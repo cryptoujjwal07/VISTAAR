@@ -1,0 +1,5 @@
+Build production administration console.
+
+Sections: Users, Roles, Datasets, Documents, Jobs, Reviews, Publications, Translations, Media, Audit, System Health, Configuration.
+
+Analytics use actual system data: documents, datasets, jobs, verification states, reviews, publications, searches, education resources and media. Never fabricate KPIs; if no data show No data available. Add filters/date ranges. All admin operations permission-controlled and audited.

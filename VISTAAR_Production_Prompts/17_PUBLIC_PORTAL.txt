@@ -1,0 +1,9 @@
+Build production VISTAAR public portal.
+
+Routes: /, /explore, /stations, /expeditions, /datasets, /research, /weather, /education, /media, /about.
+
+Homepage: Hero, India's Polar Science, Antarctica, Arctic, Himalayas, Latest Research, Weather Intelligence, Education, Media, Datasets.
+
+Personas: Student, Teacher, Journalist, Scientist. Languages: English, Hindi and configured additional languages.
+
+Use actual published data only. Never show internal drafts/unapproved claims. Beige/white editorial design. Add SEO metadata, structured URLs, sitemap, OpenGraph and accessible headings; server-render public content where appropriate.

@@ -1,0 +1,10 @@
+Build comprehensive automated tests.
+
+Backend: unit, integration, API, repository, RBAC and security tests.
+Scientific: schema validation, unit/timestamp normalization, quality flags, provenance, claim verification, numeric normalization and conflict detection.
+AI: structured-output validation, invalid-output rejection, prompt-injection resistance and citation requirements.
+Frontend: component, critical workflow and accessibility tests.
+E2E: login, upload, ingestion, processing, PDF parsing, RAG, AI generation, verification, source navigation, review, approval, publication, public search, education and media.
+Security: unauthorized publish, unauthorized dataset access, IDOR, role escalation and restricted-content exposure.
+
+Synthetic fixtures are allowed ONLY in tests. Production uses real source data.

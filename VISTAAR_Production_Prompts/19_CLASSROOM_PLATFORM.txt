@@ -1,0 +1,7 @@
+Build VISTAAR Classroom Studio as a real production feature.
+
+Support Classes 8–12. Lesson structure: learning objective, scientific concept, explanation, real Indian polar example, real data visualization, activity, key terms, 3-question quiz, answers and sources.
+
+Student mode: interactive lesson, visualization, quiz, progress. Teacher mode: lesson preview, quiz, answer key, source references, download/export.
+
+Do not generate unsupported curriculum/scientific claims. Preserve provenance. Quiz questions must come from approved content, not uncontrolled model output.

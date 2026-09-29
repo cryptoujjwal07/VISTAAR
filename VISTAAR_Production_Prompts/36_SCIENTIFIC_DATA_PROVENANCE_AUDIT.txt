@@ -1,0 +1,10 @@
+Perform final scientific-data provenance audit.
+
+Trace representative real NPDC observations through:
+RAW FILE → INGESTION → NORMALIZATION → DATABASE → QUERY → CHART → AI CONTEXT → CLAIM → VERIFICATION → REVIEW → PUBLICATION.
+
+For each trace verify original file, checksum, dataset, provider, station, timestamp, original value/unit, normalized value/unit, database record, claim, source reference, verification result and publication version.
+
+Confirm no scientific value changed unexpectedly, missing values were not replaced with zero, no synthetic scientific data is present in production and all public scientific facts have provenance.
+
+Create docs/SCIENTIFIC_DATA_PROVENANCE_AUDIT.md.

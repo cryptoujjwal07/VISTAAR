@@ -1,0 +1,5 @@
+Build production VISTAAR unified search across documents, datasets, stations, expeditions, research, media, education and published content.
+
+Support keyword, semantic search, autocomplete, filters, facets and pagination. Filters: region, station, provider, dataset, date, topic and content type.
+
+Use hybrid retrieval where appropriate. Scientific results show provenance. AI answers show evidence. Do not use vector search as the only search mechanism.

@@ -1,0 +1,9 @@
+Build the deterministic scientific claim verification engine.
+
+Statuses: VERIFIED, NEEDS_REVIEW, UNSUPPORTED, CONFLICTING.
+
+For each claim: parse assertions; extract numbers; normalize values/units; identify metric/location/qualifier; locate source; compare numerically; check semantic consistency; detect conflicts; produce explainable result.
+
+VERIFIED means value+unit+metric+relevant evidence confirmed. NEEDS_REVIEW means evidence exists but human judgment is required. UNSUPPORTED means required evidence is absent. CONFLICTING means credible source evidence disagrees.
+
+Never silently mark VERIFIED. Store claim, evidence, verification rule/result, timestamp and verifier version. Reviewers must see why the status was produced.

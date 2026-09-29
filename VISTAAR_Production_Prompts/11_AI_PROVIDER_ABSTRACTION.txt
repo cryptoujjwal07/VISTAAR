@@ -1,0 +1,5 @@
+Implement an AI provider abstraction. Do not tightly couple business logic to one vendor.
+
+Create AIProvider interface supporting structured generation, text generation and embedding generation. Implement configured production provider. Configuration via environment/config.
+
+Support timeouts, retries, rate limits, failure handling, structured output validation and usage tracking. Do not unnecessarily log sensitive prompts. Validate all responses with Pydantic/Zod. Reject invalid model output.

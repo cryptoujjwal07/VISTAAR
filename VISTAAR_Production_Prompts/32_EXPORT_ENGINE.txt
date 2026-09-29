@@ -1,0 +1,5 @@
+Build production export system.
+
+Support PIB press-release PDF, social assets, education PDF, teacher lesson export, journalist press kit and scientific chart export. Use WeasyPrint for appropriate documents.
+
+Exports use approved content and preserve title, source metadata, publication/version, generation timestamp and provenance where appropriate. Never export unpublished internal content through public workflows. Large exports asynchronous.

@@ -1,0 +1,5 @@
+Perform a complete production architecture audit. Do not modify code initially.
+
+Inspect actual implementation for architecture, security, database, scientific data, provenance, AI, RAG, claim verification, RBAC, audit, publishing, frontend, accessibility, performance, observability, testing, deployment, backup and recovery.
+
+For every area report PASS, PARTIAL or FAIL. For failures provide severity, location, problem, impact and recommended solution. Do not claim PASS without evidence or invent functionality.

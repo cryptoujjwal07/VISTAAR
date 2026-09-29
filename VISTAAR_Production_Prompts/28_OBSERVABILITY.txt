@@ -1,0 +1,7 @@
+Implement production observability.
+
+Structured logs with request_id, job_id, resource_id and user_id where appropriate.
+
+Metrics: request latency, error rate, DB latency, queue depth, worker utilization, job failures, AI latency/failures, translation failures, storage usage and search latency.
+
+Implement health/readiness, worker, DB and Redis health. Use production-safe error responses; never expose stack traces publicly. Never log passwords, tokens, API keys, private credentials or unnecessary sensitive information.

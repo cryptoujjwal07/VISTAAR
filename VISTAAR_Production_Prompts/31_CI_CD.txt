@@ -1,0 +1,5 @@
+Build production CI/CD.
+
+Every PR runs lint, typecheck, unit tests, configured integration tests, security checks, frontend build and backend validation. Production deployment requires successful checks.
+
+Separate development/staging/production. Never deploy unvalidated local code. Never commit secrets. Use environment-specific config. Document rollback. Add database migration/index deployment strategy and post-deployment health checks. Fail deployment if health checks fail.

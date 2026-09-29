@@ -1,0 +1,7 @@
+Perform final production-readiness review. Treat VISTAAR as a real institutional application.
+
+Verify production build, backend/worker startup, indexes, Redis, object storage, authentication, RBAC, audit, dataset/PDF ingestion, embeddings, RAG, citations, claim verification, review, approval, publication, search, weather, education, media, multilingual architecture, export, security tests, accessibility, automated tests, CI/CD, monitoring, backups, rollback and documentation.
+
+Run actual verification, not source inspection alone.
+
+Report READY or NOT READY. If NOT READY, list blocking issues in priority order. Do not claim production readiness until blockers are resolved.

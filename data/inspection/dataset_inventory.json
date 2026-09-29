@@ -1,0 +1,2156 @@
+{
+  "generated_at": "2026-09-29T20:21:27.480932",
+  "total_files": 22,
+  "csv_datasets": [
+    {
+      "file_type": "csv",
+      "filename": "himansh.csv",
+      "size_bytes": 543540,
+      "sha256": "1e310a2e5cae435518b8b90460e64aef0009ffc6605c454f442792481a01e952",
+      "encoding": "utf-8",
+      "delimiter": ",",
+      "row_count": 1132,
+      "column_count": 42,
+      "columns": [
+        "id",
+        "time_stamp",
+        "airtemp_max",
+        "airtemp_max_date_time",
+        "airtemp_min",
+        "airtemp_min_date_time",
+        "airtemp_avg_date_time",
+        "rh_max",
+        "rh_max_date_time",
+        "rh_min",
+        "rh_min_date_time",
+        "sup_avg",
+        "sdn_avg",
+        "sup_max",
+        "sup_max_date_time",
+        "sup_min",
+        "sup_min_date_time",
+        "sdn_max",
+        "sdn_max_date_time",
+        "sdn_min",
+        "sdn_min_date_time",
+        "lup_max",
+        "lup_min",
+        "ldn_max",
+        "ldn_min",
+        "ws_max",
+        "ws_max_date_time",
+        "ws_min",
+        "ws_min_date_time",
+        "ws_avg",
+        "wind_dir",
+        "dbtcdt_avg",
+        "tt_c_avg",
+        "tt_c_max",
+        "tt_c_max_date_time",
+        "tt_c_min",
+        "tt_c_min_date_time",
+        "preci_mm_total",
+        "preci_type_max",
+        "preci_type_max_date_time",
+        "preci_type_min",
+        "preci_type_min_date_time"
+      ],
+      "column_types": {
+        "id": "int64",
+        "time_stamp": "str",
+        "airtemp_max": "float64",
+        "airtemp_max_date_time": "str",
+        "airtemp_min": "float64",
+        "airtemp_min_date_time": "str",
+        "airtemp_avg_date_time": "float64",
+        "rh_max": "float64",
+        "rh_max_date_time": "str",
+        "rh_min": "float64",
+        "rh_min_date_time": "str",
+        "sup_avg": "float64",
+        "sdn_avg": "float64",
+        "sup_max": "float64",
+        "sup_max_date_time": "str",
+        "sup_min": "float64",
+        "sup_min_date_time": "str",
+        "sdn_max": "float64",
+        "sdn_max_date_time": "str",
+        "sdn_min": "float64",
+        "sdn_min_date_time": "str",
+        "lup_max": "float64",
+        "lup_min": "float64",
+        "ldn_max": "float64",
+        "ldn_min": "float64",
+        "ws_max": "float64",
+        "ws_max_date_time": "str",
+        "ws_min": "float64",
+        "ws_min_date_time": "str",
+        "ws_avg": "float64",
+        "wind_dir": "float64",
+        "dbtcdt_avg": "float64",
+        "tt_c_avg": "float64",
+        "tt_c_max": "float64",
+        "tt_c_max_date_time": "str",
+        "tt_c_min": "float64",
+        "tt_c_min_date_time": "str",
+        "preci_mm_total": "float64",
+        "preci_type_max": "float64",
+        "preci_type_max_date_time": "float64",
+        "preci_type_min": "float64",
+        "preci_type_min_date_time": "float64"
+      },
+      "missing_values": {
+        "id": 0,
+        "time_stamp": 0,
+        "airtemp_max": 0,
+        "airtemp_max_date_time": 0,
+        "airtemp_min": 0,
+        "airtemp_min_date_time": 0,
+        "airtemp_avg_date_time": 0,
+        "rh_max": 0,
+        "rh_max_date_time": 0,
+        "rh_min": 0,
+        "rh_min_date_time": 0,
+        "sup_avg": 0,
+        "sdn_avg": 0,
+        "sup_max": 0,
+        "sup_max_date_time": 0,
+        "sup_min": 0,
+        "sup_min_date_time": 0,
+        "sdn_max": 0,
+        "sdn_max_date_time": 0,
+        "sdn_min": 0,
+        "sdn_min_date_time": 0,
+        "lup_max": 0,
+        "lup_min": 0,
+        "ldn_max": 0,
+        "ldn_min": 0,
+        "ws_max": 0,
+        "ws_max_date_time": 0,
+        "ws_min": 0,
+        "ws_min_date_time": 0,
+        "ws_avg": 0,
+        "wind_dir": 0,
+        "dbtcdt_avg": 346,
+        "tt_c_avg": 8,
+        "tt_c_max": 0,
+        "tt_c_max_date_time": 0,
+        "tt_c_min": 0,
+        "tt_c_min_date_time": 0,
+        "preci_mm_total": 1132,
+        "preci_type_max": 1132,
+        "preci_type_max_date_time": 1132,
+        "preci_type_min": 1132,
+        "preci_type_min_date_time": 1132
+      },
+      "duplicate_count": 0,
+      "sample_values": {
+        "id": [
+          "1",
+          "2",
+          "3"
+        ],
+        "time_stamp": [
+          "2015-10-18 18:30:00+00",
+          "2015-10-19 18:30:00+00",
+          "2015-10-20 18:30:00+00"
+        ],
+        "airtemp_max": [
+          "9.6",
+          "8.67",
+          "4.763999999999999"
+        ],
+        "airtemp_max_date_time": [
+          "18-10-2015 15:20",
+          "19-10-2015 12:42",
+          "20-10-2015 13:12"
+        ],
+        "airtemp_min": [
+          "0.061",
+          "-3.08",
+          "-5.3370000000000015"
+        ],
+        "airtemp_min_date_time": [
+          "18-10-2015 23:57",
+          "19-10-2015 07:27",
+          "20-10-2015 23:37"
+        ],
+        "airtemp_avg_date_time": [
+          "4.086",
+          "1.195",
+          "-1.499"
+        ],
+        "rh_max": [
+          "75.79",
+          "92.7",
+          "97.3"
+        ],
+        "rh_max_date_time": [
+          "18-10-2015 23:58",
+          "19-10-2015 23:19",
+          "20-10-2015 04:50"
+        ],
+        "rh_min": [
+          "19.58",
+          "12.23",
+          "25.84"
+        ],
+        "rh_min_date_time": [
+          "18-10-2015 15:41",
+          "19-10-2015 11:44",
+          "20-10-2015 12:31"
+        ],
+        "sup_avg": [
+          "44.62",
+          "188.5",
+          "186.6"
+        ],
+        "sdn_avg": [
+          "11.24",
+          "37.2",
+          "60.95"
+        ],
+        "sup_max": [
+          "570.3",
+          "1100.0",
+          "1142.0"
+        ],
+        "sup_max_date_time": [
+          "18-10-2015 15:09",
+          "19-10-2015 11:39",
+          "20-10-2015 13:05"
+        ],
+        "sup_min": [
+          "-5.7010000000000005",
+          "-5.702999999999999",
+          "-5.135"
+        ],
+        "sup_min_date_time": [
+          "18-10-2015 21:49",
+          "19-10-2015 00:18",
+          "20-10-2015 23:06"
+        ],
+        "sdn_max": [
+          "120.1",
+          "214.5",
+          "398.8"
+        ],
+        "sdn_max_date_time": [
+          "18-10-2015 15:09",
+          "19-10-2015 11:39",
+          "20-10-2015 08:38"
+        ],
+        "sdn_min": [
+          "0.772",
+          "-1.8",
+          "-0.772"
+        ],
+        "sdn_min_date_time": [
+          "18-10-2015 19:32",
+          "19-10-2015 17:41",
+          "20-10-2015 00:08"
+        ],
+        "lup_max": [
+          "252.8",
+          "299.7",
+          "301.8"
+        ],
+        "lup_min": [
+          "200.2",
+          "213.4",
+          "200.3"
+        ],
+        "ldn_max": [
+          "406.3",
+          "434.3",
+          "392.8"
+        ],
+        "ldn_min": [
+          "307.4",
+          "295.1",
+          "288.0"
+        ],
+        "ws_max": [
+          "9.11",
+          "17.35",
+          "18.17"
+        ],
+        "ws_max_date_time": [
+          "18-10-2015 19:40",
+          "19-10-2015 12:35",
+          "20-10-2015 15:16"
+        ],
+        "ws_min": [
+          "0.0",
+          "0.0",
+          "0.0"
+        ],
+        "ws_min_date_time": [
+          "18-10-2015 15:09",
+          "19-10-2015 00:03",
+          "20-10-2015 09:34"
+        ],
+        "ws_avg": [
+          "4.603",
+          "4.672",
+          "4.492"
+        ],
+        "wind_dir": [
+          "181.2",
+          "160.3",
+          "167.7"
+        ],
+        "dbtcdt_avg": [
+          "450.0",
+          "450.0",
+          "450.0"
+        ],
+        "tt_c_avg": [
+          "1.94",
+          "3.3680000000000003",
+          "0.3"
+        ],
+        "tt_c_max": [
+          "16.89",
+          "23.87",
+          "17.93"
+        ],
+        "tt_c_max_date_time": [
+          "18-10-2015 15:11",
+          "19-10-2015 12:33",
+          "20-10-2015 12:07"
+        ],
+        "tt_c_min": [
+          "-3.465",
+          "-6.364",
+          "-6.803"
+        ],
+        "tt_c_min_date_time": [
+          "18-10-2015 23:51",
+          "19-10-2015 06:17",
+          "20-10-2015 23:56"
+        ],
+        "preci_mm_total": [],
+        "preci_type_max": [],
+        "preci_type_max_date_time": [],
+        "preci_type_min": [],
+        "preci_type_min_date_time": []
+      },
+      "date_range": {
+        "start": "2015-01-10 18:30:00+00",
+        "end": "2018-12-30 18:30:00+00",
+        "column": "time_stamp"
+      },
+      "station": "Himansh",
+      "region": "Himalayas (Spiti Valley, Chandra Basin)",
+      "provider": "NCPOR"
+    },
+    {
+      "file_type": "csv",
+      "filename": "iig_bharati.csv",
+      "size_bytes": 1881037,
+      "sha256": "1702bbe9ee02584bfc62e5156127c79c33e41f5b340abe61b8234043ae39b565",
+      "encoding": "utf-8",
+      "delimiter": ",",
+      "row_count": 38337,
+      "column_count": 6,
+      "columns": [
+        "obstime",
+        "tempr",
+        "ap",
+        "ws",
+        "wd",
+        "rh"
+      ],
+      "column_types": {
+        "obstime": "str",
+        "tempr": "float64",
+        "ap": "float64",
+        "ws": "float64",
+        "wd": "float64",
+        "rh": "float64"
+      },
+      "missing_values": {
+        "obstime": 0,
+        "tempr": 0,
+        "ap": 0,
+        "ws": 0,
+        "wd": 0,
+        "rh": 0
+      },
+      "duplicate_count": 0,
+      "sample_values": {
+        "obstime": [
+          "2012-01-28 12:00:00",
+          "2012-01-28 13:00:00",
+          "2012-01-28 14:00:00"
+        ],
+        "tempr": [
+          "-0.33",
+          "-0.44",
+          "0.02"
+        ],
+        "ap": [
+          "982.0",
+          "982.02",
+          "981.18"
+        ],
+        "ws": [
+          "4.51",
+          "4.19",
+          "4.06"
+        ],
+        "wd": [
+          "155.95",
+          "149.7",
+          "149.46"
+        ],
+        "rh": [
+          "34.24",
+          "38.07",
+          "40.88"
+        ]
+      },
+      "date_range": {
+        "start": "2012-01-28 12:00:00",
+        "end": "2016-12-31 23:00:00",
+        "column": "obstime"
+      },
+      "station": "Bharati",
+      "region": "Antarctica (Larsemann Hills)",
+      "provider": "IIG (Indian Institute of Geomagnetism)"
+    },
+    {
+      "file_type": "csv",
+      "filename": "imd_bharati_fixed_hour.csv",
+      "size_bytes": 717135,
+      "sha256": "baae92f137f420f4728b0f46a0482099e7d35ee94fac016cdd25db2b67726843",
+      "encoding": "utf-8",
+      "delimiter": ",",
+      "row_count": 15528,
+      "column_count": 6,
+      "columns": [
+        "obstime",
+        "tempr",
+        "ap",
+        "ws",
+        "wd",
+        "rh"
+      ],
+      "column_types": {
+        "obstime": "str",
+        "tempr": "float64",
+        "ap": "float64",
+        "ws": "float64",
+        "wd": "float64",
+        "rh": "float64"
+      },
+      "missing_values": {
+        "obstime": 0,
+        "tempr": 2433,
+        "ap": 2433,
+        "ws": 2485,
+        "wd": 2485,
+        "rh": 8453
+      },
+      "duplicate_count": 0,
+      "sample_values": {
+        "obstime": [
+          "06-02-2015 00:00",
+          "06-02-2015 01:00",
+          "06-02-2015 02:00"
+        ],
+        "tempr": [
+          "-1.59",
+          "-1.26",
+          "-0.57"
+        ],
+        "ap": [
+          "962.75",
+          "962.64",
+          "962.71"
+        ],
+        "ws": [
+          "9.2",
+          "8.85",
+          "7.19"
+        ],
+        "wd": [
+          "119.28",
+          "123.86",
+          "122.56"
+        ],
+        "rh": [
+          "43.13",
+          "44.22",
+          "43.35"
+        ]
+      },
+      "date_range": {
+        "start": "01-01-2016 00:00",
+        "end": "31-12-2015 23:00",
+        "column": "obstime"
+      },
+      "station": "Bharati",
+      "region": "Antarctica (Larsemann Hills)",
+      "provider": "IMD (India Meteorological Department)"
+    },
+    {
+      "file_type": "csv",
+      "filename": "imd_maitri.csv",
+      "size_bytes": 6821559,
+      "sha256": "1916258465883011618b00b2cebfbcf9c052c67b61b9dc640f54a5019ca28074",
+      "encoding": "utf-8",
+      "delimiter": ",",
+      "row_count": 155169,
+      "column_count": 6,
+      "columns": [
+        "1985-01-01 00:00:00",
+        "-2",
+        "977.2",
+        "12",
+        "-999",
+        "-999.1"
+      ],
+      "column_types": {
+        "1985-01-01 00:00:00": "str",
+        "-2": "float64",
+        "977.2": "float64",
+        "12": "float64",
+        "-999": "int64",
+        "-999.1": "int64"
+      },
+      "missing_values": {
+        "1985-01-01 00:00:00": 0,
+        "-2": 0,
+        "977.2": 0,
+        "12": 0,
+        "-999": 0,
+        "-999.1": 0
+      },
+      "duplicate_count": 0,
+      "sample_values": {
+        "1985-01-01 00:00:00": [
+          "1985-01-01 12:00:00",
+          "1985-01-01 13:00:00",
+          "1985-01-01 14:00:00"
+        ],
+        "-2": [
+          "-2.0",
+          "-2.0",
+          "-2.0"
+        ],
+        "977.2": [
+          "977.8",
+          "977.9",
+          "978.2"
+        ],
+        "12": [
+          "13.0",
+          "14.0",
+          "14.0"
+        ],
+        "-999": [
+          "-999",
+          "-999",
+          "-999"
+        ],
+        "-999.1": [
+          "-999",
+          "-999",
+          "-999"
+        ]
+      },
+      "date_range": null,
+      "station": "Maitri",
+      "region": "Antarctica (Schirmacher Oasis)",
+      "provider": "IMD (India Meteorological Department)"
+    },
+    {
+      "file_type": "csv",
+      "filename": "sankalp_sase.csv",
+      "size_bytes": 3858110,
+      "sha256": "ab4db5d0113a35e5e372b42c11b5a18084ef317c2f3200f639513fd6e6725856",
+      "encoding": "utf-8",
+      "delimiter": ",",
+      "row_count": 83798,
+      "column_count": 6,
+      "columns": [
+        "obstime",
+        "tempr",
+        "ap",
+        "ws",
+        "wd",
+        "rh"
+      ],
+      "column_types": {
+        "obstime": "str",
+        "tempr": "float64",
+        "ap": "float64",
+        "ws": "float64",
+        "wd": "float64",
+        "rh": "float64"
+      },
+      "missing_values": {
+        "obstime": 0,
+        "tempr": 0,
+        "ap": 0,
+        "ws": 0,
+        "wd": 0,
+        "rh": 0
+      },
+      "duplicate_count": 0,
+      "sample_values": {
+        "obstime": [
+          "2006-02-23 12:00:00",
+          "2006-02-23 13:00:00",
+          "2006-02-23 14:00:00"
+        ],
+        "tempr": [
+          "-4.059",
+          "-3.079",
+          "-1.473"
+        ],
+        "ap": [
+          "941.0",
+          "941.0",
+          "941.0"
+        ],
+        "ws": [
+          "1.95",
+          "1.347",
+          "0.5"
+        ],
+        "wd": [
+          "159.2",
+          "166.3",
+          "198.7"
+        ],
+        "rh": [
+          "40.02",
+          "37.35",
+          "30.26"
+        ]
+      },
+      "date_range": {
+        "start": "2006-02-23 12:00:00",
+        "end": "2015-12-31 23:00:00",
+        "column": "obstime"
+      },
+      "station": "Sankalp / SASE Field Post",
+      "region": "Western Himalayas",
+      "provider": "DGRE / SASE (MoD / NCPOR collaborator)"
+    }
+  ],
+  "archive_datasets": [
+    {
+      "file_type": "zip",
+      "filename": "highspeedwinrecorder-data-2015-19.zip",
+      "size_bytes": 43940951,
+      "sha256": "edf05fa712cd274870849d57742561e33b382f816b78827cffd35a092200adb6",
+      "station": "Unknown",
+      "region": "Polar",
+      "provider": "IMD / NCPOR",
+      "instrument": "High Speed Wind Recorder",
+      "total_internal_files": 2008,
+      "total_uncompressed_bytes": 461248299,
+      "internal_files_preview": [
+        {
+          "filename": "34/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/010415.mdb",
+          "size_bytes": 516096,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/020415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/030415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/040415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/050415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/060415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/070415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/080415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/090415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/100415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/110415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/120415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/130415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/140415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/150415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/160415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/170415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        },
+        {
+          "filename": "34/HWSR  APRIL 2015/180415.mdb",
+          "size_bytes": 225280,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "34/HWSR  DEC 2014/LEGENDS CH1 CH2 ETC.txt",
+        "first_lines": [
+          "CH1-----TEMP DRY BULB",
+          "",
+          "CH2---RH",
+          "",
+          "CH3 WIND DIRECTION",
+          "",
+          "CH4----WIND SPEED",
+          "",
+          "CH5---STATION LEVEL PRESSURE"
+        ]
+      }
+    },
+    {
+      "file_type": "zip",
+      "filename": "micro_rain_radar_2014.zip",
+      "size_bytes": 75481263,
+      "sha256": "e1e697528e51d134157052900b29926312e67451b18641885cae4b3b728753fe",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "Micro Rain Radar (MRR-2)",
+      "total_internal_files": 300,
+      "total_uncompressed_bytes": 218396400,
+      "internal_files_preview": [
+        {
+          "filename": "20140101.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140102.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140103.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140104.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140105.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140106.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140107.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140108.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140109.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140110.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140111.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140112.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140113.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140114.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140115.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140116.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140117.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140118.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140119.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20140120.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        }
+      ],
+      "sample_content": null
+    },
+    {
+      "file_type": "zip",
+      "filename": "micro_rain_radar_2015.zip",
+      "size_bytes": 47898856,
+      "sha256": "86467b7b4b82738c6904c38dd1aef60cacdc350bafa89e3088d7ec563dd307d0",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "Micro Rain Radar (MRR-2)",
+      "total_internal_files": 249,
+      "total_uncompressed_bytes": 181269012,
+      "internal_files_preview": [
+        {
+          "filename": "20150403.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150404.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150405.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150406.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150407.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150408.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150409.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150410.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150411.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150412.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150413.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150414.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150415.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150416.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150417.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150418.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150419.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150420.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150421.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20150422.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        }
+      ],
+      "sample_content": null
+    },
+    {
+      "file_type": "zip",
+      "filename": "micro_rain_radar_2016.zip",
+      "size_bytes": 43153669,
+      "sha256": "66c929371db3fac273d8bee0a2270768e413c3cde1f4a36036b933c36983c230",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "Micro Rain Radar (MRR-2)",
+      "total_internal_files": 269,
+      "total_uncompressed_bytes": 195828772,
+      "internal_files_preview": [
+        {
+          "filename": "20160101.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160102.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160103.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160104.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160105.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160106.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160107.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160108.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160109.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160110.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160111.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160112.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160113.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160114.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160115.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160116.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160117.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160118.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160119.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20160120.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        }
+      ],
+      "sample_content": null
+    },
+    {
+      "file_type": "zip",
+      "filename": "micro_rain_radar_2017.zip",
+      "size_bytes": 18469481,
+      "sha256": "e816d51e138bdf8d13753bd98c88ef81ac31ad2d69dfd669f231cf5096e6a4ab",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "Micro Rain Radar (MRR-2)",
+      "total_internal_files": 95,
+      "total_uncompressed_bytes": 69158860,
+      "internal_files_preview": [
+        {
+          "filename": "20170411.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170412.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170413.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170414.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170415.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170416.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170417.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170418.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170419.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170420.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170421.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170422.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170423.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170424.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170425.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170426.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170427.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170428.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170429.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        },
+        {
+          "filename": "20170430.minute.cdf",
+          "size_bytes": 727988,
+          "is_dir": false
+        }
+      ],
+      "sample_content": null
+    },
+    {
+      "file_type": "zip",
+      "filename": "ott_2018.zip",
+      "size_bytes": 1259547,
+      "sha256": "cbec1a6bc27db42aa961e65f197675d99a8fd24bfe8cba36040bb372b5b6f0fd",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "OTT-PARSIVEL Optical Disdrometer",
+      "total_internal_files": 9,
+      "total_uncompressed_bytes": 13262723,
+      "internal_files_preview": [
+        {
+          "filename": "2018/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "2018/ott_data_04_2018_npdc.csv",
+          "size_bytes": 708904,
+          "is_dir": false
+        },
+        {
+          "filename": "2018/ott_data_05_2018_npdc.csv",
+          "size_bytes": 1952651,
+          "is_dir": false
+        },
+        {
+          "filename": "2018/ott_data_06_2018_npdc.csv",
+          "size_bytes": 1852761,
+          "is_dir": false
+        },
+        {
+          "filename": "2018/ott_data_07_2018_npdc.csv",
+          "size_bytes": 1997436,
+          "is_dir": false
+        },
+        {
+          "filename": "2018/ott_data_08_2018_npdc.csv",
+          "size_bytes": 1914068,
+          "is_dir": false
+        },
+        {
+          "filename": "2018/ott_data_09_2018_npdc.csv",
+          "size_bytes": 2102353,
+          "is_dir": false
+        },
+        {
+          "filename": "2018/ott_data_11_2018_npdc.csv",
+          "size_bytes": 226763,
+          "is_dir": false
+        },
+        {
+          "filename": "2018/ott_data_12_2018_npdc.csv",
+          "size_bytes": 2507787,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "2018/ott_data_04_2018_npdc.csv",
+        "first_lines": [
+          "Timestamp,Intensity of precipitation (mm/h),Weather code SYNOP WaWa,Weather code METAR/SPECI,Weather code NWS,MOR Visibility (m),Number of detected particles,Kinetic Energy,Snow intensity (mm/h)",
+          "19.04.2018 12:31:00,0,0,NP,C,20000,0,0,0",
+          "19.04.2018 12:32:00,0,0,NP,C,20000,0,0,0",
+          "19.04.2018 12:33:00,0,0,NP,C,20000,0,0,0",
+          "19.04.2018 12:34:00,0,0,NP,C,20000,0,0,0",
+          "19.04.2018 12:35:00,0,0,NP,C,20000,0,0,0",
+          "19.04.2018 12:36:00,0,0,NP,C,20000,0,0,0",
+          "19.04.2018 12:37:00,0,0,NP,C,20000,0,0,0",
+          "19.04.2018 12:38:00,0,0,NP,C,20000,0,0,0",
+          "19.04.2018 12:39:00,0,0,NP,C,20000,0,0,0"
+        ]
+      }
+    },
+    {
+      "file_type": "zip",
+      "filename": "ott_2019.zip",
+      "size_bytes": 1783452,
+      "sha256": "dd157657521334471c5fb413db8e9a90ba3a94d4a1ea6b0b8a9e70614f978856",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "OTT-PARSIVEL Optical Disdrometer",
+      "total_internal_files": 13,
+      "total_uncompressed_bytes": 22831585,
+      "internal_files_preview": [
+        {
+          "filename": "2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "2019/ott_data_01_2019_npdc.csv",
+          "size_bytes": 1888981,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_02_2019_npdc.csv",
+          "size_bytes": 1705347,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_03_2019_npdc.csv",
+          "size_bytes": 2082537,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_04_2019_npdc.csv",
+          "size_bytes": 2062341,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_05_2019_npdc.csv",
+          "size_bytes": 2080349,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_06_2019_npdc.csv",
+          "size_bytes": 2009131,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_07_2019_npdc.csv",
+          "size_bytes": 2094709,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_08_2019_npdc.csv",
+          "size_bytes": 2099960,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_09_2019_npdc.csv",
+          "size_bytes": 2033101,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_10_2019_npdc.csv",
+          "size_bytes": 2076141,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_11_2019_npdc.csv",
+          "size_bytes": 2016667,
+          "is_dir": false
+        },
+        {
+          "filename": "2019/ott_data_12_2019_npdc.csv",
+          "size_bytes": 682321,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "2019/ott_data_01_2019_npdc.csv",
+        "first_lines": [
+          "Timestamp,Intensity of precipitation (mm/h),Weather code SYNOP WaWa,Weather code METAR/SPECI,Weather code NWS,MOR Visibility (m),Number of detected particles,Kinetic Energy,Snow intensity (mm/h)",
+          "01.01.2019 00:00:00,0,0,NP,C,20000,0,0,0",
+          "01.01.2019 00:01:00,0,0,NP,C,20000,0,0,0",
+          "01.01.2019 00:02:00,0,0,NP,C,20000,0,0,0",
+          "01.01.2019 00:03:00,0,0,NP,C,20000,0,0,0",
+          "01.01.2019 00:04:00,0,0,NP,C,20000,0,0,0",
+          "01.01.2019 00:05:00,0,0,NP,C,20000,0,0,0",
+          "01.01.2019 00:06:00,0,0,NP,C,20000,0,0,0",
+          "01.01.2019 00:07:00,0,0,NP,C,20000,0,0,0",
+          "01.01.2019 00:08:00,0,0,NP,C,20000,0,0,0"
+        ]
+      }
+    },
+    {
+      "file_type": "zip",
+      "filename": "ott_2020.zip",
+      "size_bytes": 1208646,
+      "sha256": "4240d754350fef28c56e81cdd869580629dfc429a84f661965ef270f238f51d1",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "OTT-PARSIVEL Optical Disdrometer",
+      "total_internal_files": 10,
+      "total_uncompressed_bytes": 13307546,
+      "internal_files_preview": [
+        {
+          "filename": "2020/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "2020/ott_data_04_2020_npdc_n.csv",
+          "size_bytes": 983737,
+          "is_dir": false
+        },
+        {
+          "filename": "2020/ott_data_05_2020_npdc_n.csv",
+          "size_bytes": 1920436,
+          "is_dir": false
+        },
+        {
+          "filename": "2020/ott_data_06_2020_npdc_n.csv",
+          "size_bytes": 1862541,
+          "is_dir": false
+        },
+        {
+          "filename": "2020/ott_data_07_2020_npdc_n.csv",
+          "size_bytes": 853570,
+          "is_dir": false
+        },
+        {
+          "filename": "2020/ott_data_08_2020_npdc_n.csv",
+          "size_bytes": 1925479,
+          "is_dir": false
+        },
+        {
+          "filename": "2020/ott_data_09_2020_npdc_n.csv",
+          "size_bytes": 1860454,
+          "is_dir": false
+        },
+        {
+          "filename": "2020/ott_data_10_2020_npdc.csv",
+          "size_bytes": 725929,
+          "is_dir": false
+        },
+        {
+          "filename": "2020/ott_data_11_2020_npdc_n.csv",
+          "size_bytes": 1269291,
+          "is_dir": false
+        },
+        {
+          "filename": "2020/ott_data_12_2020_npdc_n.csv",
+          "size_bytes": 1906109,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "2020/ott_data_04_2020_npdc_n.csv",
+        "first_lines": [
+          "Timestamp,Intensity of precipitation (mm/h),Weather code SYNOP WaWa,Weather code METAR/SPECI,Weather code NWS,MOR Visibility (m),Number of detected particles,Kinetic Energy,Snow intensity (mm/h)",
+          "2020-04-15 06:03:00,0,0,NP,C,20000,0,0,0",
+          "2020-04-15 06:04:00,0,0,NP,C,20000,0,0,0",
+          "2020-04-15 06:05:00,0,0,NP,C,20000,0,0,0",
+          "2020-04-15 06:06:00,0,0,NP,C,20000,0,0,0",
+          "2020-04-15 06:07:00,0,0,NP,C,20000,0,0,0",
+          "2020-04-15 06:08:00,0,0,NP,C,20000,0,0,0",
+          "2020-04-15 06:09:00,0,0,NP,C,20000,0,0,0",
+          "2020-04-15 06:10:00,0,0,NP,C,20000,0,0,0",
+          "2020-04-15 06:11:00,0,0,NP,C,20000,0,0,0"
+        ]
+      }
+    },
+    {
+      "file_type": "zip",
+      "filename": "ott_2021.zip",
+      "size_bytes": 2471292,
+      "sha256": "4d2923ce4bb5e9f05f8e1238b9da7c67bf75a25340d9868b2ded5b0e380e8333",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "OTT-PARSIVEL Optical Disdrometer",
+      "total_internal_files": 13,
+      "total_uncompressed_bytes": 31288493,
+      "internal_files_preview": [
+        {
+          "filename": "2021/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "2021/ott_data_apr2021_npdc_n.csv",
+          "size_bytes": 1853227,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_aug2021_npdc.csv",
+          "size_bytes": 1761783,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_dec2021_npdc.csv",
+          "size_bytes": 1913300,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_feb2021_npdc_n.csv",
+          "size_bytes": 1387042,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_jan2021_npdc_n.csv",
+          "size_bytes": 1922359,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_jul2021_npdc.csv",
+          "size_bytes": 575045,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_jun2021_npdc.csv",
+          "size_bytes": 2337267,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_mar2021_npdc_n.csv",
+          "size_bytes": 1918805,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_may2021_npdc.csv",
+          "size_bytes": 2390199,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_nov2021_npdc.csv",
+          "size_bytes": 11780893,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_oct2021_npdc.csv",
+          "size_bytes": 2435826,
+          "is_dir": false
+        },
+        {
+          "filename": "2021/ott_data_sep2021_npdc.csv",
+          "size_bytes": 1012747,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "2021/ott_data_apr2021_npdc_n.csv",
+        "first_lines": [
+          "Timestamp,Intensity of precipitation (mm/h),Weather code SYNOP WaWa,Weather code METAR/SPECI,Weather code NWS,MOR Visibility (m),Number of detected particles,Kinetic Energy,Snow intensity (mm/h)",
+          "01.04.2021 00:00:00,0.267,71,-SN,S-,1192,118,0.36,5",
+          "01.04.2021 00:01:00,0.277,71,-SN,S-,2238,165,0.52,1",
+          "01.04.2021 00:02:00,0.224,71,-SN,S-,2400,173,0.31,2",
+          "01.04.2021 00:03:00,0.431,71,-SN,S-,1889,270,0.96,2",
+          "01.04.2021 00:04:00,0.706,71,-SN,S-,951,478,1.36,3",
+          "01.04.2021 00:05:00,0.262,71,-SN,S-,1794,192,0.36,2",
+          "01.04.2021 00:06:00,0.233,71,-SN,S-,1651,202,0.32,1",
+          "01.04.2021 00:07:00,0.206,71,-SN,S-,2087,152,0.26,1",
+          "01.04.2021 00:08:00,0.283,71,-SN,S-,2099,180,0.4,1"
+        ]
+      }
+    },
+    {
+      "file_type": "zip",
+      "filename": "ott_jan_to_june_2019.zip",
+      "size_bytes": 3889069,
+      "sha256": "484d8329f3283418b67a6d374da5731b1d7e7621c446a75ad00776dcacbfcba8",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "OTT-PARSIVEL Optical Disdrometer",
+      "total_internal_files": 12,
+      "total_uncompressed_bytes": 61284530,
+      "internal_files_preview": [
+        {
+          "filename": "JUNE2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "JUNE2019/MAITRI_OTT",
+          "size_bytes": 21092191,
+          "is_dir": false
+        },
+        {
+          "filename": "Mar2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "Mar2019/MAITRI_OTT",
+          "size_bytes": 7490225,
+          "is_dir": false
+        },
+        {
+          "filename": "May2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "May2019/MAITRI_OTT",
+          "size_bytes": 16398785,
+          "is_dir": false
+        },
+        {
+          "filename": "APR2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "APR2019/MAITRI_OTT",
+          "size_bytes": 11285784,
+          "is_dir": false
+        },
+        {
+          "filename": "Feb2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "Feb2019/MAITRI_OTT",
+          "size_bytes": 3516243,
+          "is_dir": false
+        },
+        {
+          "filename": "Jan2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "Jan2019/MAITRI_OTT",
+          "size_bytes": 1501302,
+          "is_dir": false
+        }
+      ],
+      "sample_content": null
+    },
+    {
+      "file_type": "zip",
+      "filename": "ott_jul_aug_sep_2019.zip",
+      "size_bytes": 7434611,
+      "sha256": "bbc79e833a1e7a46ef33f2eb70c383555c516d807fa2b6f60f802159661a515b",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "OTT-PARSIVEL Optical Disdrometer",
+      "total_internal_files": 6,
+      "total_uncompressed_bytes": 99578369,
+      "internal_files_preview": [
+        {
+          "filename": "SEPT2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "SEPT2019/MAITRI_OTT",
+          "size_bytes": 38803904,
+          "is_dir": false
+        },
+        {
+          "filename": "AUGIUST2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "AUGIUST2019/MAITRI_OTT",
+          "size_bytes": 33054031,
+          "is_dir": false
+        },
+        {
+          "filename": "JULY2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "JULY2019/MAITRI_OTT",
+          "size_bytes": 27720434,
+          "is_dir": false
+        }
+      ],
+      "sample_content": null
+    },
+    {
+      "file_type": "zip",
+      "filename": "ott_oct_nov_dec_2019.zip",
+      "size_bytes": 11676072,
+      "sha256": "dc76e77c3202aac65a50ad996d16268eda0a7a7d2cafc2cf95d83f7a30358bb6",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "OTT-PARSIVEL Optical Disdrometer",
+      "total_internal_files": 6,
+      "total_uncompressed_bytes": 149861773,
+      "internal_files_preview": [
+        {
+          "filename": "DEC2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "DEC2019/MAITRI_OTT",
+          "size_bytes": 53867444,
+          "is_dir": false
+        },
+        {
+          "filename": "NOV2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "NOV2019/MAITRI_OTT",
+          "size_bytes": 49831883,
+          "is_dir": false
+        },
+        {
+          "filename": "OCT2019/",
+          "size_bytes": 0,
+          "is_dir": true
+        },
+        {
+          "filename": "OCT2019/MAITRI_OTT",
+          "size_bytes": 46162446,
+          "is_dir": false
+        }
+      ],
+      "sample_content": null
+    },
+    {
+      "file_type": "zip",
+      "filename": "radiometer_2018.zip",
+      "size_bytes": 25510988,
+      "sha256": "fe3a87a499504cd4ed75b496759f7e9c7012adcff631de45eca6f0a0143ec2d8",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "Multi-frequency Microwave Radiometer (HATPRO)",
+      "total_internal_files": 12,
+      "total_uncompressed_bytes": 82499679,
+      "internal_files_preview": [
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_06_Zenith_H.csv",
+          "size_bytes": 4680991,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_06_Zenith_T.csv",
+          "size_bytes": 5333176,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_07_Zenith_H.csv",
+          "size_bytes": 7882212,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_07_Zenith_T.csv",
+          "size_bytes": 9018286,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_08_Zenith_H.csv",
+          "size_bytes": 6264025,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_08_Zenith_T.csv",
+          "size_bytes": 7246516,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_12_Zenith_H.csv",
+          "size_bytes": 7260029,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_12_Zenith_T.csv",
+          "size_bytes": 8775901,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_04_Zenith_H.csv",
+          "size_bytes": 6237010,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_04_Zenith_T.csv",
+          "size_bytes": 7432273,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_05_Zenith_H.csv",
+          "size_bytes": 5787694,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2018_05_Zenith_T.csv",
+          "size_bytes": 6581566,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "NyAlesund_Ncpor_Radiometer_2018_06_Zenith_H.csv",
+        "first_lines": [
+          "Timestamp,0.00,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.25,2.50,2.75,3.0,3.25,3.50,3.75,4.00,4.25,4.50,4.75,5.0,5.25,5.5,5.75,6.0,6.25,6.5,6.75,7.0,7.25,7.5,7.75,8.0,8.25,8.50,8.75,9.0,9.25,9.50,9.75,10.0,qual",
+          "2018-06-12 15:03:34,67.29,75.83,76.47,79.03,82.68,84.85,87.55,91.15,90.30,93.86,96.27,94.88,100.00,98.31,100.00,99.55,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,91.17,76.37,69.56,57.42,45.79,41.56,36.58,36.88,30.29,25.30,23.55,21.64,20.84,22.88,22.17,24.16,20.14,19.96,20.28,24.33,25.34,23.35,21.14,10.56,6.76,4.34,2.51,0",
+          "2018-06-12 15:05:47,67.66,77.04,77.70,79.91,83.27,85.69,88.39,92.10,91.29,95.38,97.83,96.40,100.00,98.55,99.44,99.31,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,90.38,75.89,70.40,58.91,48.16,44.09,39.36,39.31,32.53,27.45,25.57,23.77,22.77,24.84,23.69,25.65,22.08,21.83,22.17,25.62,26.42,25.01,22.03,11.85,7.90,5.05,2.85,0",
+          "2018-06-12 15:08:00,68.56,76.44,76.86,79.17,82.36,84.92,87.60,91.43,90.69,95.19,97.64,96.92,100.00,99.68,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,91.55,78.33,73.88,62.69,52.03,47.62,42.24,41.91,35.37,30.05,27.77,25.96,24.72,26.45,25.09,26.91,23.40,23.07,22.94,25.93,26.02,24.79,21.94,11.78,7.78,5.01,2.95,0",
+          "2018-06-12 15:10:12,67.69,76.65,77.17,79.33,82.56,85.09,87.82,91.58,90.67,95.11,97.52,96.23,100.00,98.64,99.31,99.61,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,91.76,77.97,72.99,61.71,51.16,47.19,42.10,41.89,34.86,29.51,27.43,25.73,24.40,26.31,24.94,26.83,23.40,23.09,23.33,26.37,26.87,25.68,22.50,12.20,8.23,5.18,2.96,0",
+          "2018-06-12 15:12:24,67.67,76.70,76.90,79.32,82.64,85.04,87.70,91.32,90.45,94.66,97.34,95.72,100.00,98.15,98.99,99.01,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,89.21,74.95,69.84,58.11,47.43,43.46,39.02,38.91,32.36,27.17,25.43,23.56,22.60,24.77,23.67,25.38,21.89,21.80,22.48,25.91,27.25,25.69,22.70,12.48,8.51,5.37,2.94,0",
+          "2018-06-12 15:14:38,67.99,76.71,77.10,79.10,82.16,84.43,86.82,90.26,89.25,93.15,95.36,93.93,99.16,96.07,97.27,97.47,99.86,99.40,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,93.37,78.87,73.58,62.25,51.12,47.05,42.23,41.98,34.91,29.24,27.36,25.37,24.27,26.25,24.80,26.47,23.13,23.01,23.51,26.72,27.66,25.74,22.52,12.31,8.40,5.16,2.84,0",
+          "2018-06-12 15:16:49,68.61,77.23,77.68,80.07,83.51,86.12,88.72,92.62,91.72,96.05,98.61,97.26,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,90.68,75.89,70.36,58.75,47.83,43.43,38.71,38.67,32.15,27.14,25.24,23.42,22.28,24.40,23.42,25.22,21.56,21.27,21.58,24.92,25.81,24.16,21.41,11.28,7.53,4.81,2.66,0",
+          "2018-06-12 15:19:01,69.54,79.10,79.74,81.83,85.14,87.60,90.14,93.68,92.68,96.83,98.97,97.22,100.00,98.74,99.14,99.23,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,89.39,75.12,69.98,58.70,48.22,44.51,40.12,40.08,33.22,28.05,26.18,24.50,23.30,25.44,24.16,25.92,22.58,22.30,22.84,25.97,27.05,25.52,22.26,12.31,8.43,5.33,2.92,0",
+          "2018-06-12 15:21:14,69.02,77.76,78.14,80.14,83.11,85.50,87.83,91.50,90.47,94.71,96.79,95.56,100.00,97.66,98.35,98.77,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,100.00,91.52,77.19,72.04,60.97,50.07,45.93,41.20,41.01,34.08,28.79,26.95,25.16,23.96,25.90,24.63,26.28,23.16,22.98,23.40,26.68,27.73,26.17,22.76,12.42,8.49,5.34,2.91,0"
+        ]
+      }
+    },
+    {
+      "file_type": "zip",
+      "filename": "radiometer_2019.zip",
+      "size_bytes": 29341813,
+      "sha256": "912801404ec1f876feee00fef98e27d5a07dd2858ae1348a50110e99a2f0975d",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "Multi-frequency Microwave Radiometer (HATPRO)",
+      "total_internal_files": 18,
+      "total_uncompressed_bytes": 91681365,
+      "internal_files_preview": [
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_11_Zenith_H.csv",
+          "size_bytes": 4504989,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_11_Zenith_T.csv",
+          "size_bytes": 5614600,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_12_Zenith_H.csv",
+          "size_bytes": 4631693,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_12_Zenith_T.csv",
+          "size_bytes": 5838967,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_02_Zenith_H.csv",
+          "size_bytes": 6474676,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_02_Zenith_T.csv",
+          "size_bytes": 7977103,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_03_Zenith_H.csv",
+          "size_bytes": 6287516,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_03_Zenith_T.csv",
+          "size_bytes": 7802929,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_06_Zenith_H.csv",
+          "size_bytes": 239509,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_06_Zenith_T.csv",
+          "size_bytes": 278698,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_07_Zenith_H.csv",
+          "size_bytes": 4840037,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_07_Zenith_T.csv",
+          "size_bytes": 5595724,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_08_Zenith_H.csv",
+          "size_bytes": 4911953,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_08_Zenith_T.csv",
+          "size_bytes": 5693536,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_09_Zenith_H.csv",
+          "size_bytes": 4865265,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_09_Zenith_T.csv",
+          "size_bytes": 5696968,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_10_Zenith_H.csv",
+          "size_bytes": 4702778,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2019_10_Zenith_T.csv",
+          "size_bytes": 5724424,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "NyAlesund_Ncpor_Radiometer_2019_11_Zenith_H.csv",
+        "first_lines": [
+          "Timestamp,0.00,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.25,2.50,2.75,3.0,3.25,3.50,3.75,4.00,4.25,4.50,4.75,5.0,5.25,5.5,5.75,6.0,6.25,6.5,6.75,7.0,7.25,7.5,7.75,8.0,8.25,8.50,8.75,9.0,9.25,9.50,9.75,10.0,qual",
+          "2019-11-01 00:05:31,68.72,66.79,66.35,66.61,66.55,66.88,66.73,65.93,66.89,65.70,65.02,63.98,61.56,58.33,57.53,54.12,52.42,46.88,43.40,42.12,39.78,32.15,26.92,20.68,16.72,14.55,10.61,8.44,6.33,6.16,4.87,3.35,2.53,2.80,2.51,2.66,2.84,2.76,2.69,2.42,2.47,3.35,3.71,3.81,3.87,3.99,4.50,4.00,3.69,2.64,1.85,1.72,1.61,0.52,0.18,0.16,0.21,0.10,0",
+          "2019-11-01 00:07:43,69.09,68.48,67.81,67.85,67.68,67.92,67.19,66.25,66.98,65.99,64.82,63.56,60.77,56.59,54.60,50.90,48.82,44.44,40.51,39.72,37.63,31.60,27.66,22.21,18.47,16.35,12.62,10.34,7.93,8.35,6.90,5.11,3.92,4.27,3.91,4.20,4.50,4.47,4.18,3.79,3.79,4.86,5.60,5.63,5.75,5.78,6.48,5.81,5.21,3.84,2.68,2.30,2.07,0.72,0.29,0.25,0.24,0.15,0",
+          "2019-11-01 00:09:55,69.20,69.44,69.07,69.34,69.37,69.61,69.47,68.38,69.31,68.42,67.54,66.43,63.82,59.88,58.21,54.26,52.07,46.62,42.17,40.63,37.99,30.60,25.95,20.05,16.31,14.35,10.61,8.57,6.56,6.75,5.55,3.96,3.05,3.42,3.14,3.42,3.68,3.57,3.44,3.09,3.19,4.15,4.75,4.87,4.95,5.00,5.67,5.13,4.68,3.32,2.38,2.11,2.09,0.71,0.26,0.21,0.26,0.15,0",
+          "2019-11-01 00:12:08,68.51,68.51,68.17,68.69,68.66,69.10,68.76,68.01,69.15,68.18,67.47,66.17,63.22,59.84,58.30,54.29,52.23,47.22,43.56,41.84,39.42,33.04,28.66,22.94,19.25,16.89,12.79,10.62,8.35,8.38,6.88,5.09,4.00,4.38,3.93,4.18,4.40,4.31,4.13,3.75,3.91,4.87,5.26,5.34,5.52,5.67,6.27,5.60,5.09,3.73,2.92,2.67,2.41,0.91,0.34,0.27,0.30,0.17,0",
+          "2019-11-01 00:14:20,67.47,67.42,67.66,67.86,67.82,67.64,67.40,66.52,66.92,65.34,64.04,62.32,59.08,55.92,54.71,51.38,49.51,44.02,40.67,39.97,38.28,31.91,27.33,21.61,17.93,15.85,12.25,10.26,7.94,7.71,6.17,4.35,3.27,3.61,3.21,3.48,3.72,3.45,3.26,2.85,2.93,3.80,4.15,4.29,4.37,4.52,4.99,4.35,3.98,2.77,2.01,1.77,1.61,0.52,0.17,0.14,0.17,0.10,0",
+          "2019-11-01 00:16:32,66.70,65.27,65.02,65.31,65.31,65.46,65.00,64.06,64.90,63.42,62.57,61.00,57.84,55.07,54.33,50.75,49.26,44.25,40.98,40.02,37.72,31.61,27.13,21.55,17.76,15.55,11.67,9.69,7.43,7.16,5.78,4.21,3.27,3.63,3.18,3.40,3.61,3.44,3.27,2.96,3.09,3.96,4.24,4.37,4.53,4.73,5.24,4.61,4.22,3.03,2.30,2.06,1.83,0.64,0.22,0.18,0.22,0.12,0",
+          "2019-11-01 00:18:44,66.18,66.00,65.89,66.05,66.08,66.11,65.87,64.91,65.76,64.40,63.66,62.00,58.94,55.45,53.55,49.48,47.35,42.59,38.91,37.22,34.94,29.51,25.76,20.75,17.39,15.42,11.80,10.07,7.92,8.03,6.65,4.98,4.01,4.44,3.99,4.28,4.63,4.56,4.40,3.97,4.12,5.13,5.56,5.62,5.79,5.87,6.51,5.84,5.33,3.93,3.07,2.77,2.44,0.92,0.34,0.28,0.30,0.17,0",
+          "2019-11-01 00:20:57,65.89,66.32,66.44,66.67,66.76,66.91,66.52,65.54,66.45,65.19,64.24,62.76,59.63,56.40,54.55,50.69,48.72,43.95,40.51,39.10,37.13,31.79,28.16,23.21,19.85,17.85,14.03,12.12,9.74,9.90,8.19,6.19,4.94,5.38,4.85,5.15,5.51,5.37,5.15,4.58,4.72,5.77,6.18,6.24,6.40,6.42,7.04,6.30,5.75,4.21,3.31,2.96,2.57,0.99,0.36,0.29,0.30,0.17,0",
+          "2019-11-01 00:23:09,65.56,66.25,66.28,66.94,67.33,67.88,67.80,67.46,68.66,67.89,67.62,67.38,65.42,60.72,59.04,54.90,52.95,48.00,43.76,42.53,40.25,33.60,29.82,24.20,20.22,17.84,13.39,11.15,8.42,8.57,7.10,5.43,4.10,4.44,4.02,4.30,4.58,4.49,4.23,3.81,3.80,4.76,5.51,5.67,5.94,5.97,6.85,6.05,5.43,4.00,2.88,2.46,2.29,0.84,0.35,0.29,0.27,0.18,0"
+        ]
+      }
+    },
+    {
+      "file_type": "zip",
+      "filename": "radiometer_2020.zip",
+      "size_bytes": 48398613,
+      "sha256": "4fe03f975b4d277fb20286d33b9fde142c0412624e82d242a620dc1220906edd",
+      "station": "Himadri",
+      "region": "Arctic (Ny-\u00c5lesund, Svalbard)",
+      "provider": "NCPOR Atmospheric Sciences",
+      "instrument": "Multi-frequency Microwave Radiometer (HATPRO)",
+      "total_internal_files": 23,
+      "total_uncompressed_bytes": 153697075,
+      "internal_files_preview": [
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_01_Zenith_T.csv",
+          "size_bytes": 5982253,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_02_Zenith_H.csv",
+          "size_bytes": 5230647,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_02_Zenith_T.csv",
+          "size_bytes": 6232789,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_03_Zenith_H.csv",
+          "size_bytes": 4937702,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_03_Zenith_T.csv",
+          "size_bytes": 5988688,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_04_Zenith_H.csv",
+          "size_bytes": 2541420,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_04_Zenith_T.csv",
+          "size_bytes": 3053470,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_05_Zenith_H.csv",
+          "size_bytes": 5023944,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_05_Zenith_T.csv",
+          "size_bytes": 5882296,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_06_Zenith_H.csv",
+          "size_bytes": 6370897,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_06_Zenith_T.csv",
+          "size_bytes": 7424122,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_07_Zenith_H.csv",
+          "size_bytes": 7682137,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_07_Zenith_T.csv",
+          "size_bytes": 8896879,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_08_Zenith_H.csv",
+          "size_bytes": 7642853,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_08_Zenith_T.csv",
+          "size_bytes": 8896450,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_09_Zenith_H.csv",
+          "size_bytes": 7366173,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_09_Zenith_T.csv",
+          "size_bytes": 8647201,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_10_Zenith_H.csv",
+          "size_bytes": 6848300,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_10_Zenith_T.csv",
+          "size_bytes": 8644198,
+          "is_dir": false
+        },
+        {
+          "filename": "NyAlesund_Ncpor_Radiometer_2020_11_Zenith_H.csv",
+          "size_bytes": 6669875,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "NyAlesund_Ncpor_Radiometer_2020_01_Zenith_T.csv",
+        "first_lines": [
+          "Timestamp,0.00,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.25,2.50,2.75,3.0,3.25,3.50,3.75,4.00,4.25,4.50,4.75,5.0,5.25,5.5,5.75,6.0,6.25,6.5,6.75,7.0,7.25,7.5,7.75,8.0,8.25,8.50,8.75,9.0,9.25,9.50,9.75,10.0,qual",
+          "2020-01-01 00:05:30,260.96,259.87,260.07,260.05,260.01,259.91,259.87,259.76,259.59,259.55,259.29,259.16,258.86,258.73,258.49,258.34,258.13,257.76,257.30,256.69,255.93,255.06,253.96,253.13,252.65,251.64,249.54,247.45,245.37,242.97,240.82,238.94,237.19,235.35,233.29,231.13,229.19,227.28,225.28,223.28,221.55,219.82,218.28,216.68,215.29,213.92,212.61,211.08,209.63,208.24,206.68,205.12,203.66,201.72,199.39,197.23,195.64,194.25,0",
+          "2020-01-01 00:07:43,261.13,260.33,260.59,260.56,260.50,260.34,260.22,260.07,259.81,259.75,259.43,259.09,258.62,258.30,257.92,257.47,257.05,256.55,255.98,255.31,254.59,253.85,252.74,251.98,251.51,250.56,248.59,246.77,244.82,242.54,240.44,238.60,236.99,235.21,233.26,231.12,229.32,227.42,225.51,223.56,221.84,220.12,218.62,217.08,215.75,214.42,213.11,211.60,210.20,208.82,207.32,205.81,204.36,202.38,200.00,197.78,196.08,194.60,0",
+          "2020-01-01 00:09:55,261.23,260.28,260.62,260.65,260.70,260.68,260.65,260.60,260.42,260.47,260.22,260.03,259.76,259.52,259.23,258.85,258.60,258.18,257.63,257.08,256.20,255.34,254.11,253.32,252.72,251.60,249.29,247.15,245.02,242.50,240.19,238.15,236.33,234.46,232.39,230.14,228.25,226.23,224.25,222.20,220.40,218.56,217.03,215.49,214.10,212.77,211.44,209.90,208.45,206.99,205.44,203.93,202.48,200.53,198.27,196.15,194.60,193.23,0",
+          "2020-01-01 00:12:08,261.37,260.60,260.86,260.84,260.81,260.75,260.68,260.57,260.33,260.32,260.01,259.73,259.38,259.11,258.82,258.45,258.19,257.76,257.21,256.68,255.89,255.14,254.04,253.32,252.84,251.93,250.00,248.15,246.29,243.97,241.81,239.91,238.23,236.47,234.52,232.41,230.63,228.72,226.77,224.75,222.96,221.15,219.63,218.07,216.67,215.30,213.93,212.40,210.98,209.54,207.99,206.49,205.09,203.30,201.15,199.11,197.58,196.23,0",
+          "2020-01-01 00:14:21,261.46,260.30,260.55,260.54,260.51,260.36,260.28,260.18,260.00,259.96,259.73,259.48,259.11,258.87,258.50,258.11,257.71,257.19,256.57,255.82,255.05,254.20,252.99,252.14,251.55,250.49,248.28,246.28,244.22,241.84,239.66,237.74,236.07,234.20,232.20,230.05,228.17,226.25,224.31,222.34,220.63,218.89,217.37,215.84,214.51,213.18,211.89,210.39,209.00,207.65,206.20,204.72,203.30,201.33,199.03,196.88,195.28,193.86,0",
+          "2020-01-01 00:16:34,261.62,260.66,260.99,261.04,261.04,260.88,260.84,260.75,260.55,260.52,260.31,260.06,259.71,259.53,259.22,258.92,258.58,258.15,257.59,256.87,256.16,255.22,253.95,253.06,252.47,251.35,249.19,247.06,244.91,242.48,240.32,238.38,236.68,234.77,232.71,230.51,228.57,226.58,224.57,222.58,220.81,219.02,217.46,215.84,214.44,212.99,211.60,209.96,208.46,207.00,205.43,203.80,202.21,200.13,197.69,195.43,193.75,192.26,0",
+          "2020-01-01 00:18:46,261.79,260.68,260.87,260.80,260.72,260.59,260.49,260.36,260.11,260.05,259.75,259.44,259.03,258.75,258.39,257.96,257.58,257.06,256.40,255.66,254.86,254.05,252.95,252.17,251.68,250.73,248.72,246.79,244.85,242.55,240.42,238.62,236.99,235.22,233.27,231.19,229.41,227.57,225.70,223.78,222.06,220.36,218.90,217.38,216.10,214.88,213.68,212.34,211.10,209.89,208.57,207.24,206.05,204.37,202.28,200.27,198.74,197.38,0",
+          "2020-01-01 00:20:59,261.26,260.31,260.65,260.75,260.80,260.75,260.79,260.80,260.70,260.74,260.62,260.55,260.34,260.29,260.08,259.87,259.59,259.19,258.58,257.84,257.05,256.03,254.75,253.81,253.19,252.02,249.72,247.50,245.34,242.86,240.66,238.70,236.95,235.05,233.00,230.83,228.86,226.89,224.86,222.86,221.08,219.27,217.71,216.09,214.67,213.23,211.82,210.19,208.68,207.22,205.65,204.06,202.56,200.59,198.28,196.14,194.59,193.24,0",
+          "2020-01-01 00:23:12,261.14,260.04,260.38,260.45,260.50,260.38,260.39,260.36,260.25,260.27,260.13,260.01,259.75,259.60,259.28,259.01,258.72,258.27,257.71,257.01,256.21,255.22,253.93,252.99,252.34,251.12,248.67,246.33,244.02,241.48,239.25,237.25,235.47,233.49,231.37,229.13,227.13,225.13,223.10,221.09,219.34,217.55,215.99,214.38,213.00,211.56,210.16,208.51,206.96,205.47,203.87,202.24,200"
+        ]
+      }
+    },
+    {
+      "file_type": "zip",
+      "filename": "surface_data_bharati_Dec2018_Nov2022.zip",
+      "size_bytes": 232700,
+      "sha256": "498d43fb740aaacb7b2ca06753fb263d8e684fce0dcbc7c9da69c67654b46db7",
+      "station": "Bharati",
+      "region": "Antarctica (Larsemann Hills)",
+      "provider": "IMD",
+      "instrument": "Surface Synoptic / Weather Station",
+      "total_internal_files": 2,
+      "total_uncompressed_bytes": 1106681,
+      "internal_files_preview": [
+        {
+          "filename": "89776_TB2.dat",
+          "size_bytes": 129083,
+          "is_dir": false
+        },
+        {
+          "filename": "89776_TB3.dat",
+          "size_bytes": 977598,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "89776_TB2.dat",
+        "first_lines": [
+          "897761812010007-052080000      0000000000                                    201",
+          "897761812020003-058050000      0000000000                                    201",
+          "89776181203-003-079070000      0000000000                                    201",
+          "89776181204-011-060100000      0000000000                                    201",
+          "897761812050007-058110000      0000000000                                    201",
+          "897761812060007-063070000      0000000000                                    201",
+          "89776181207-012-047130000      0000000000                                    201",
+          "897761812080018-053100000      0000000000                                    201",
+          "897761812090032-044090000      0000000000                                    201",
+          "897761812100017-049090000      0000000000                                    201"
+        ]
+      }
+    },
+    {
+      "file_type": "zip",
+      "filename": "surface_data_maitri_1990-2019.zip",
+      "size_bytes": 1737604,
+      "sha256": "5c2b5b4bca6835743bdcf5adde257ef9ddd067583ee1006379fc1480c2215f71",
+      "station": "Maitri",
+      "region": "Antarctica (Schirmacher Oasis)",
+      "provider": "IMD",
+      "instrument": "Surface Synoptic / Weather Station",
+      "total_internal_files": 2,
+      "total_uncompressed_bytes": 12432387,
+      "internal_files_preview": [
+        {
+          "filename": "89514_TB2.dat",
+          "size_bytes": 1362948,
+          "is_dir": false
+        },
+        {
+          "filename": "89514_TB3.dat",
+          "size_bytes": 11069439,
+          "is_dir": false
+        }
+      ],
+      "sample_content": {
+        "sampled_file": "89514_TB2.dat",
+        "first_lines": [
+          "8951489122700920001                                                          191                                             ",
+          "8951489122800650018                                                          191                                             ",
+          "895148912290023-002                      0117302300                          191                                             ",
+          "895148912300027-004              1       01030013300116302130                191                                             ",
+          "8951489123100520011              1       0123402400                          191                                             ",
+          "895149001010018-00209            1       01000101300113502400                191MAX. TEMP. RECORDED AT 0800 GMT.             ",
+          "895149001020046000013            1       0100010100                          191MAX. TEMP. RECORDED AT 1030 GMT              ",
+          "895149001030036-00724            1       010550064001163018300115301545      191MAX.TEMP.REC.AT 1000GMT,MIN.TEMP.REC.1600GMT ",
+          "895149001040045-00915            1       010000013001200021100122302400      191                                             ",
+          "895149001050078000109            1       01000000500106150700                191                                             "
+        ]
+      }
+    }
+  ]
+}

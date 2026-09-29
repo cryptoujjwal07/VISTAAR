@@ -1,0 +1,5 @@
+Design and implement production MongoDB Atlas architecture from the real inspected datasets.
+
+Collections: users, roles, documents, document_pages, document_chunks, datasets, dataset_metadata, dataset_records, media_assets, expeditions, stations, claims, claim_verifications, generated_content, review_tasks, translations, quizzes, publications, audit_events, notifications, jobs.
+
+Use appropriate/compound indexes, MongoDB Search and Vector Search. Do not store huge PDFs/videos/images as ordinary MongoDB documents; use object storage. Every scientific record preserves provenance. Every claim references document/page/chunk OR dataset/timestamp/record/field. Create repository/data-access abstractions, DB health checks and index initialization/migration tooling.

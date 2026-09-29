@@ -1,0 +1,5 @@
+Build production multilingual architecture using a TranslationProvider abstraction and Digital India Bhashini when configured.
+
+Workflow: approved source → claim segmentation → translation → terminology validation → numerical preservation → review when necessary → publish.
+
+Preserve numbers, units, station/dataset names and scientific terminology. Store source language, target language, translation, provider, version, timestamp and review status. If translation fails retain original. Never silently replace approved source with failed/unverified translation.

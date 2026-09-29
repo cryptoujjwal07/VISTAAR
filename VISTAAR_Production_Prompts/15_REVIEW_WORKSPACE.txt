@@ -1,0 +1,11 @@
+Build the production VISTAAR Scientific Review Workspace. This is a core institutional workflow, not a demo.
+
+Desktop: LEFT source PDF, RIGHT generated content/claims, BOTTOM scientific evidence/data visualization.
+
+PDF: page navigation, zoom, search, source highlighting, bounding-box highlighting, jump-to-source.
+
+Tabs: PIB, Social, Education, Vernacular. Each claim displays text, status, source, metric, value, unit, qualifier and verification evidence.
+
+Clicking a claim must navigate to exact page, scroll to evidence and highlight it.
+
+Statuses: VERIFIED, NEEDS_REVIEW, UNSUPPORTED, CONFLICTING. Reviewer actions: edit, accept, reject, request revision, resolve conflict, approve. Audit every action. No unapproved content can publish. Use beige/white identity.

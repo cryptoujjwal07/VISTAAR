@@ -1,0 +1,7 @@
+Perform complete production UI/UX audit without changing business logic.
+
+Mandatory: warm beige background, white surfaces, scientific blue accents, subtle cyan, charcoal typography and warm borders. No dark mode, black cards, neon, excessive gradients, glassmorphism or generic SaaS template.
+
+Audit spacing, typography, alignment, navigation, forms, tables, charts, PDF viewer, review workspace, responsiveness, accessibility, loading/empty/error states, mobile, keyboard and focus states.
+
+Remove placeholder text, fake statistics, fake scientific content, unnecessary components and duplicate UI. Make it feel like a national scientific knowledge platform, not a hackathon dashboard. Review Workspace and Public Portal are the strongest visual areas.

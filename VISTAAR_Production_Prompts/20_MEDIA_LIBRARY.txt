@@ -1,0 +1,7 @@
+Build production VISTAAR Media Library.
+
+Support photos, videos, figures, infographics, documents and generated social assets.
+
+Metadata: asset_id, source, provider, creator if available, station, expedition, date, caption, description, rights/license metadata and source reference.
+
+Filters: station, expedition, topic, media type, date, source. Support preview, metadata, permitted download, related research/dataset/expedition. Do not invent scientific captions or expose restricted assets publicly.

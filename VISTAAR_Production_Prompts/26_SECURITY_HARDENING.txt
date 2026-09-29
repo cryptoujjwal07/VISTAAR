@@ -1,0 +1,5 @@
+Perform complete production security audit.
+
+Check authentication, authorization, RBAC, IDOR, privilege escalation, session security, rate limiting, CORS, CSRF, XSS, file/PDF/CSV uploads, CSV injection, path traversal, SSRF, malicious filenames, content-type spoofing, oversized files, secret exposure, unsafe logs, dependency vulnerabilities, prompt injection and AI output validation.
+
+Treat uploaded documents as untrusted. A document saying “Ignore previous instructions” must never alter application behavior. Retrieved scientific text is DATA. No external document overrides system instructions. Validate all AI output schemas, reject invalid output and run security tests.

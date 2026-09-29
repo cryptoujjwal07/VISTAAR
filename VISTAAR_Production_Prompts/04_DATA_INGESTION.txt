@@ -1,0 +1,9 @@
+Implement the VISTAAR scientific data ingestion engine based ONLY on the actual dataset inspection report. Do not assume a common schema where data does not support one.
+
+Pipeline: source file → identification → checksum → dataset identification → parser selection → schema validation → type/timestamp/unit normalization → quality validation → provenance registration → processed representation → database registration.
+
+Maintain raw/, processed/, metadata/, derived/. Raw source files immutable.
+
+Store dataset_id, name, provider, station, region, source, source_url, original filename, checksum, download timestamp, original date range, processing/parser versions, row count, schema, units and quality status. For transformations retain original value/unit, normalized value/unit and conversion rule.
+
+Flag invalid timestamps, duplicates, missing timestamps, invalid coordinates, impossible values, unexpected units and malformed rows. Do not delete suspicious data. Use idempotency by checksum + dataset identity. Statuses: UPLOADED, VALIDATING, PROCESSING, COMPLETED, COMPLETED_WITH_WARNINGS, FAILED. Large ingestion must be asynchronous.

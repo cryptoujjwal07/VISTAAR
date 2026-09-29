@@ -1,0 +1,9 @@
+The project contains genuine NPDC datasets downloaded from official NCPOR sources. Inspect EVERY supplied dataset before implementing ingestion or database assumptions.
+
+Do not assume schemas, column names, timestamps, units, station IDs, providers, missing-value conventions, delimiters, encoding or parameter availability.
+
+For each file determine: original filename, dataset name, provider/institute, station, region, source URL if available, date range, format, encoding, delimiter, sheets, row count, columns/types, units, timestamp format, missing values, duplicates, coordinates, suspicious values and metadata availability.
+
+Possible datasets include Maitri AWS/High Speed Wind Recorder/Surface/OTT-PARSIVEL; Bharati AWS IIG/AWS IMD/Surface; Himansh AWS; Himadri MRR/Radiometer/OTT-PARSIVEL. Only classify datasets actually present.
+
+Create data/inspection/dataset_inventory.json and data/inspection/dataset_schema_report.md. Do not modify raw files, generate processed data or synthetic scientific values. STOP after inspection and report inventory, schema, units, timestamps, missing values, duplicates, quality issues, proposed normalized model and dataset-specific fields.

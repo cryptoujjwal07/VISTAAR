@@ -1,0 +1,7 @@
+Build scientific numerical normalization.
+
+Recognize equivalent forms such as -38.4°C, -38.4 C and −38.4 °C. Support negative/decimal values, separators, unit variants, relevant scientific notation and Devanagari numerals.
+
+Equal numeric values are not equivalent if metric/unit differs: 38.4 knots must not match 38.4°C.
+
+Retain original text, numeric value, unit, metric, location, qualifier and source position.

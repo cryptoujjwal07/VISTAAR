@@ -1,0 +1,5 @@
+Build the scientific dataset quality-control layer. Do not silently correct scientific measurements.
+
+Quality flags: VALID, MISSING, SUSPICIOUS, INVALID, DUPLICATE, OUT_OF_RANGE, UNIT_ERROR, TIMESTAMP_ERROR. Distinguish missing from zero.
+
+Create dataset-level quality summaries: row count, valid/missing/suspicious/invalid/duplicate counts, time coverage and parameter coverage. Provide authorized quality reports. Every quality decision must be explainable. Store quality rules by dataset/parameter when necessary. Do not apply generic scientific thresholds without documenting source/configuration.

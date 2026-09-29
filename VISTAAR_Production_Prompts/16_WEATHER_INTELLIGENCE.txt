@@ -1,0 +1,7 @@
+Build production VISTAAR Weather Intelligence using ONLY real ingested NPDC data.
+
+Do not hardcode parameters; dynamically detect available fields. Potential parameters: temperature, humidity, pressure, wind speed/direction, precipitation and any actual fields.
+
+Support station/dataset/provider selectors, date range, parameter selector, units, interactive time series, hover inspection, valid min/max/average, missing-data visualization, quality flags, record inspection and source citation.
+
+Every chart shows station, dataset, provider, period, parameter, unit and source. Never replace missing with zero or fabricate measurements. Allow chart point → original dataset record.

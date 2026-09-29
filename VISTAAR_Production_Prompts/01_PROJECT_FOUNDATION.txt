@@ -1,0 +1,13 @@
+Implement the VISTAAR production project foundation according to the Production Engineering Contract.
+
+Create a maintainable monorepo/modular structure:
+apps/web, apps/api, apps/worker, packages/shared, packages/types, packages/config, docs, infra, scripts.
+
+Frontend: Next.js App Router, strict TypeScript, Tailwind, shadcn/ui, ESLint, production build.
+Backend: FastAPI, Pydantic, async modular domains.
+Worker: Redis-backed asynchronous workers.
+Infrastructure: MongoDB Atlas, Redis and object-storage abstractions.
+
+Create .env.example plus development/test/production configuration. Never hardcode secrets. Create GET /health and GET /health/ready and structured logging.
+
+Do not implement business features yet. Verify frontend build, backend startup, worker startup, DB and Redis configuration. Do not use fake scientific data.

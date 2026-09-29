@@ -1,0 +1,9 @@
+Implement production authentication and authorization.
+
+Roles: SUPER_ADMIN, OUTREACH_EDITOR, FIELD_SCIENTIST, PUBLIC_USER. Public personas Student/Teacher/Journalist/Scientist are NOT admin roles.
+
+Implement login, logout, refresh, current user, password hashing, secure token/session handling, RBAC, permissions, route protection and API authorization.
+
+FIELD_SCIENTIST: upload documents/datasets, create drafts, inspect own submissions. OUTREACH_EDITOR: review/edit/verify/approve/publish/export. SUPER_ADMIN: users/roles/settings/audit/datasets/governance. PUBLIC_USER: public content/search/education/public media.
+
+Prevent IDOR, horizontal/vertical privilege escalation, unauthorized publication and dataset modification. Rate-limit login. Audit login/logout/failed login/permission changes/publication/upload/review/approval/rejection.

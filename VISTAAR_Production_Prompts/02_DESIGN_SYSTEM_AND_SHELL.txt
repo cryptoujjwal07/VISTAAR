@@ -1,0 +1,7 @@
+Build the complete VISTAAR production design system and application shell; no business logic yet.
+
+MANDATORY: #FAF7F0 background, #FFFFFF cards, #17202A text, #5F6B76 secondary, #E7E0D5 border, #2563EB primary, #0E7490 scientific, #15803D success, #B45309 warning, #B91C1C danger. Entire application remains beige/white. No dark mode, black dashboard, neon, excessive gradients, glassmorphism or generic SaaS admin template.
+
+Create reusable navbar, sidebar, footer, breadcrumbs, page headers, tabs, buttons, forms, tables, filters, badges, status indicators, dialogs, drawers, tooltips, command/search, pagination, skeletons, empty/error states, confirmations and toasts.
+
+Public shell: /, /explore, /expeditions, /stations, /datasets, /weather, /education, /media, /about. Protected shell: /workspace and /admin. Ensure responsive behavior. No fake scientific metrics.

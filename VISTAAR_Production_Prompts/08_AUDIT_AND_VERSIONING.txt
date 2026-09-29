@@ -1,0 +1,7 @@
+Implement production audit and version control.
+
+Version documents, generated content, claims, dataset metadata, publications, translations and education content where appropriate.
+
+Audit fields: event_id, actor_id, action, resource_type, resource_id, timestamp, request_id, reason, before_version, after_version.
+
+Published content references an immutable approved version. Prevent silent overwrites. Support draft revision, review revision, approval, publication and archive. Audit history is append-only from the application perspective; ordinary users cannot edit it.

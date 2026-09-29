@@ -1,0 +1,5 @@
+Audit VISTAAR against every requirement in official SIH Problem Statement 26063.
+
+Check: unified PDF/CSV/photo ingestion; FAIR-style metadata; async processing; PDF parsing; chunking; embeddings; four-track generation; PIB; social; Class 8–12 education; vernacular; claim provenance; numerical proximity verification; VERIFIED/NEEDS REVIEW/UNSUPPORTED/CONFLICTING; no hallucinated quotes; weather visualization; human review; audit trail; public portal; Student/Teacher/Journalist/Scientist personas; multilingual; dataset discovery; search; media; export; RBAC; security; scalability; production deployment.
+
+For each classify IMPLEMENTED/PARTIALLY IMPLEMENTED/MISSING and provide requirement, implementation location, evidence, gap, severity and recommended fix. Do not mark implemented because a placeholder exists. Create docs/SIH_REQUIREMENTS_AUDIT.md.

@@ -1,0 +1,7 @@
+Implement production backup and disaster-recovery planning.
+
+Document MongoDB backup, object-storage backup, configuration backup, audit retention, recovery, DB restore, media restore and deployment rollback.
+
+Define RPO/RTO based on the actual environment; do not claim unsupported guarantees.
+
+Create docs/disaster-recovery.md and operational recovery checklists. Ensure published scientific content can be restored with provenance intact.
