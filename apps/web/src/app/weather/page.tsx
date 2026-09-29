@@ -19,13 +19,26 @@ export default function WeatherPage() {
   const [stations, setStations] = useState<any[]>([]);
   const [selectedStation, setSelectedStation] = useState<string>("himansh");
   const [selectedDataset, setSelectedDataset] = useState<string>("");
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
   const [selectedParam, setSelectedParam] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPoint, setSelectedPoint] = useState<any>(null);
+  const [fullRecord, setFullRecord] = useState<any>(null);
   const [hoveredPoint, setHoveredPoint] = useState<any>(null);
+
+  async function inspectFullRecord(pt: any) {
+    setSelectedPoint(pt);
+    if (!pt?.record_id) return;
+    try {
+      const rec = await fetchApi(`/weather/records/${pt.record_id}`);
+      setFullRecord(rec);
+    } catch {
+      setFullRecord(null);
+    }
+  }
 
   useEffect(() => {
     async function loadStations() {
@@ -46,6 +59,7 @@ export default function WeatherPage() {
       try {
         const params = new URLSearchParams({ station_id: selectedStation });
         if (selectedDataset) params.set("dataset_id", selectedDataset);
+        if (selectedProvider) params.set("provider", selectedProvider);
         if (selectedParam) params.set("parameter", selectedParam);
         if (startDate) params.set("start_date", startDate);
         if (endDate) params.set("end_date", endDate);
@@ -56,7 +70,7 @@ export default function WeatherPage() {
           setSelectedParam(res.parameter);
         }
         if (res.points?.length > 0) {
-          setSelectedPoint(res.points[0]);
+          inspectFullRecord(res.points[0]);
         }
       } catch (e) {
         console.error("Failed to load time series", e);
@@ -65,7 +79,7 @@ export default function WeatherPage() {
       }
     }
     loadTimeSeries();
-  }, [selectedStation, selectedDataset, selectedParam, startDate, endDate]);
+  }, [selectedStation, selectedDataset, selectedProvider, selectedParam, startDate, endDate]);
 
   const points = data?.points || [];
   const stats = data?.statistics;
@@ -173,11 +187,20 @@ export default function WeatherPage() {
 
         <div>
           <label className="text-[10px] font-mono uppercase text-vistaar-muted block mb-1">
-            Authoritative Provider
+            Authoritative Provider Selector
           </label>
-          <div className="px-2.5 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] font-semibold text-vistaar-scientific truncate">
-            {data?.provider || "NCPOR / NPDC"}
-          </div>
+          <select
+            value={selectedProvider}
+            onChange={(e) => setSelectedProvider(e.target.value)}
+            className="w-full px-2.5 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] font-semibold text-vistaar-scientific text-xs"
+          >
+            <option value="">All Providers ({data?.provider || "NCPOR / NPDC"})</option>
+            {(data?.available_providers || []).map((prov: string) => (
+              <option key={prov} value={prov}>
+                {prov}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -265,6 +288,25 @@ export default function WeatherPage() {
                         {minVal}
                       </text>
 
+                      {/* Missing-Data Visual Gap Markers (Never replaced with zero) */}
+                      {(data?.missing_points || []).slice(0, 30).map((mp: any, mIdx: number) => {
+                        const totalSpan = Math.max(points.length + (data?.missing_points?.length || 0), 2);
+                        const mx = padding + ((mp.index || mIdx) / totalSpan) * (svgWidth - 2 * padding);
+                        return (
+                          <line
+                            key={mp.record_id || `miss_${mIdx}`}
+                            x1={mx}
+                            y1={padding}
+                            x2={mx}
+                            y2={svgHeight - padding}
+                            stroke="#D97706"
+                            strokeWidth="1.2"
+                            strokeDasharray="2 3"
+                            opacity="0.65"
+                          />
+                        );
+                      })}
+
                       <polyline
                         fill="none"
                         stroke="#2563EB"
@@ -291,7 +333,7 @@ export default function WeatherPage() {
                             }`}
                             onMouseEnter={() => setHoveredPoint(pt)}
                             onMouseLeave={() => setHoveredPoint(null)}
-                            onClick={() => setSelectedPoint(pt)}
+                            onClick={() => inspectFullRecord(pt)}
                           />
                         );
                       })}
@@ -384,6 +426,19 @@ export default function WeatherPage() {
                       {selectedPoint.quality}
                     </Badge>
                   </div>
+                  {fullRecord?.metrics && (
+                    <div className="pt-2 border-t border-vistaar-border/60">
+                      <span className="text-vistaar-muted block text-[10px] uppercase mb-1">Full Original Record Metrics</span>
+                      <div className="bg-[#FAF7F0] p-2 rounded border border-vistaar-border text-[10px] space-y-0.5 max-h-28 overflow-y-auto">
+                        {Object.entries(fullRecord.metrics).map(([k, v]) => (
+                          <div key={k} className="flex justify-between">
+                            <span className="text-vistaar-muted">{k}:</span>
+                            <span className="font-bold text-vistaar-text">{v === null ? "NULL (MISSING)" : String(v)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="pt-2 border-t border-vistaar-border/60">
                     <span className="text-vistaar-muted block text-[10px] uppercase">Raw Source File</span>
                     <span className="text-vistaar-text break-all">{selectedPoint.provenance?.source_file}</span>
