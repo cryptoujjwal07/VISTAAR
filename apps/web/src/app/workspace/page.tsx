@@ -208,6 +208,30 @@ export default function ReviewWorkspacePage() {
     }
   }
 
+  // Handle dedicated Prompt 24 governance actions (unpublish, archive, reject, request-revision)
+  async function handleGovernanceAction(
+    endpoint: "unpublish" | "archive" | "reject" | "request-revision",
+    label: string
+  ) {
+    if (!publication) return;
+    try {
+      const res = await fetchApi(`/publications/${publication.id}/${endpoint}`, {
+        method: "POST",
+        body: JSON.stringify({
+          reason: `Reviewer executed '${label}' in Scientific Review Workspace`,
+          reviewer_notes: `Prompt 24 governance action: ${label}`,
+        }),
+      });
+      const updatedPub = await fetchApi(`/publications/${publication.id}`);
+      setPublication(updatedPub);
+      setActionMessage(
+        `${label} completed: ${res.previous_status} → ${res.current_status} (Immutable audit event recorded).`
+      );
+    } catch (e: any) {
+      setActionMessage(`${label} error: ${e.message}`);
+    }
+  }
+
   // Test scientific numerical normalization (Prompt 13)
   async function handleRunNormalization(exprA = normExprA, exprB = normExprB) {
     try {
@@ -387,7 +411,7 @@ export default function ReviewWorkspacePage() {
             </Button>
           )}
 
-          {/* Enforced Publishing Governance State Machine Buttons */}
+          {/* Enforced Publishing Governance State Machine Buttons (Prompt 24) */}
           {publication && (
             <div className="flex flex-wrap items-center gap-1.5 pl-2 border-l border-vistaar-border">
               {(publication.status === "DRAFT" || publication.status === "AI_GENERATED") && (
@@ -436,19 +460,81 @@ export default function ReviewWorkspacePage() {
                 </Button>
               )}
 
+              {publication.status === "PUBLISHED" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleGovernanceAction("unpublish", "Unpublish")}
+                  className="text-xs border-amber-500 text-amber-900 bg-amber-50 hover:bg-amber-100"
+                >
+                  Unpublish
+                </Button>
+              )}
+
+              {(publication.status === "APPROVED" || publication.status === "PUBLISHED") && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleGovernanceAction("archive", "Archive")}
+                  className="text-xs border-slate-400 text-slate-700 bg-slate-50 hover:bg-slate-100"
+                >
+                  Archive
+                </Button>
+              )}
+
               {publication.status !== "NEEDS_REVIEW" && publication.status !== "DRAFT" && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleTransition("NEEDS_REVIEW")}
+                  onClick={() => handleGovernanceAction("request-revision", "Request Revision")}
                   className="text-xs text-rose-700 border-rose-200 hover:bg-rose-50"
                 >
                   Request Revision
                 </Button>
               )}
+
+              {["AI_GENERATED", "NEEDS_REVIEW", "REVIEWED", "APPROVED"].includes(publication.status) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleGovernanceAction("reject", "Reject to Draft")}
+                  className="text-xs text-red-700 border-red-300 bg-red-50/50 hover:bg-red-100"
+                >
+                  Reject
+                </Button>
+              )}
             </div>
           )}
         </div>
+      </div>
+
+      {/* Prompt 24: 7-Stage Publishing Governance Lifecycle Stepper */}
+      <div className="bg-white px-4 py-2.5 rounded-lg border border-vistaar-border shadow-sm flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-bold uppercase text-vistaar-muted mr-1">Governance Lifecycle:</span>
+          {["DRAFT", "AI_GENERATED", "NEEDS_REVIEW", "REVIEWED", "APPROVED", "PUBLISHED", "ARCHIVED"].map(
+            (stage, idx, arr) => {
+              const active = (publication?.status || "DRAFT") === stage;
+              return (
+                <div key={stage} className="flex items-center space-x-1.5">
+                  <span
+                    className={`px-2 py-0.5 rounded border ${
+                      active
+                        ? "bg-vistaar-primary text-white border-vistaar-primary font-bold"
+                        : "bg-[#FAF7F0] text-vistaar-muted border-vistaar-border"
+                    }`}
+                  >
+                    {stage}
+                  </span>
+                  {idx < arr.length - 1 && <span className="text-vistaar-muted">→</span>}
+                </div>
+              );
+            }
+          )}
+        </div>
+        <span className="text-[10px] text-emerald-800 font-semibold">
+          Enforced at API Layer • AI Cannot Directly Publish • Immutable Approved Snapshot
+        </span>
       </div>
 
       {actionMessage && (
