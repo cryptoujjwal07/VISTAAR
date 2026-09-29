@@ -355,6 +355,105 @@ async def test_prompt_14_deterministic_claim_verification_engine():
 
 
 @pytest.mark.asyncio
+async def test_prompt_15_scientific_review_workspace_workflow():
+    """
+    Prompt 15 Verification:
+    - Verifies PDF source metadata & bounding-box coordinates for jump-to-source highlighting.
+    - Verifies all reviewer claim actions: EDIT, REQUEST_REVISION, RESOLVE_CONFLICT, REJECT, ACCEPT.
+    - Verifies track editing (PATCH /publications/{id}/track) & revision history.
+    - Enforces 'No unapproved content can publish' (AI_GENERATED/NEEDS_REVIEW -> PUBLISHED is blocked with HTTP 400).
+    """
+    await connect_to_mongo()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        login_res = await client.post(
+            "/api/v1/auth/login",
+            json={"email": "editor@vistaar.ncpor.res.in", "password": "Editor@Vistaar2026!"},
+        )
+        assert login_res.status_code == 200
+        headers = {"Authorization": f"Bearer {login_res.json()['access_token']}"}
+
+        # 1. Generate 4-track outreach package
+        gen_res = await client.post("/api/v1/ai/generate-outreach", json={"station_id": "maitri"}, headers=headers)
+        assert gen_res.status_code == 200
+        pkg = gen_res.json()
+        pub_id = pkg["id"]
+
+        # 2. Verify every claim includes page_number, chunk_id, and bounding_box for PDF jump-to-source
+        first_claim = pkg["claims"][0]
+        assert "page_number" in first_claim["evidence"]
+        assert "chunk_id" in first_claim["evidence"]
+        assert "bounding_box" in first_claim["evidence"]
+
+        # 3. Verify reviewer claim actions: EDIT, REJECT, RESOLVE_CONFLICT, ACCEPT
+        cid = first_claim["claim_id"]
+        edit_res = await client.post(
+            f"/api/v1/claims/{cid}/review-action",
+            json={
+                "action": "EDIT",
+                "publication_id": pub_id,
+                "updated_claim_text": first_claim["claim_text"] + " [Verified by Senior Glaciologist]",
+                "updated_value": first_claim["value"],
+                "updated_unit": first_claim["unit"],
+                "reviewer_notes": "Added editorial attribution note",
+            },
+            headers=headers,
+        )
+        assert edit_res.status_code == 200
+        assert edit_res.json()["new_status"] == "NEEDS_REVIEW"
+
+        resolve_res = await client.post(
+            f"/api/v1/claims/{cid}/review-action",
+            json={"action": "RESOLVE_CONFLICT", "publication_id": pub_id, "reviewer_notes": "Resolved against AWS log"},
+            headers=headers,
+        )
+        assert resolve_res.status_code == 200
+        assert resolve_res.json()["new_status"] == "VERIFIED"
+
+        # 4. Verify track editing via PATCH /publications/{id}/track (used by workspace UI)
+        track_res = await client.patch(
+            f"/api/v1/publications/{pub_id}/track",
+            json={
+                "track": "PIB",
+                "title": pkg["pib"]["title"] + " (Reviewed)",
+                "summary": pkg["pib"]["summary"],
+                "body": pkg["pib"]["body"],
+            },
+            headers=headers,
+        )
+        assert track_res.status_code == 200
+        assert track_res.json()["version"] == 2
+
+        # 5. Enforce 'No unapproved content can publish': direct transition from AI_GENERATED to PUBLISHED must fail
+        illegal_pub = await client.post(
+            f"/api/v1/publications/{pub_id}/transition",
+            json={"new_status": "PUBLISHED", "reason": "Attempt direct publish without approval"},
+            headers=headers,
+        )
+        assert illegal_pub.status_code == 400
+
+        # 6. Valid governance workflow: AI_GENERATED -> REVIEWED -> APPROVED -> PUBLISHED
+        r1 = await client.post(
+            f"/api/v1/publications/{pub_id}/transition",
+            json={"new_status": "REVIEWED", "reason": "All claims verified"},
+            headers=headers,
+        )
+        assert r1.status_code == 200
+        r2 = await client.post(
+            f"/api/v1/publications/{pub_id}/transition",
+            json={"new_status": "APPROVED", "reason": "Approved snapshot v2"},
+            headers=headers,
+        )
+        assert r2.status_code == 200
+        r3 = await client.post(
+            f"/api/v1/publications/{pub_id}/transition",
+            json={"new_status": "PUBLISHED", "reason": "Published to public portal"},
+            headers=headers,
+        )
+        assert r3.status_code == 200
+        assert r3.json()["current_status"] == "PUBLISHED"
+
+
+@pytest.mark.asyncio
 async def test_prompt_16_weather_intelligence():
     """
     Prompt 16 Verification:

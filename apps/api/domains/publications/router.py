@@ -14,9 +14,9 @@ class StatusTransitionRequest(BaseModel):
     reviewer_notes: Optional[str] = None
 
 class EditTrackRequest(BaseModel):
-    track: Literal['PIB', 'SOCIAL', 'EDUCATION', 'VERNACULAR']
+    track: Literal['PIB', 'SOCIAL', 'EDUCATION', 'VERNACULAR', 'pib', 'social', 'education', 'vernacular']
     title: str
-    summary: str
+    summary: Optional[str] = ""
     body: str
 
 @router.get("")
@@ -385,14 +385,16 @@ async def transition_status(
     }
 
 @router.put("/{pub_id}/tracks")
+@router.patch("/{pub_id}/tracks")
+@router.patch("/{pub_id}/track")
 async def update_publication_track(
     pub_id: str,
     req: EditTrackRequest,
-    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"]))
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR", "FIELD_SCIENTIST"]))
 ):
     """
     Updates a publication track, increments version number, appends to immutable revisions history,
-    and logs before_version and after_version in audit trail (Prompt 08).
+    and logs before_version and after_version in audit trail (Prompt 08 & 15).
     """
     db = get_database()
     pub = await db.publications.find_one({"id": pub_id})
@@ -402,12 +404,13 @@ async def update_publication_track(
     old_version = pub.get("version", 1)
     new_version = old_version + 1
     track_key = req.track.lower()
+    track_upper = req.track.upper()
     now = datetime.now(timezone.utc).isoformat()
     
     revision_entry = {
         "revision_id": f"rev_{uuid.uuid4().hex[:12]}",
         "version": new_version,
-        "track": req.track,
+        "track": track_upper,
         "title": req.title,
         "summary": req.summary,
         "body": req.body,
