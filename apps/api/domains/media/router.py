@@ -119,7 +119,124 @@ PUBLIC_MEDIA_CATALOG: List[Dict[str, Any]] = [
         "source_reference": "doc_test_polar_maitri (Page 1)",
         "restricted": False,
     },
+    {
+        "asset_id": "med_video_expedition_43",
+        "title": "Expedition Field Log: 43-ISEA AWS Sensor Calibration at Maitri",
+        "station_id": "maitri",
+        "expedition_id": "isea-43",
+        "topic": "Meteorology & Katabatic Wind Telemetry",
+        "region": "Antarctica",
+        "media_type": "VIDEO",
+        "date": "2024-01-25",
+        "url": "https://images.unsplash.com/photo-1516571748831-5d81767b788d?auto=format&fit=crop&w=1200&q=80",
+        "caption": "Field video documentation of ultrasonic anemometer and radiation shield maintenance at Maitri AWS tower.",
+        "description": "Recorded by the 43rd Indian Scientific Expedition meteorological team during austral summer maintenance.",
+        "source": "43rd Indian Scientific Expedition to Antarctica (43-ISEA)",
+        "provider": "NCPOR / IMD",
+        "creator": "NCPOR Field Media Unit",
+        "license": "Government Open Data License - India (GODL)",
+        "source_reference": "NPDC Video Archive #ANT-MAI-2024-V02",
+        "restricted": False,
+    },
+    {
+        "asset_id": "med_doc_himansh_report",
+        "title": "Technical Monograph: Chandra Basin Cryosphere Mass Balance Report",
+        "station_id": "himansh",
+        "expedition_id": "himansh-himalaya-8",
+        "topic": "Glaciology & Mass Balance",
+        "region": "Himalayas",
+        "media_type": "DOCUMENT",
+        "date": "2023-11-15",
+        "url": "/api/v1/documents/doc_himansh_glaciology_2023/pages/1/render?dpi=150",
+        "caption": "Official NCPOR technical monograph summarizing glacier ablation stakes and AWS observations at Himansh.",
+        "description": "Archival PDF document linked to SHA-256 verified chunks in the VISTAAR Document Intelligence repository.",
+        "source": "NCPOR Glaciology Division",
+        "provider": "NCPOR / NPDC",
+        "creator": "Himalayan Cryosphere Group, NCPOR",
+        "license": "Government Open Data License - India (GODL)",
+        "source_reference": "doc_himansh_glaciology_2023",
+        "restricted": False,
+    },
+    {
+        "asset_id": "med_social_himadri_card",
+        "title": "Social Outreach Card: Himadri Polar Night Disdrometer Highlights",
+        "station_id": "himadri",
+        "expedition_id": "arctic-winter-1",
+        "topic": "Arctic Amplification & Fjord Hydrometeorology",
+        "region": "Arctic",
+        "media_type": "SOCIAL_ASSET",
+        "date": "2024-02-18",
+        "url": "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1200&q=80",
+        "caption": "Verified social dissemination card highlighting India's first winter Arctic atmospheric observations at Ny-Ålesund.",
+        "description": "Generated social outreach card linked to approved Himadri OTT-PARSIVEL disdrometer dataset records.",
+        "source": "VISTAAR Outreach Studio",
+        "provider": "NCPOR / MoES",
+        "creator": "VISTAAR Social Dissemination Pipeline",
+        "license": "Government Open Data License - India (GODL)",
+        "source_reference": "NPDC Dataset ds_himadri_parsivel",
+        "restricted": False,
+    },
+    {
+        "asset_id": "med_restricted_embargo_raw",
+        "title": "Restricted Internal Calibration Log (Embargoed)",
+        "station_id": "bharati",
+        "expedition_id": "isea-43",
+        "topic": "Internal Sensor Calibration",
+        "region": "Antarctica",
+        "media_type": "DOCUMENT",
+        "date": "2024-03-01",
+        "url": "",
+        "caption": "Internal embargoed raw sensor drift calibration notes prior to NPDC quality control.",
+        "description": "Restricted internal asset — must never be exposed on public Media Library endpoints.",
+        "source": "Internal Engineering Log",
+        "provider": "NCPOR Internal",
+        "creator": "Calibration Team",
+        "license": "RESTRICTED - INTERNAL USE ONLY",
+        "source_reference": "INTERNAL-CAL-2024",
+        "restricted": True,
+    },
 ]
+
+STATION_NAMES = {
+    "maitri": "Maitri Research Station (Schirmacher Oasis, Antarctica)",
+    "bharati": "Bharati Research Station (Larsemann Hills, Antarctica)",
+    "himadri": "Himadri Research Station (Ny-Ålesund, Svalbard, Arctic)",
+    "himansh": "Himansh Glaciological Station (Chandra Basin, Himalayas)",
+}
+
+EXPEDITION_NAMES = {
+    "isea-43": "43rd Indian Scientific Expedition to Antarctica (43-ISEA)",
+    "arctic-winter-1": "1st Indian Winter Arctic Scientific Expedition",
+    "himansh-himalaya-8": "8th Cryosphere Field Campaign (Chandra Basin, Spiti)",
+}
+
+
+async def _enrich_media_asset(asset: Dict[str, Any]) -> Dict[str, Any]:
+    db = get_database()
+    sid = asset["station_id"]
+    ds = await db.datasets.find_one({"station_id": sid}, {"_id": 0})
+    doc = await db.documents.find_one({"station_id": sid}, {"_id": 0})
+    pub = await db.publications.find_one({"station_id": sid, "status": "PUBLISHED"}, {"_id": 0})
+
+    return {
+        **asset,
+        "station": STATION_NAMES.get(sid, sid.capitalize()),
+        "expedition": EXPEDITION_NAMES.get(asset["expedition_id"], asset["expedition_id"]),
+        "rights_metadata": {
+            "license": asset["license"],
+            "permitted_download": not asset.get("restricted", False),
+            "attribution_required": True,
+            "attribution_text": f"{asset['provider']} / {asset.get('creator', 'NCPOR')} ({asset['license']})",
+        },
+        "related_links": {
+            "station_id": sid,
+            "expedition_id": asset["expedition_id"],
+            "dataset_id": (ds or {}).get("dataset_id"),
+            "dataset_sha256": (ds or {}).get("sha256"),
+            "document_id": (doc or {}).get("document_id"),
+            "published_research_id": (pub or {}).get("id"),
+        },
+    }
 
 
 @router.get("/assets")
@@ -128,12 +245,13 @@ async def list_media_assets(
     expedition_id: Optional[str] = None,
     topic: Optional[str] = None,
     media_type: Optional[str] = None,
+    date: Optional[str] = None,
     source: Optional[str] = None,
     limit: int = 20,
 ):
     """
     Production Media Library endpoint (Prompt 20).
-    Filters out any restricted assets and supports station, expedition, topic, media_type, and source filters.
+    Strictly excludes restricted assets and supports station, expedition, topic, media_type, date, and source filters.
     """
     filtered = [a for a in PUBLIC_MEDIA_CATALOG if not a.get("restricted", False)]
     if station_id:
@@ -144,9 +262,68 @@ async def list_media_assets(
         filtered = [a for a in filtered if topic.lower() in a["topic"].lower()]
     if media_type:
         filtered = [a for a in filtered if a["media_type"] == media_type.upper()]
+    if date:
+        filtered = [a for a in filtered if a["date"].startswith(date.strip())]
     if source:
-        filtered = [a for a in filtered if source.lower() in a["source"].lower() or source.lower() in a["provider"].lower()]
-    return filtered[:limit]
+        filtered = [
+            a
+            for a in filtered
+            if source.lower() in a["source"].lower() or source.lower() in a["provider"].lower()
+        ]
+
+    enriched = []
+    for a in filtered[:limit]:
+        enriched.append(await _enrich_media_asset(a))
+    return enriched
+
+
+@router.get("/assets/{asset_id}")
+async def get_media_asset_detail(asset_id: str):
+    found = next((a for a in PUBLIC_MEDIA_CATALOG if a["asset_id"] == asset_id), None)
+    if not found:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media asset not found")
+    if found.get("restricted", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Restricted media asset cannot be accessed publicly")
+    return await _enrich_media_asset(found)
+
+
+@router.get("/assets/{asset_id}/download")
+async def download_media_asset(asset_id: str):
+    """Permitted download endpoint with full provenance and GODL license sheet (Prompt 20)."""
+    asset = await get_media_asset_detail(asset_id)
+    rel = asset.get("related_links", {})
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>VISTAAR Official Media Asset Package — {asset['title']}</title>
+<style>
+  body {{ font-family: Georgia, serif; background: #FAF7F0; color: #17202A; margin: 36px; line-height: 1.6; }}
+  .card {{ max-width: 780px; margin: auto; background: #FFFFFF; border: 1px solid #E7E0D5; padding: 32px; border-radius: 8px; }}
+  .badge {{ display: inline-block; background: #DBEAFE; color: #1E40AF; padding: 4px 10px; font-family: monospace; font-size: 12px; border-radius: 4px; }}
+  .meta {{ background: #FAF7F0; border: 1px solid #E7E0D5; padding: 14px; font-family: monospace; font-size: 12px; margin-top: 16px; border-radius: 6px; }}
+</style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">PERMITTED MEDIA DOWNLOAD • {asset['media_type']} • {asset['asset_id']}</span>
+    <h1>{asset['title']}</h1>
+    <p><strong>Verified Scientific Caption:</strong> {asset['caption']}</p>
+    <p>{asset['description']}</p>
+    <div class="meta">
+      <strong>PROVENANCE &amp; RIGHTS METADATA:</strong><br/>
+      Asset ID: {asset['asset_id']} | Date: {asset['date']}<br/>
+      Station: {asset['station']} | Expedition: {asset['expedition']}<br/>
+      Source: {asset['source']} | Provider: {asset['provider']} | Creator: {asset.get('creator')}<br/>
+      License: {asset['license']} | Source Reference: {asset['source_reference']}<br/>
+      Related NPDC Dataset: {rel.get('dataset_id')} (SHA-256: {(rel.get('dataset_sha256') or '')[:16]}...)<br/>
+      Asset Source URL: <a href="{asset['url']}">{asset['url']}</a>
+    </div>
+  </div>
+</body>
+</html>"""
+    return Response(content=html, media_type="text/html")
+
 
 
 @router.get("/press-kit")

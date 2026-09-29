@@ -111,6 +111,48 @@ async def test_media_library_and_press_kit_builder():
         assert isinstance(items, list)
         # Restricted assets must be hidden from public requests by default
         assert all(not a.get("restricted", False) for a in items)
+        assert all(a["asset_id"] != "med_restricted_embargo_raw" for a in items)
+
+        # Verify all 6 media types supported (Prompt 20)
+        media_types = {a["media_type"] for a in items}
+        assert {"IMAGE", "VIDEO", "FIGURE", "INFOGRAPHIC", "DOCUMENT", "SOCIAL_ASSET"}.issubset(media_types)
+
+        # Verify required metadata & related links
+        sample = items[0]
+        for field in [
+            "asset_id",
+            "source",
+            "provider",
+            "creator",
+            "station",
+            "expedition",
+            "date",
+            "caption",
+            "description",
+            "license",
+            "rights_metadata",
+            "source_reference",
+            "related_links",
+        ]:
+            assert field in sample
+
+        # Verify filters: station, expedition, topic, media_type, date, source
+        filt_res = await client.get(
+            "/api/v1/media/assets?station_id=maitri&expedition_id=isea-43&media_type=VIDEO&date=2024&source=NCPOR"
+        )
+        assert filt_res.status_code == 200
+        filt_items = filt_res.json()
+        assert len(filt_items) == 1
+        assert filt_items[0]["asset_id"] == "med_video_expedition_43"
+
+        # Direct access to restricted asset must return 403 Forbidden
+        rest_res = await client.get("/api/v1/media/assets/med_restricted_embargo_raw")
+        assert rest_res.status_code == 403
+
+        # Permitted download endpoint
+        dl_res = await client.get("/api/v1/media/assets/med_bharati_ext/download")
+        assert dl_res.status_code == 200
+        assert "PERMITTED MEDIA DOWNLOAD" in dl_res.text
 
         kit_json = await client.get("/api/v1/media/press-kit?station_id=maitri")
         assert kit_json.status_code == 200
@@ -119,6 +161,7 @@ async def test_media_library_and_press_kit_builder():
         pk = await client.get("/api/v1/media/press-kit/download?station_id=maitri")
         assert pk.status_code == 200
         assert "Accredited Journalist Press Kit" in pk.text
+
 
 
 @pytest.mark.asyncio
