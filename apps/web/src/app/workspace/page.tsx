@@ -258,7 +258,7 @@ export default function ReviewWorkspacePage() {
       const updatedPub = await fetchApi(`/publications/${publication.id}`);
       setPublication(updatedPub);
       setShowRevisionsModal(false);
-      setActionMessage(`Successfully rollbacked to v${targetVersion}. Active version is now v${res.current_version}.`);
+      setActionMessage(`Successfully rollbacked to v${targetVersion}. Active version is now v${res.new_version || res.current_version || updatedPub.version}.`);
     } catch (e: any) {
       setActionMessage(`Rollback failed: ${e.message}`);
     }
@@ -271,7 +271,7 @@ export default function ReviewWorkspacePage() {
       const res = await fetchApi(`/publications/${publication.id}/track`, {
         method: "PATCH",
         body: JSON.stringify({
-          track: activeTrack,
+          track: activeTrack.toUpperCase(),
           title: editedTitle,
           summary: currentTrackData?.summary || "",
           body: editedBody,
