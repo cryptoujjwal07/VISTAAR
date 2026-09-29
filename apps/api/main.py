@@ -24,6 +24,7 @@ from apps.api.domains.media.router import router as media_router
 from apps.api.domains.search.router import router as search_router
 from apps.api.domains.audit.router import router as audit_router
 from apps.api.domains.localization.router import router as localization_router
+from apps.api.domains.rag.router import router as rag_router
 
 logger = get_logger("vistaar.api")
 
@@ -105,6 +106,7 @@ app.include_router(media_router, prefix="/api/v1")
 app.include_router(search_router, prefix="/api/v1")
 app.include_router(audit_router, prefix="/api/v1")
 app.include_router(localization_router, prefix="/api/v1")
+app.include_router(rag_router, prefix="/api/v1")
 
 if __name__ == "__main__":
     import uvicorn

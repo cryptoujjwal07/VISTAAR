@@ -175,6 +175,15 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
 
     return user
 
+async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer)) -> Optional[dict]:
+    """Optional authentication dependency that returns user dict if valid or None otherwise."""
+    if not credentials:
+        return None
+    try:
+        return await get_current_user(credentials)
+    except Exception:
+        return None
+
 def require_roles(allowed_roles: List[str]):
     """Enforces role-based access control (RBAC)."""
     async def role_checker(user: dict = Depends(get_current_user)):
