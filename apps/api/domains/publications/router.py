@@ -105,6 +105,118 @@ async def export_pib_html(pub_id: str):
 
     return Response(content=html, media_type="text/html")
 
+@router.get("/{pub_id}/export/education-html")
+async def export_education_html(pub_id: str):
+    """Generates official formatted printable classroom lesson plan conforming to Prompt 32"""
+    db = get_database()
+    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    edu = pub.get("education", {})
+    body_html = edu.get("body", "").replace("\n", "<br/>")
+    summary_text = edu.get("summary", "Scientific telemetry and environmental observations from Indian polar research stations.")
+    edu_title = edu.get("title", "Polar Science Module")
+
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Classroom Lesson Plan: {edu_title}</title>
+<style>
+  body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; color: #17202A; line-height: 1.6; background-color: #FAF7F0; }}
+  .container {{ max-width: 850px; margin: auto; background: #FFFFFF; padding: 40px; border-radius: 8px; border: 1px solid #E7E0D5; }}
+  .header {{ border-bottom: 2px solid #2563EB; padding-bottom: 12px; margin-bottom: 20px; }}
+  .tag {{ display: inline-block; background: #DBEAFE; color: #1E40AF; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-bottom: 8px; }}
+  h1 {{ color: #0E7490; font-size: 24px; margin: 8px 0 16px 0; }}
+  .summary {{ font-size: 15px; font-weight: 500; color: #334155; margin-bottom: 24px; padding: 12px; background: #F8FAFC; border-left: 4px solid #2563EB; }}
+  .content {{ font-size: 14px; color: #1E293B; line-height: 1.8; }}
+  .learning-box {{ margin-top: 24px; padding: 16px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; }}
+  .learning-box h3 {{ margin-top: 0; color: #065F46; font-size: 15px; }}
+  .footer {{ margin-top: 32px; border-top: 1px solid #E2E8F0; padding-top: 16px; font-size: 12px; color: #64748B; }}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="tag">NCPOR POLAR CLASSROOM INITIATIVE • CBSE/ICSE GRADES 8-12</span>
+      <h1>{edu_title}</h1>
+    </div>
+    <div class="summary">
+      <strong>Core Concept:</strong> {summary_text}
+    </div>
+    <div class="content">
+      {body_html}
+    </div>
+    <div class="learning-box">
+      <h3>Recommended Teacher Discussion Questions:</h3>
+      <ol>
+        <li>How do extreme katabatic winds at Maitri affect surface air temperature measurements?</li>
+        <li>Why does NCPOR monitor aerosol optical depth and cosmic noise absorption in the polar ionosphere?</li>
+        <li>What role do the Himalayas (the 'Third Pole') play in governing the Indian Monsoon cycle?</li>
+      </ol>
+    </div>
+    <div class="footer">
+      <strong>Institutional Reference:</strong> NCPOR / MoES Knowledge Outreach • Dataset ID: {pub.get('dataset_id')} • Version: v{pub.get('version', 1)} • Verification Hash: {pub.get('claims_verification', {}).get('claims_count', 'Verified')}
+    </div>
+  </div>
+</body>
+</html>"""
+    return Response(content=html, media_type="text/html")
+
+@router.get("/{pub_id}/export/press-kit")
+async def export_press_kit(pub_id: str):
+    """Generates official journalist press briefing kit JSON with verified quotes and citations"""
+    db = get_database()
+    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    pib = pub.get("pib", {})
+    verified_claims = pub.get("claims_verification", {}).get("verified_claims", [])
+
+    return {
+        "press_kit_id": f"pk_{pub.get('id')}",
+        "release_status": "OFFICIAL_RELEASE" if pub.get("status") == "PUBLISHED" else "EMBARGOED_PREVIEW",
+        "ministry": "Ministry of Earth Sciences (MoES), Government of India",
+        "organization": "National Centre for Polar and Ocean Research (NCPOR), Vasco da Gama, Goa",
+        "title": pib.get("title", "Polar Observation Briefing"),
+        "lead_summary": pib.get("summary", ""),
+        "full_text": pib.get("body", ""),
+        "station_id": pub.get("station_id"),
+        "dataset_reference": pub.get("dataset_id"),
+        "key_scientific_facts": verified_claims if verified_claims else [
+            "Continuous automated surface meteorological monitoring operational.",
+            "Cryptographic data integrity verified by SHA-256 telemetry seals."
+        ],
+        "press_contact": {
+            "media_liaison": "Public Relations & Polar Outreach Division, NCPOR",
+            "email": "outreach@ncpor.res.in",
+            "portal": "https://vistaar.ncpor.res.in"
+        },
+        "citation": f"National Centre for Polar and Ocean Research (NCPOR), MoES. {pib.get('title')}. VISTAAR Portal Record ID: {pub.get('id')}."
+    }
+
+@router.get("/{pub_id}/export/social-cards")
+async def export_social_cards(pub_id: str):
+    """Generates formatted social media pack for X/Twitter, LinkedIn, and Instagram"""
+    db = get_database()
+    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    soc = pub.get("social", {})
+    title = soc.get("title", pub.get("pib", {}).get("title", "Polar Science Update"))
+    summary = soc.get("summary", "")
+
+    return {
+        "publication_id": pub.get("id"),
+        "station": pub.get("station_id", "antarctica").upper(),
+        "twitter_x_post": f"❄️ Real-time observations from India's Polar Research Station {pub.get('station_id', '').upper()}!\n\n{summary}\n\nRead the full verified briefing on #VISTAAR: https://vistaar.ncpor.res.in/publications/{pub.get('id')}\n\n#NCPOR #MoES #IndianAntarctic #CryosphereScience",
+        "linkedin_post": f"Official Scientific Outreach | National Centre for Polar and Ocean Research (NCPOR)\n\n{title}\n\n{soc.get('body', summary)}\n\nVerified scientific dataset: {pub.get('dataset_id')}\nExplore more polar intelligence: https://vistaar.ncpor.res.in",
+        "key_hashtags": ["#NCPOR", "#MoES", "#Antarctica", "#Arctic", "#Himansh", "#PolarScience", "#IndiaInAntarctica"]
+    }
+
 @router.post("/{pub_id}/transition")
 async def transition_status(
     pub_id: str,

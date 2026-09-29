@@ -69,7 +69,7 @@ async def get_weather_timeseries(
     parameter: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    limit: int = Query(500, ge=10, le=2000)
+    limit: int = Query(500, ge=1, le=2000)
 ):
     db = get_database()
     sid = station_id.lower()
