@@ -274,3 +274,75 @@ async def test_prompt_24_publishing_governance_lifecycle():
         assert hist_res.status_code == 200
         assert hist_res.json()["event_count"] >= 7
 
+
+@pytest.mark.asyncio
+async def test_prompt_25_admin_console_overview_and_configuration():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # 1. Permission control check: unauthenticated requests rejected
+        unauth_res = await client.get("/api/v1/admin/overview")
+        assert unauth_res.status_code in [401, 403]
+
+        admin_login = await client.post("/api/v1/auth/login", json={
+            "email": settings.SUPER_ADMIN_EMAIL,
+            "password": settings.SUPER_ADMIN_PASSWORD,
+        })
+        token = admin_login.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 2. Fetch Admin Console Overview with station and date range filters
+        ov_res = await client.get(
+            "/api/v1/admin/overview?station_id=maitri&date_from=2020-01-01&date_to=2030-12-31",
+            headers=headers,
+        )
+        assert ov_res.status_code == 200
+        ov_data = ov_res.json()
+        expected_sections = [
+            "Users",
+            "Roles",
+            "Datasets",
+            "Documents",
+            "Jobs",
+            "Reviews",
+            "Publications",
+            "Translations",
+            "Media",
+            "Audit",
+            "System Health",
+            "Configuration",
+        ]
+        assert ov_data["sections"] == expected_sections
+        assert ov_data["filters_applied"]["station_id"] == "maitri"
+        for k in [
+            "datasets",
+            "documents",
+            "jobs",
+            "reviews",
+            "publications",
+            "translations",
+            "searches",
+            "education_resources",
+            "media",
+            "verification_states",
+        ]:
+            assert k in ov_data["analytics"]
+
+        # 3. Audited configuration update
+        cfg_res = await client.patch(
+            "/api/v1/admin/configuration",
+            json={
+                "strict_claim_verification": True,
+                "require_editorial_approval": True,
+                "ai_rate_limit_rpm": 60,
+                "reason": "Automated test verification of Prompt 25 admin config",
+            },
+            headers=headers,
+        )
+        assert cfg_res.status_code == 200
+        assert cfg_res.json()["status"] == "updated"
+
+        cfg_audit = await client.get("/api/v1/audit/resource/CONFIGURATION/system_governance_config", headers=headers)
+        assert cfg_audit.status_code == 200
+        assert cfg_audit.json()["event_count"] >= 1
+
+
