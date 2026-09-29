@@ -221,12 +221,137 @@ async def get_observation_provenance(record_id: str):
     return record
 
 
+EXPEDITIONS_CATALOG: List[Dict[str, Any]] = [
+    {
+        "id": "isea-43",
+        "name": "43rd Indian Scientific Expedition to Antarctica (43-ISEA)",
+        "season": "2023–2024",
+        "vessel": "MV Vasiliy Golovnin",
+        "leader": "National Centre for Polar and Ocean Research (NCPOR), MoES",
+        "status": "ACTIVE",
+        "station_ids": ["maitri", "bharati"],
+        "stations": ["Maitri Research Station (Schirmacher Oasis)", "Bharati Research Station (Larsemann Hills)"],
+        "objectives": (
+            "Continuous synoptic surface meteorology, high-frequency ultrasonic anemometry, "
+            "tropospheric microwave radiometry, ice-core paleoclimate synthesis, and Prydz Bay oceanography."
+        ),
+        "topics": [
+            "Katabatic Wind Dynamics",
+            "Tropospheric Radiometry",
+            "Ice-Core Paleoclimate",
+            "Prydz Bay Oceanography",
+            "Geomagnetism",
+        ],
+        "timeline": [
+            {
+                "phase": "Expedition Mobilization & Cape Town Charter",
+                "period": "Oct–Nov 2023",
+                "station": "Goa / Cape Town Staging",
+                "description": "Calibration of AWS sensors, radiometers, and cargo loading aboard MV Vasiliy Golovnin.",
+            },
+            {
+                "phase": "Maitri & Bharati Austral Summer Operations",
+                "period": "Dec 2023 – Mar 2024",
+                "station": "Maitri & Bharati Stations",
+                "description": "Continuous 1-minute and hourly surface meteorological logging, radiosonde launches, and ice-shelf surveys.",
+            },
+            {
+                "phase": "Austral Wintering Telemetry & NPDC Archival",
+                "period": "Apr 2024 – Present",
+                "station": "Maitri & Bharati Observatories",
+                "description": "Automated telemetry transmission, quality-flagging, and SHA-256 dataset ingestion into NPDC.",
+            },
+        ],
+    },
+    {
+        "id": "arctic-winter-1",
+        "name": "1st Indian Winter Arctic Scientific Expedition",
+        "season": "2023–2024",
+        "vessel": "Svalbard Polar Airlift & Kongsfjorden Mooring",
+        "leader": "Arctic Operations Division, NCPOR / MoES",
+        "status": "ACTIVE",
+        "station_ids": ["himadri"],
+        "stations": ["Himadri Research Station (Ny-Ålesund, Svalbard)"],
+        "objectives": (
+            "Year-round high-Arctic polar night atmospheric physics, laser optical disdrometry (PARSIVEL), "
+            "Kongsfjorden hydrography, and IndARC sub-surface mooring telemetry."
+        ),
+        "topics": [
+            "Arctic Amplification",
+            "Hydrometeor Disdrometry",
+            "Polar Night Atmospheric Physics",
+            "IndARC Sub-surface Mooring",
+        ],
+        "timeline": [
+            {
+                "phase": "Inaugural Polar Night Deployment",
+                "period": "Dec 2023",
+                "station": "Himadri Station, Ny-Ålesund",
+                "description": "Historic deployment of Indian winter scientific team to Svalbard for year-round Arctic observation.",
+            },
+            {
+                "phase": "PARSIVEL Optical Disdrometer & Precipitation Campaign",
+                "period": "Jan – May 2024",
+                "station": "Himadri Atmospheric Roof Lab",
+                "description": "Continuous hydrometeor size-velocity spectrum capture and rain/snow phase transitions.",
+            },
+            {
+                "phase": "Kongsfjorden Summer Mooring Turnaround",
+                "period": "Jun – Sep 2024",
+                "station": "Kongsfjorden & Himadri",
+                "description": "Retrieval and re-deployment of IndARC mooring sensors and NPDC dataset publication.",
+            },
+        ],
+    },
+    {
+        "id": "himansh-himalaya-8",
+        "name": "8th Cryosphere Field Campaign (Chandra Basin, Spiti)",
+        "season": "2023–2024",
+        "vessel": "High-Altitude Terrestrial Convoy",
+        "leader": "Himalayan Cryosphere Group, NCPOR",
+        "status": "ACTIVE",
+        "station_ids": ["himansh"],
+        "stations": ["Himansh Glaciological Station (Spiti Valley, 4080 m a.s.l.)"],
+        "objectives": (
+            "Glacier mass-balance monitoring across Sutri Dhaka and Chhota Shigri glaciers, "
+            "high-altitude automated weather station (AWS) telemetry, and snow-water equivalent profiling."
+        ),
+        "topics": [
+            "Glacier Mass Balance",
+            "Sutri Dhaka & Batal Ablation",
+            "Third Pole AWS Telemetry",
+            "Himalayan Meltwater Hydrology",
+        ],
+        "timeline": [
+            {
+                "phase": "Pre-Monsoon AWS Sensor Verification",
+                "period": "May – Jun 2024",
+                "station": "Himansh Base (4,080 m a.s.l.)",
+                "description": "Maintenance of Campbell Scientific AWS towers and radiation shields in Chandra Basin.",
+            },
+            {
+                "phase": "Peak Ablation Glacier Stake Measurements",
+                "period": "Jul – Sep 2024",
+                "station": "Sutri Dhaka & Batal Glaciers",
+                "description": "DGPS kinematic surveys, ground-penetrating radar ice thickness profiling, and discharge gauging.",
+            },
+            {
+                "phase": "High-Altitude Winter Telemetry Archival",
+                "period": "Oct 2024 – Present",
+                "station": "Himansh Observatory",
+                "description": "Automated sub-zero temperature, relative humidity, and wind vector archival in NPDC.",
+            },
+        ],
+    },
+]
+
+
 @router.get("/stations/{station_id}/explorer")
 async def get_station_relational_explorer(station_id: str):
     """
     Production Station & Expedition Relational Explorer (Prompt 18).
-    Uses live MongoDB database relationships across datasets, documents, published research,
-    classroom modules, and media assets while preserving source provenance.
+    Uses live MongoDB database relationships across datasets, documents, weather telemetry,
+    published research, classroom modules, and media assets while preserving source provenance.
     """
     db = get_database()
     sid = station_id.lower().strip()
@@ -248,52 +373,169 @@ async def get_station_relational_explorer(station_id: str):
     related_education = [l for l in all_lessons if l.get("station_id") == sid or sid in l.get("station", "").lower()]
     related_media = await list_media_assets(station_id=sid)
 
-    expedition_map = {
-        "maitri": [
-            {
-                "id": "isea-43",
-                "name": "43rd Indian Scientific Expedition to Antarctica (43-ISEA)",
-                "season": "2023–2024",
-                "vessel": "MV Vasiliy Golovnin",
-                "topics": ["Katabatic Wind Dynamics", "Ice-Core Paleoclimate", "Geomagnetism"],
-            }
-        ],
-        "bharati": [
-            {
-                "id": "isea-43",
-                "name": "43rd Indian Scientific Expedition to Antarctica (43-ISEA)",
-                "season": "2023–2024",
-                "vessel": "MV Vasiliy Golovnin",
-                "topics": ["Tropospheric Radiometry", "Prydz Bay Oceanography", "Sea-Ice Albedo"],
-            }
-        ],
-        "himadri": [
-            {
-                "id": "arctic-winter-1",
-                "name": "1st Indian Winter Arctic Scientific Expedition",
-                "season": "2023–2024",
-                "vessel": "Svalbard Polar Airlift & Kongsfjorden Mooring",
-                "topics": ["Arctic Amplification", "Hydrometeor Disdrometry", "IndARC Sub-surface Mooring"],
-            }
-        ],
-        "himansh": [
-            {
-                "id": "himansh-himalaya-8",
-                "name": "8th Cryosphere Field Campaign (Chandra Basin, Spiti)",
-                "season": "2023–2024",
-                "vessel": "High-Altitude Terrestrial Convoy",
-                "topics": ["Glacier Mass Balance", "Sutri Dhaka & Batal Ablation", "Third Pole AWS Telemetry"],
-            }
-        ],
+    expeditions = [exp for exp in EXPEDITIONS_CATALOG if sid in exp["station_ids"]]
+
+    # Compute database-backed weather telemetry summary for this station
+    total_records = await db.dataset_records.count_documents({"station_id": sid})
+    latest_rec = await db.dataset_records.find_one({"station_id": sid}, {"_id": 0}, sort=[("timestamp", -1)])
+    earliest_rec = await db.dataset_records.find_one({"station_id": sid}, {"_id": 0}, sort=[("timestamp", 1)])
+    primary_ds = datasets[0] if datasets else {}
+
+    weather_summary = {
+        "station_id": sid,
+        "total_records": total_records,
+        "dataset_count": len(datasets),
+        "primary_dataset_id": primary_ds.get("dataset_id"),
+        "primary_dataset_sha256": primary_ds.get("sha256"),
+        "parameters": primary_ds.get("parameters", []),
+        "units": primary_ds.get("units", {}),
+        "period": {
+            "start": earliest_rec.get("timestamp") if earliest_rec else None,
+            "end": latest_rec.get("timestamp") if latest_rec else None,
+        },
+        "latest_observation": {
+            "record_id": latest_rec.get("record_id") if latest_rec else None,
+            "timestamp": latest_rec.get("timestamp") if latest_rec else None,
+            "metrics": latest_rec.get("metrics", {}) if latest_rec else {},
+        },
     }
+
+    research_topics: List[str] = []
+    for exp in expeditions:
+        for t in exp.get("topics", []):
+            if t not in research_topics:
+                research_topics.append(t)
 
     return {
         "station": station_info,
-        "expeditions": expedition_map.get(sid, []),
+        "expeditions": expeditions,
         "datasets": datasets,
         "documents": documents,
+        "weather_summary": weather_summary,
         "published_research": published_research,
         "education_modules": related_education,
         "media_assets": related_media,
+        "research_topics": research_topics,
     }
+
+
+@router.get("/expeditions")
+async def list_expeditions(station_id: Optional[str] = None):
+    """
+    Production Expedition Directory (Prompt 18).
+    Enriches each expedition with live relational database counts across datasets,
+    scientific PDFs, published outreach, education modules, and media assets.
+    """
+    db = get_database()
+    from apps.api.domains.classroom.router import list_lessons
+    from apps.api.domains.media.router import list_media_assets
+
+    all_lessons = await list_lessons()
+    results = []
+
+    for exp in EXPEDITIONS_CATALOG:
+        if station_id and station_id.lower().strip() not in exp["station_ids"]:
+            continue
+
+        sids = exp["station_ids"]
+        ds_count = await db.datasets.count_documents({"station_id": {"$in": sids}})
+        doc_count = await db.documents.count_documents({"station_id": {"$in": sids}})
+        pub_count = await db.publications.count_documents({"station_id": {"$in": sids}, "status": "PUBLISHED"})
+        edu_count = len([
+            l for l in all_lessons
+            if l.get("station_id") in sids or any(s in l.get("station", "").lower() for s in sids)
+        ])
+        media_items = []
+        for s in sids:
+            media_items.extend(await list_media_assets(station_id=s))
+
+        results.append({
+            **exp,
+            "counts": {
+                "datasets": ds_count,
+                "documents": doc_count,
+                "published_content": pub_count,
+                "education_modules": edu_count,
+                "media_assets": len({m["asset_id"]: m for m in media_items}),
+            },
+        })
+
+    return results
+
+
+@router.get("/expeditions/{expedition_id}/explorer")
+async def get_expedition_relational_explorer(expedition_id: str):
+    """
+    Production Expedition Relational Explorer (Prompt 18).
+    Connects expedition overview, timeline, scientific documents, NPDC datasets,
+    media assets, scientific topics, related education, and related public content
+    via database relationships while preserving SHA-256 source provenance.
+    """
+    db = get_database()
+    eid = expedition_id.lower().strip()
+    exp = next((e for e in EXPEDITIONS_CATALOG if e["id"] == eid), None)
+    if not exp:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Expedition '{expedition_id}' not found")
+
+    sids = exp["station_ids"]
+    datasets = await db.datasets.find({"station_id": {"$in": sids}}, {"_id": 0}).to_list(length=30)
+    documents = await db.documents.find({"station_id": {"$in": sids}}, {"_id": 0}).to_list(length=30)
+    published_items = await db.publications.find(
+        {"station_id": {"$in": sids}, "status": "PUBLISHED"}, {"_id": 0}
+    ).to_list(length=20)
+
+    # Preserve immutable published_snapshot on related_public_content
+    related_public_content = []
+    for item in published_items:
+        snap = item.get("published_snapshot") or {}
+        related_public_content.append({
+            "id": item.get("id"),
+            "status": item.get("status"),
+            "station_id": item.get("station_id"),
+            "dataset_id": item.get("dataset_id"),
+            "version": snap.get("version", item.get("version")),
+            "published_at": item.get("published_at"),
+            "pib": snap.get("pib", item.get("pib")),
+            "education": snap.get("education", item.get("education")),
+            "approved_by": item.get("approved_by"),
+        })
+
+    from apps.api.domains.classroom.router import list_lessons
+    from apps.api.domains.media.router import list_media_assets
+
+    all_lessons = await list_lessons()
+    related_education = [
+        l for l in all_lessons
+        if l.get("station_id") in sids or any(s in l.get("station", "").lower() for s in sids)
+    ]
+
+    media_map: Dict[str, Any] = {}
+    for s in sids:
+        for asset in await list_media_assets(station_id=s):
+            media_map[asset["asset_id"]] = asset
+    related_media = list(media_map.values())
+
+    return {
+        "expedition": exp,
+        "timeline": exp["timeline"],
+        "scientific_topics": exp["topics"],
+        "datasets": datasets,
+        "documents": documents,
+        "media_assets": related_media,
+        "related_education": related_education,
+        "related_public_content": related_public_content,
+        "provenance": {
+            "provider": "National Centre for Polar and Ocean Research (NCPOR) / NPDC",
+            "station_ids": sids,
+            "dataset_sha256_fingerprints": [
+                {"dataset_id": d.get("dataset_id"), "sha256": d.get("sha256"), "filename": d.get("original_filename")}
+                for d in datasets
+            ],
+            "document_sha256_fingerprints": [
+                {"document_id": doc.get("document_id"), "sha256": doc.get("sha256"), "filename": doc.get("original_filename")}
+                for doc in documents
+            ],
+        },
+    }
+
 

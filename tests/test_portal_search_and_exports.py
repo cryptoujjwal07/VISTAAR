@@ -7,13 +7,37 @@ from apps.api.main import app
 async def test_station_explorer_and_weather_intelligence():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        res = await client.get("/api/v1/weather/stations/maitri/explorer")
-        assert res.status_code == 200
-        data = res.json()
-        assert data["station"]["id"] == "maitri"
-        assert "expeditions" in data
-        assert "datasets" in data
-        assert len(data["expeditions"]) >= 1
+        for sid in ["maitri", "bharati", "himadri", "himansh"]:
+            res = await client.get(f"/api/v1/weather/stations/{sid}/explorer")
+            assert res.status_code == 200
+            data = res.json()
+            assert data["station"]["id"] == sid
+            assert "expeditions" in data
+            assert "datasets" in data
+            assert "documents" in data
+            assert "weather_summary" in data
+            assert "research_topics" in data
+            assert len(data["expeditions"]) >= 1
+
+        # Expedition directory & relational explorer (Prompt 18)
+        exps_res = await client.get("/api/v1/weather/expeditions")
+        assert exps_res.status_code == 200
+        exps = exps_res.json()
+        assert len(exps) >= 3
+        assert "counts" in exps[0]
+
+        exp_graph_res = await client.get("/api/v1/weather/expeditions/isea-43/explorer")
+        assert exp_graph_res.status_code == 200
+        exp_graph = exp_graph_res.json()
+        assert exp_graph["expedition"]["id"] == "isea-43"
+        assert len(exp_graph["timeline"]) >= 3
+        assert len(exp_graph["scientific_topics"]) >= 1
+        assert "datasets" in exp_graph
+        assert "documents" in exp_graph
+        assert "media_assets" in exp_graph
+        assert "related_education" in exp_graph
+        assert "related_public_content" in exp_graph
+        assert "provenance" in exp_graph
 
         # Weather timeseries with missing data integrity
         tel = await client.get("/api/v1/weather/timeseries?station_id=maitri&limit=24")
@@ -23,6 +47,7 @@ async def test_station_explorer_and_weather_intelligence():
         assert "statistics" in tel_data
         assert "missing_count" in tel_data["statistics"]
         assert "source_citation" in tel_data
+
 
 
 @pytest.mark.asyncio
