@@ -45,9 +45,14 @@ class Settings(BaseSettings):
     BHASHINI_API_KEY: Optional[str] = Field(default=None)
     BHASHINI_PIPELINE_ID: Optional[str] = Field(default=None)
     
-    # Storage
+    # Storage & Cloudinary Media Pipeline
     STORAGE_PROVIDER: str = Field(default="local")
     STORAGE_LOCAL_PATH: str = Field(default="./data/storage")
+    CLOUDINARY_CLOUD_NAME: Optional[str] = Field(default=None)
+    CLOUDINARY_API_KEY: Optional[str] = Field(default=None)
+    CLOUDINARY_API_SECRET: Optional[str] = Field(default=None)
+    JWT_REFRESH_SECRET: str = Field(default="vistaar_secure_refresh_secret_key_polar_science_2026_ncpor")
+    EMBEDDING_PROVIDER_KEY: Optional[str] = Field(default=None)
     
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

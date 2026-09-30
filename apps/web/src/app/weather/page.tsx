@@ -21,6 +21,7 @@ export default function WeatherPage() {
   const [selectedDataset, setSelectedDataset] = useState<string>("");
   const [selectedProvider, setSelectedProvider] = useState<string>("");
   const [selectedParam, setSelectedParam] = useState<string>("");
+  const [rangeMode, setRangeMode] = useState<string>("MONTH");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [data, setData] = useState<any>(null);
@@ -57,7 +58,11 @@ export default function WeatherPage() {
     async function loadTimeSeries() {
       setLoading(true);
       try {
-        const params = new URLSearchParams({ station_id: selectedStation, downsample: "150" });
+        const params = new URLSearchParams({
+          station_id: selectedStation,
+          range_mode: rangeMode,
+          downsample: "150",
+        });
         if (selectedDataset) params.set("dataset_id", selectedDataset);
         if (selectedProvider) params.set("provider", selectedProvider);
         if (selectedParam) params.set("parameter", selectedParam);
@@ -79,7 +84,7 @@ export default function WeatherPage() {
       }
     }
     loadTimeSeries();
-  }, [selectedStation, selectedDataset, selectedProvider, selectedParam, startDate, endDate]);
+  }, [selectedStation, selectedDataset, selectedProvider, selectedParam, rangeMode, startDate, endDate]);
 
   const points = data?.points || [];
   const stats = data?.statistics;
@@ -142,6 +147,33 @@ export default function WeatherPage() {
         </div>
       </div>
 
+      {/* Time-Range Resolution Controls (Sections 16 & 54: LIVE / DAY / WEEK / MONTH / YEAR / CUSTOM) */}
+      <div className="bg-white p-3.5 rounded-lg border border-vistaar-border shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center space-x-2">
+          <Calendar className="w-4 h-4 text-vistaar-scientific" />
+          <span className="font-bold text-vistaar-text">Time-Range Resolution:</span>
+          <span className="font-mono text-[11px] text-vistaar-muted">
+            ({data?.resolution || "ADAPTIVE_RESOLUTION"})
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {["LIVE", "DAY", "WEEK", "MONTH", "YEAR", "CUSTOM"].map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setRangeMode(mode)}
+              className={`px-3 py-1 rounded font-mono text-xs font-bold border transition-all cursor-pointer ${
+                rangeMode === mode
+                  ? "bg-vistaar-primary text-white border-vistaar-primary shadow-2xs"
+                  : "bg-[#FAF7F0] text-vistaar-text border-vistaar-border hover:bg-white"
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Filter & Provenance Metadata Bar (Prompt 16 Requirement) */}
       <div className="bg-white p-4 rounded-lg border border-vistaar-border shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
         <div>
@@ -168,7 +200,10 @@ export default function WeatherPage() {
           <input
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setRangeMode("CUSTOM");
+            }}
             className="w-full px-2.5 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] font-mono text-xs"
           />
         </div>
@@ -180,7 +215,10 @@ export default function WeatherPage() {
           <input
             type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setRangeMode("CUSTOM");
+            }}
             className="w-full px-2.5 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] font-mono text-xs"
           />
         </div>

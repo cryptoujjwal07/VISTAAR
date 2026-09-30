@@ -14,27 +14,56 @@ security_bearer = HTTPBearer(auto_error=False)
 
 class UserRole(str, Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
+    ADMIN = "ADMIN"
     OUTREACH_EDITOR = "OUTREACH_EDITOR"
     FIELD_SCIENTIST = "FIELD_SCIENTIST"
+    SCIENTIST = "SCIENTIST"
+    RESEARCHER = "RESEARCHER"
+    JOURNALIST = "JOURNALIST"
+    TEACHER = "TEACHER"
+    STUDENT = "STUDENT"
     PUBLIC_USER = "PUBLIC_USER"
 
 class UserPersona(str, Enum):
     STUDENT = "STUDENT"
     TEACHER = "TEACHER"
     JOURNALIST = "JOURNALIST"
+    RESEARCHER = "RESEARCHER"
     SCIENTIST = "SCIENTIST"
 
 ROLE_PERMISSIONS: Dict[str, Set[str]] = {
     "SUPER_ADMIN": {"*"},
+    "ADMIN": {"*"},
     "OUTREACH_EDITOR": {
         "content:create", "content:edit", "content:review", "content:verify",
         "content:approve", "content:publish", "content:export", "content:archive",
-        "datasets:view", "documents:view", "media:view", "media:upload"
+        "datasets:view", "documents:view", "media:view", "media:upload", "claims:verify"
     },
     "FIELD_SCIENTIST": {
         "datasets:upload", "documents:upload", "drafts:create",
         "submissions:read_own", "submissions:edit_own",
-        "datasets:view", "documents:view", "media:view"
+        "datasets:view", "documents:view", "media:view", "media:upload_draft"
+    },
+    "SCIENTIST": {
+        "datasets:upload", "documents:upload", "drafts:create",
+        "submissions:read_own", "submissions:edit_own",
+        "datasets:view", "documents:view", "media:view", "media:upload_draft"
+    },
+    "RESEARCHER": {
+        "datasets:view", "documents:view", "media:view", "rag:query",
+        "search:execute", "citations:export", "projects:read"
+    },
+    "JOURNALIST": {
+        "content:read_public", "datasets:read_public", "media:read_public",
+        "press_kit:generate", "press_kit:download", "search:execute"
+    },
+    "TEACHER": {
+        "content:read_public", "datasets:read_public", "media:read_public",
+        "education:view", "classroom:manage", "quiz:create", "analytics:classroom", "search:execute"
+    },
+    "STUDENT": {
+        "content:read_public", "datasets:read_public", "media:read_public",
+        "education:view", "quiz:submit", "progress:read_own", "search:execute"
     },
     "PUBLIC_USER": {
         "content:read_public", "datasets:read_public", "media:read_public",

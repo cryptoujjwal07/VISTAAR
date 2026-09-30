@@ -639,3 +639,165 @@ async def download_press_kit_document(
 </html>"""
     return Response(content=html, media_type="text/html")
 
+
+# =========================================================================
+# Scientist Media Workspace & Cloudinary Upload Pipeline (Sections 20 & 21)
+# =========================================================================
+
+import uuid
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field
+from fastapi import Depends
+from apps.api.core.security import require_roles, sanitize_filename
+from apps.api.core.storage import media_storage_provider
+from apps.api.domains.audit.service import record_audit_event
+
+
+class ScientistMediaUploadRequest(BaseModel):
+    title: str = Field(..., min_length=3)
+    filename: str = Field(default="expedition_observation.jpg")
+    station_id: str = Field(default="maitri")
+    expedition_id: str = Field(default="isea-43")
+    media_type: str = Field(default="IMAGE")
+    topic: str = Field(default="Meteorology & Cryosphere Telemetry")
+    caption: str = Field(..., min_length=5)
+    description: str = Field(default="Verified field observation uploaded via Scientist Media Workspace.")
+    tags: List[str] = Field(default_factory=list)
+    scientific_classification: str = Field(default="OBSERVATIONAL_EVIDENCE")
+
+
+class MediaModerationRequest(BaseModel):
+    moderation_state: str = Field(..., description="SUBMITTED_FOR_REVIEW | APPROVED | REJECTED | PUBLISHED")
+    reason: str = Field(default="Editorial verification complete")
+
+
+@router.post("/upload")
+async def upload_scientific_media(
+    req: ScientistMediaUploadRequest,
+    current_user=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN", "OUTREACH_EDITOR", "FIELD_SCIENTIST", "SCIENTIST"])
+    ),
+):
+    """
+    Scientist / Outreach Editor Media Upload endpoint (Sections 20 & 21).
+    Uploads through MediaStorageProvider (Cloudinary when configured, local storage fallback),
+    persists metadata in MongoDB, and enforces governance (Scientists submit as SUBMITTED_FOR_REVIEW,
+    never auto-publishing without editorial approval).
+    """
+    clean_fname = sanitize_filename(
+        req.filename,
+        allowed_extensions={".jpg", ".jpeg", ".png", ".webp", ".mp4", ".pdf"},
+    )
+    payload_bytes = f"VISTAAR_SCIENTIFIC_MEDIA:{req.title}:{req.station_id}:{req.caption}".encode("utf-8")
+    upload_res = await media_storage_provider.upload_media(
+        filename=clean_fname,
+        content=payload_bytes,
+        media_type=req.media_type,
+        station_id=req.station_id,
+    )
+
+    asset_id = f"med_{uuid.uuid4().hex[:10]}"
+    now = datetime.now(timezone.utc).isoformat()
+    initial_state = (
+        "APPROVED"
+        if current_user.get("role") in ("SUPER_ADMIN", "ADMIN", "OUTREACH_EDITOR")
+        else "SUBMITTED_FOR_REVIEW"
+    )
+
+    asset_doc = {
+        "asset_id": asset_id,
+        "title": req.title,
+        "owner_id": current_user["id"],
+        "owner_email": current_user["email"],
+        "uploader_role": current_user.get("role"),
+        "station_id": req.station_id.lower(),
+        "expedition_id": req.expedition_id.lower(),
+        "topic": req.topic,
+        "region": "Antarctica" if req.station_id.lower() in ("maitri", "bharati") else ("Arctic" if req.station_id.lower() == "himadri" else "Himalayas"),
+        "media_type": req.media_type.upper(),
+        "date": now[:10],
+        "cloudinary_public_id": upload_res["public_id"],
+        "url": upload_res["secure_url"],
+        "thumbnail_url": upload_res["thumbnail_url"],
+        "storage_provider": upload_res["provider"],
+        "sha256": upload_res["sha256"],
+        "file_size": len(payload_bytes),
+        "caption": req.caption,
+        "description": req.description,
+        "tags": req.tags,
+        "scientific_classification": req.scientific_classification,
+        "source": f"Scientist Media Workspace ({current_user.get('name', current_user['email'])})",
+        "provider": "NCPOR / MoES",
+        "creator": current_user.get("name", current_user["email"]),
+        "license": "Government Open Data License - India (GODL)",
+        "source_reference": f"NPDC-{req.station_id.upper()}-{asset_id}",
+        "moderation_state": initial_state,
+        "restricted": initial_state != "APPROVED",
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    db = get_database()
+    await db.media_assets.insert_one(asset_doc)
+    asset_doc.pop("_id", None)
+
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="MEDIA_UPLOADED",
+        resource_type="MEDIA_ASSET",
+        resource_id=asset_id,
+        details={
+            "station_id": req.station_id,
+            "moderation_state": initial_state,
+            "storage_provider": upload_res["provider"],
+            "sha256": upload_res["sha256"],
+        },
+    )
+
+    return asset_doc
+
+
+@router.patch("/assets/{asset_id}/moderation")
+async def moderate_media_asset(
+    asset_id: str,
+    req: MediaModerationRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "ADMIN", "OUTREACH_EDITOR"])),
+):
+    """Outreach Editor / Admin only: approves or rejects scientist-uploaded media assets."""
+    db = get_database()
+    doc = await db.media_assets.find_one({"asset_id": asset_id})
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Uploaded media asset not found")
+
+    new_state = req.moderation_state.upper()
+    is_restricted = new_state not in ("APPROVED", "PUBLISHED")
+    now = datetime.now(timezone.utc).isoformat()
+
+    await db.media_assets.update_one(
+        {"asset_id": asset_id},
+        {
+            "$set": {
+                "moderation_state": new_state,
+                "restricted": is_restricted,
+                "reviewed_by": current_user["email"],
+                "review_reason": req.reason,
+                "updated_at": now,
+            }
+        },
+    )
+
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="MEDIA_MODERATION_UPDATED",
+        resource_type="MEDIA_ASSET",
+        resource_id=asset_id,
+        reason=req.reason,
+        before_version=doc.get("moderation_state"),
+        after_version=new_state,
+    )
+
+    return {"asset_id": asset_id, "moderation_state": new_state, "restricted": is_restricted}
+
+

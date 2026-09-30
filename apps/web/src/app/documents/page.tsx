@@ -57,6 +57,47 @@ export default function DocumentIntelligencePage() {
   const [uploadSync, setUploadSync] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Scientist Media Workspace State (Sections 20 & 21)
+  const [mediaPanelOpen, setMediaPanelOpen] = useState(false);
+  const [mediaTitle, setMediaTitle] = useState("");
+  const [mediaStation, setMediaStation] = useState("maitri");
+  const [mediaExpedition, setMediaExpedition] = useState("isea-43");
+  const [mediaType, setMediaType] = useState("IMAGE");
+  const [mediaCaption, setMediaCaption] = useState("");
+  const [mediaTags, setMediaTags] = useState("glaciology, telemetry, aws");
+  const [mediaClassification, setMediaClassification] = useState("OBSERVATIONAL_EVIDENCE");
+  const [mediaSubmitting, setMediaSubmitting] = useState(false);
+
+  async function handleScientistMediaUpload(e: React.FormEvent) {
+    e.preventDefault();
+    setMediaSubmitting(true);
+    try {
+      const res = await fetchApi("/media/upload", {
+        method: "POST",
+        body: JSON.stringify({
+          title: mediaTitle,
+          filename: `${mediaStation}_observation.jpg`,
+          station_id: mediaStation,
+          expedition_id: mediaExpedition,
+          media_type: mediaType,
+          caption: mediaCaption,
+          tags: mediaTags.split(",").map((t) => t.trim()).filter(Boolean),
+          scientific_classification: mediaClassification,
+        }),
+      });
+      setActionMessage(
+        `Scientific media '${res.title}' (${res.asset_id}) submitted with status ${res.moderation_state} via ${res.storage_provider} provider (SHA-256: ${res.sha256?.slice(0, 12)}...).`
+      );
+      setMediaTitle("");
+      setMediaCaption("");
+      setMediaPanelOpen(false);
+    } catch (err: any) {
+      setActionMessage(err?.message || "Failed to submit scientific media.");
+    } finally {
+      setMediaSubmitting(false);
+    }
+  }
+
   // Prompt 10 RAG Knowledge Engine State
   const [ragQuestion, setRagQuestion] = useState("What was the minimum temperature and atmospheric pressure recorded at Maitri Station in July?");
   const [ragContentType, setRagContentType] = useState("ALL");
@@ -247,6 +288,15 @@ export default function DocumentIntelligencePage() {
         <div className="flex items-center space-x-3">
           <Button
             size="sm"
+            variant="outline"
+            onClick={() => setMediaPanelOpen(!mediaPanelOpen)}
+            className="flex items-center space-x-1.5 border-emerald-300 text-emerald-800 hover:bg-emerald-50"
+          >
+            <Upload className="w-4 h-4 text-emerald-600" />
+            <span>{mediaPanelOpen ? "Close Media Form" : "Upload Field Media Evidence"}</span>
+          </Button>
+          <Button
+            size="sm"
             variant="primary"
             onClick={() => setUploadModalOpen(true)}
             className="flex items-center space-x-1.5"
@@ -256,6 +306,107 @@ export default function DocumentIntelligencePage() {
           </Button>
         </div>
       </div>
+
+      {/* Scientist Media Workspace Form Panel (Sections 20 & 21) */}
+      {mediaPanelOpen && (
+        <Card className="border-emerald-300 shadow-sm bg-emerald-50/40">
+          <CardHeader className="p-4 pb-2 border-b border-emerald-200">
+            <CardTitle className="text-sm font-bold text-emerald-950 flex items-center space-x-2">
+              <Compass className="w-4 h-4 text-emerald-700" />
+              <span>Scientist Field Media Workspace (Section 21: Submit for Review)</span>
+            </CardTitle>
+            <CardDescription className="text-xs text-emerald-800">
+              Upload expedition photographs, videos, or observational evidence. Ingests via Cloudinary / Local Object Storage with SHA-256 fingerprinting. Submitted as <code>SUBMITTED_FOR_REVIEW</code> for Outreach Editor moderation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4">
+            <form onSubmit={handleScientistMediaUpload} className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="font-bold text-vistaar-text block mb-1">Observation Title</label>
+                <input
+                  type="text"
+                  value={mediaTitle}
+                  onChange={(e) => setMediaTitle(e.target.value)}
+                  placeholder="AWS Ultrasonic Anemometer Rime Ice Inspection"
+                  className="w-full px-3 py-2 rounded border border-vistaar-border bg-white text-xs"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-vistaar-text block mb-1">Polar Station</label>
+                <select
+                  value={mediaStation}
+                  onChange={(e) => setMediaStation(e.target.value)}
+                  className="w-full px-3 py-2 rounded border border-vistaar-border bg-white text-xs font-semibold"
+                >
+                  <option value="maitri">Maitri (Schirmacher Oasis)</option>
+                  <option value="bharati">Bharati (Larsemann Hills)</option>
+                  <option value="himadri">Himadri (Ny-Ålesund, Arctic)</option>
+                  <option value="himansh">Himansh (Chandra Basin, Himalayas)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-vistaar-text block mb-1">Media Type</label>
+                <select
+                  value={mediaType}
+                  onChange={(e) => setMediaType(e.target.value)}
+                  className="w-full px-3 py-2 rounded border border-vistaar-border bg-white text-xs"
+                >
+                  <option value="IMAGE">Photograph / Satellite Image</option>
+                  <option value="VIDEO">Field Log Video</option>
+                  <option value="FIGURE">Scientific Instrument Figure</option>
+                  <option value="DOCUMENT">Field Observation Log</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="font-bold text-vistaar-text block mb-1">Verified Scientific Caption</label>
+                <input
+                  type="text"
+                  value={mediaCaption}
+                  onChange={(e) => setMediaCaption(e.target.value)}
+                  placeholder="Documenting super-cooled fog and rime accretion on the 10m Campbell AWS tower."
+                  className="w-full px-3 py-2 rounded border border-vistaar-border bg-white text-xs"
+                  required
+                  minLength={5}
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-vistaar-text block mb-1">Expedition Reference</label>
+                <input
+                  type="text"
+                  value={mediaExpedition}
+                  onChange={(e) => setMediaExpedition(e.target.value)}
+                  placeholder="isea-43"
+                  className="w-full px-3 py-2 rounded border border-vistaar-border bg-white text-xs font-mono"
+                />
+              </div>
+
+              <div className="md:col-span-3 flex justify-end space-x-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMediaPanelOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={mediaSubmitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {mediaSubmitting ? "Uploading & Fingerprinting..." : "Submit to Outreach Review"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {actionMessage && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-xs text-vistaar-primary flex items-center justify-between">

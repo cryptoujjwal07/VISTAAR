@@ -36,8 +36,20 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8)
     name: str = Field(..., min_length=2)
     role: Optional[str] = 'PUBLIC_USER'
-    persona: Optional[Literal['STUDENT', 'TEACHER', 'JOURNALIST', 'SCIENTIST']] = 'STUDENT'
+    persona: Optional[Literal['STUDENT', 'TEACHER', 'JOURNALIST', 'RESEARCHER', 'SCIENTIST']] = 'STUDENT'
     organization: Optional[str] = None
+    country: Optional[str] = "India"
+    state: Optional[str] = None
+    district: Optional[str] = None
+    city: Optional[str] = None
+    student_id: Optional[str] = None
+    class_grade: Optional[str] = None
+    subject: Optional[str] = None
+    designation: Optional[str] = None
+    research_domain: Optional[str] = None
+    department: Optional[str] = None
+    orcid: Optional[str] = None
+    preferred_language: Optional[str] = "en"
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
@@ -47,8 +59,15 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(..., min_length=8)
 
 class RoleUpdateRequest(BaseModel):
-    role: Literal['SUPER_ADMIN', 'OUTREACH_EDITOR', 'FIELD_SCIENTIST', 'PUBLIC_USER']
+    role: Literal[
+        'SUPER_ADMIN', 'ADMIN', 'OUTREACH_EDITOR', 'FIELD_SCIENTIST',
+        'SCIENTIST', 'RESEARCHER', 'JOURNALIST', 'TEACHER', 'STUDENT', 'PUBLIC_USER'
+    ]
     reason: Optional[str] = None
+
+class RoleApplicationReviewRequest(BaseModel):
+    action: Literal['APPROVE', 'REJECT', 'REQUEST_INFO', 'SUSPEND']
+    reason: str = Field(..., min_length=3)
 
 class StatusUpdateRequest(BaseModel):
     is_active: bool
@@ -524,3 +543,290 @@ async def get_submission_details(
     verify_ownership(sub.get("author_id"), current_user, allow_roles=["SUPER_ADMIN", "OUTREACH_EDITOR"])
 
     return sub
+
+
+# =========================================================================
+# Structured Location Hierarchy & Role Verification Queue (Sections 10, 12, 36)
+# =========================================================================
+
+LOCATION_HIERARCHY = {
+    "countries": [
+        {
+            "id": "IN",
+            "name": "India",
+            "states_and_uts": [
+                {
+                    "id": "GA",
+                    "name": "Goa",
+                    "districts": [
+                        {
+                            "id": "GA-SG",
+                            "name": "South Goa",
+                            "cities": ["Vasco da Gama", "Margao", "Mormugao"],
+                            "institutions": ["National Centre for Polar and Ocean Research (NCPOR)", "Goa University"],
+                        },
+                        {
+                            "id": "GA-NG",
+                            "name": "North Goa",
+                            "cities": ["Panaji", "Mapusa"],
+                            "institutions": ["CSIR-National Institute of Oceanography (NIO)"],
+                        },
+                    ],
+                },
+                {
+                    "id": "DL",
+                    "name": "Delhi (NCT)",
+                    "districts": [
+                        {
+                            "id": "DL-ND",
+                            "name": "New Delhi",
+                            "cities": ["New Delhi"],
+                            "institutions": [
+                                "Ministry of Earth Sciences (MoES), Prithvi Bhavan",
+                                "India Meteorological Department (IMD)",
+                                "NCERT",
+                                "IIT Delhi",
+                                "Jawaharlal Nehru University (JNU)",
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "id": "HP",
+                    "name": "Himachal Pradesh",
+                    "districts": [
+                        {
+                            "id": "HP-LS",
+                            "name": "Lahaul and Spiti",
+                            "cities": ["Kaza", "Keylong", "Chandra Basin (Himansh)"],
+                            "institutions": ["Himansh Glaciological Station (NCPOR)", "SASE / DGRE"],
+                        }
+                    ],
+                },
+                {
+                    "id": "MH",
+                    "name": "Maharashtra",
+                    "districts": [
+                        {
+                            "id": "MH-MC",
+                            "name": "Mumbai",
+                            "cities": ["Mumbai", "Navi Mumbai"],
+                            "institutions": ["Indian Institute of Geomagnetism (IIG)", "IIT Bombay"],
+                        },
+                        {
+                            "id": "MH-PN",
+                            "name": "Pune",
+                            "cities": ["Pune"],
+                            "institutions": ["Indian Institute of Tropical Meteorology (IITM)", "IMD Pune"],
+                        },
+                    ],
+                },
+                {
+                    "id": "KA",
+                    "name": "Karnataka",
+                    "districts": [
+                        {
+                            "id": "KA-BL",
+                            "name": "Bengaluru Urban",
+                            "cities": ["Bengaluru"],
+                            "institutions": ["Indian Institute of Science (IISc)", "ISRO / NRSC"],
+                        }
+                    ],
+                },
+                {
+                    "id": "TN",
+                    "name": "Tamil Nadu",
+                    "districts": [
+                        {
+                            "id": "TN-CH",
+                            "name": "Chennai",
+                            "cities": ["Chennai"],
+                            "institutions": ["National Institute of Ocean Technology (NIOT)", "IIT Madras"],
+                        }
+                    ],
+                },
+            ],
+        },
+        {
+            "id": "NO",
+            "name": "Norway (Svalbard Arctic Treaty Zone)",
+            "states_and_uts": [
+                {
+                    "id": "NO-SV",
+                    "name": "Svalbard",
+                    "districts": [
+                        {
+                            "id": "NO-SV-NYA",
+                            "name": "Kongsfjorden",
+                            "cities": ["Ny-Ålesund"],
+                            "institutions": ["Himadri Arctic Research Station (NCPOR)"],
+                        }
+                    ],
+                }
+            ],
+        },
+    ]
+}
+
+
+@router.get("/locations/hierarchy")
+async def get_location_hierarchy():
+    """Returns the structured Country -> State/UT -> District -> City -> Institution hierarchy (Section 12)."""
+    return LOCATION_HIERARCHY
+
+
+class RoleApplicationRequest(BaseModel):
+    requested_role: Literal["SCIENTIST", "FIELD_SCIENTIST", "RESEARCHER", "JOURNALIST", "TEACHER"]
+    institution: str = Field(..., min_length=2)
+    designation: str = Field(..., min_length=2)
+    research_domain: Optional[str] = None
+    department: Optional[str] = None
+    orcid: Optional[str] = None
+    country: str = "India"
+    state: Optional[str] = None
+    district: Optional[str] = None
+    city: Optional[str] = None
+    supporting_notes: Optional[str] = None
+
+
+@router.post("/role-applications")
+async def submit_role_application(
+    req: RoleApplicationRequest,
+    current_user=Depends(get_current_user),
+):
+    """
+    Allows a Scientist, Researcher, Journalist, or Teacher applicant to submit a formal
+    verification request for Admin review (Sections 10, 11, 36).
+    """
+    db = get_database()
+    app_id = f"app_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc).isoformat()
+    doc = {
+        "application_id": app_id,
+        "user_id": current_user["id"],
+        "email": current_user["email"],
+        "name": current_user.get("name"),
+        "current_role": current_user.get("role", "PUBLIC_USER"),
+        "requested_role": req.requested_role,
+        "institution": req.institution,
+        "designation": req.designation,
+        "research_domain": req.research_domain,
+        "department": req.department,
+        "orcid": req.orcid,
+        "location": {
+            "country": req.country,
+            "state": req.state,
+            "district": req.district,
+            "city": req.city,
+        },
+        "supporting_notes": req.supporting_notes,
+        "verification_status": "PENDING_REVIEW",
+        "created_at": now,
+        "updated_at": now,
+    }
+    await db.role_applications.insert_one(doc)
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="ROLE_APPLICATION_SUBMITTED",
+        resource_type="ROLE_APPLICATION",
+        resource_id=app_id,
+        details={"requested_role": req.requested_role, "institution": req.institution},
+    )
+    doc.pop("_id", None)
+    return doc
+
+
+@router.get("/role-applications")
+async def list_role_applications(
+    status_filter: Optional[str] = Query(None, alias="status"),
+    current_user=Depends(require_roles(["SUPER_ADMIN", "ADMIN"])),
+):
+    """SUPER_ADMIN / ADMIN only: retrieves pending and historical role verification requests (Section 36)."""
+    db = get_database()
+    q = {}
+    if status_filter:
+        q["verification_status"] = status_filter.upper()
+    items = await db.role_applications.find(q, {"_id": 0}).sort("created_at", -1).to_list(length=100)
+    return {"items": items, "count": len(items)}
+
+
+@router.patch("/role-applications/{application_id}")
+async def review_role_application(
+    application_id: str,
+    req: RoleApplicationReviewRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN", "ADMIN"])),
+):
+    """
+    SUPER_ADMIN / ADMIN only: Approve, Reject, Request More Information, or Suspend a role application.
+    Records full audit log (user_id, admin_id, timestamp, action, reason, previous_state, new_state).
+    """
+    db = get_database()
+    app_doc = await db.role_applications.find_one({"application_id": application_id})
+    if not app_doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role application not found")
+
+    prev_state = app_doc.get("verification_status", "PENDING_REVIEW")
+    now = datetime.now(timezone.utc).isoformat()
+    status_map = {
+        "APPROVE": "APPROVED",
+        "REJECT": "REJECTED",
+        "REQUEST_INFO": "MORE_INFO_REQUESTED",
+        "SUSPEND": "SUSPENDED",
+    }
+    new_state = status_map[req.action]
+
+    await db.role_applications.update_one(
+        {"application_id": application_id},
+        {
+            "$set": {
+                "verification_status": new_state,
+                "reviewed_by": current_user["id"],
+                "reviewed_by_email": current_user["email"],
+                "review_reason": req.reason,
+                "updated_at": now,
+            }
+        },
+    )
+
+    if req.action == "APPROVE":
+        await db.users.update_one(
+            {"id": app_doc["user_id"]},
+            {"$set": {"role": app_doc["requested_role"], "updated_at": now}},
+        )
+    elif req.action == "SUSPEND":
+        await db.users.update_one(
+            {"id": app_doc["user_id"]},
+            {"$set": {"is_active": False, "updated_at": now}},
+        )
+
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action=f"ROLE_APPLICATION_{req.action}",
+        resource_type="ROLE_APPLICATION",
+        resource_id=application_id,
+        reason=req.reason,
+        before_version={"verification_status": prev_state, "role": app_doc.get("current_role")},
+        after_version={"verification_status": new_state, "role": app_doc.get("requested_role")},
+        details={
+            "user_id": app_doc["user_id"],
+            "admin_id": current_user["id"],
+            "timestamp": now,
+            "action": req.action,
+            "previous_state": prev_state,
+            "new_state": new_state,
+        },
+    )
+
+    return {
+        "application_id": application_id,
+        "user_id": app_doc["user_id"],
+        "admin_id": current_user["id"],
+        "timestamp": now,
+        "action": req.action,
+        "reason": req.reason,
+        "previous_state": prev_state,
+        "new_state": new_state,
+    }
+

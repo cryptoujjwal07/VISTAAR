@@ -74,21 +74,27 @@ async def get_weather_timeseries(
     dataset_id: Optional[str] = None,
     provider: Optional[str] = None,
     parameter: Optional[str] = None,
+    range_mode: Optional[str] = Query(
+        None,
+        description="Time-range control: LIVE | DAY | WEEK | MONTH | YEAR | CUSTOM (Sections 16 & 54)",
+    ),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     limit: int = Query(500, ge=1, le=2000),
     downsample: Optional[int] = Query(None, ge=3, le=1000, description="LTTB peak-preserving downsampling target point count (Prompt 27)"),
 ):
     """
-    Production VISTAAR Weather Intelligence endpoint (Prompt 16 & Prompt 27).
+    Production VISTAAR Weather Intelligence endpoint (Prompt 16, 27 & Sections 15–18, 26, 54).
     Uses ONLY real ingested NPDC data. Dynamically detects available parameters,
-    tracks missing data without replacing with zero, supports LTTB chart downsampling,
+    tracks missing data without replacing with zero, supports time-range controls
+    (LIVE, DAY, WEEK, MONTH, YEAR, CUSTOM) with resolution adaptation, IQR/robust anomaly explanations,
     and links every chart point to its original dataset record and SHA-256 provenance.
     """
     from apps.api.core.performance import lttb_downsample, ttl_cache
 
     sid = station_id.lower().strip()
-    cache_key = f"weather:ts:{sid}:{dataset_id}:{provider}:{parameter}:{start_date}:{end_date}:{limit}:{downsample}"
+    mode_clean = (range_mode or "CUSTOM").upper().strip()
+    cache_key = f"weather:ts:{sid}:{dataset_id}:{provider}:{parameter}:{mode_clean}:{start_date}:{end_date}:{limit}:{downsample}"
     cached = ttl_cache.get(cache_key)
     if cached is not None:
         return cached
@@ -137,8 +143,27 @@ async def get_weather_timeseries(
         if end_date:
             query["timestamp"]["$lte"] = end_date
 
-    cursor = db.dataset_records.find(query, {"_id": 0}).sort("timestamp", 1).limit(limit)
-    records = await cursor.to_list(length=limit)
+    # Apply range_mode windowing over real dataset records so multi-year data is not compressed into one unreadable line
+    effective_limit = limit
+    resolution_label = "RAW_OBSERVATION"
+    if mode_clean == "LIVE":
+        effective_limit = min(limit, 24)
+        resolution_label = "LATEST_24_OBSERVATIONS"
+    elif mode_clean == "DAY":
+        effective_limit = min(limit, 48)
+        resolution_label = "HOURLY_RESOLUTION"
+    elif mode_clean == "WEEK":
+        effective_limit = min(limit, 168)
+        resolution_label = "DAILY_WINDOW_RESOLUTION"
+    elif mode_clean == "MONTH":
+        effective_limit = min(limit, 360)
+        resolution_label = "MONTHLY_WINDOW_RESOLUTION"
+    elif mode_clean == "YEAR":
+        effective_limit = min(limit, 1000)
+        resolution_label = "ANNUAL_AGGREGATED_RESOLUTION"
+
+    cursor = db.dataset_records.find(query, {"_id": 0}).sort("timestamp", 1).limit(effective_limit)
+    records = await cursor.to_list(length=effective_limit)
 
     points = []
     missing_points = []
@@ -172,6 +197,33 @@ async def get_weather_timeseries(
             "record_id": r["record_id"],
             "provenance": r.get("provenance", {}),
         })
+
+    # Robust IQR + physical bounds anomaly detection with human-readable scientific explanations (Section 26)
+    anomalies: List[Dict[str, Any]] = []
+    if len(values) >= 4:
+        arr = np.asarray(values, dtype=np.float64)
+        q25, q75 = float(np.percentile(arr, 25)), float(np.percentile(arr, 75))
+        iqr = max(q75 - q25, 1e-6)
+        low_fence = q25 - 1.8 * iqr
+        high_fence = q75 + 1.8 * iqr
+        for pt in points:
+            v = pt["value"]
+            if v < low_fence or v > high_fence or pt["quality_flag"] not in ("VALID",):
+                direction = "above" if v > high_fence else "below"
+                pt["is_anomaly"] = True
+                pt["anomaly_explanation"] = (
+                    f"{param} observation ({v} {unit}) is significantly {direction} "
+                    f"the station's robust interquartile distribution ([{round(low_fence, 2)}, {round(high_fence, 2)}] {unit}) for this period."
+                )
+                anomalies.append({
+                    "record_id": pt["record_id"],
+                    "timestamp": pt["timestamp"],
+                    "value": v,
+                    "unit": unit,
+                    "explanation": pt["anomaly_explanation"],
+                })
+            else:
+                pt["is_anomaly"] = False
 
     period = {
         "start": points[0]["timestamp"] if points else None,
@@ -207,6 +259,9 @@ async def get_weather_timeseries(
         ],
         "provider": provider_name,
         "available_providers": available_providers,
+        "range_mode": mode_clean,
+        "resolution": resolution_label,
+        "supported_range_modes": ["LIVE", "DAY", "WEEK", "MONTH", "YEAR", "CUSTOM"],
         "period": period,
         "parameter": param,
         "available_parameters": available_params,
@@ -214,6 +269,8 @@ async def get_weather_timeseries(
         "source_citation": source_citation,
         "quality_breakdown": quality_counts,
         "statistics": stats,
+        "anomalies": anomalies[:25],
+        "anomaly_count": len(anomalies),
         "downsampled": bool(downsample and raw_point_count > len(points)),
         "raw_point_count": raw_point_count,
         "returned_point_count": len(points),

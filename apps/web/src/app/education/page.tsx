@@ -36,6 +36,13 @@ export default function EducationPage() {
         if (saved) {
           setProgressMap(JSON.parse(saved));
         }
+        const savedUser = localStorage.getItem("vistaar_user");
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          if (parsedUser?.role === "TEACHER" || parsedUser?.persona === "TEACHER") {
+            setIsTeacherMode(true);
+          }
+        }
       } catch {
         // ignore storage errors
       }
@@ -124,10 +131,12 @@ export default function EducationPage() {
             <span>NCERT Aligned Polar Science Platform (Classes 8–12)</span>
           </div>
           <h1 className="text-3xl font-extrabold text-vistaar-text">
-            VISTAAR Classroom Studio
+            {isTeacherMode ? "VISTAAR Educator & Curriculum Studio" : "VISTAAR Student Polar Learning Hub"}
           </h1>
           <p className="text-sm text-vistaar-muted mt-1">
-            Interactive inquiry-based lessons grounded in real NPDC meteorological and cryospheric observations with controlled scientific provenance.
+            {isTeacherMode
+              ? "Curriculum alignment, classroom assignment planning, learning analytics, and downloadable NCERT lesson guides."
+              : "Interactive inquiry-based lessons, live station data visualizations, quizzes, and achievement badges."}
           </p>
         </div>
 
@@ -154,7 +163,7 @@ export default function EducationPage() {
               }`}
             >
               <User className="w-3.5 h-3.5" />
-              <span>Student Mode</span>
+              <span>Student Workspace</span>
             </button>
             <button
               onClick={() => setIsTeacherMode(true)}
@@ -163,14 +172,14 @@ export default function EducationPage() {
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Teacher Mode</span>
+              <span>Teacher Workspace</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Student Mode Progress Bar */}
-      {!isTeacherMode && (
+      {/* Student Workspace: Progress Bar & Polar Achievements (Sections 7 & 30) */}
+      {!isTeacherMode ? (
         <div className="bg-white p-4 rounded-xl border border-vistaar-border shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1 flex-1">
             <div className="flex items-center justify-between text-xs font-bold text-vistaar-text">
@@ -186,9 +195,63 @@ export default function EducationPage() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-emerald-700 font-mono bg-emerald-50 px-3 py-1.5 rounded border border-emerald-200">
-            <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span>Controlled Approved Curriculum</span>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1.5 font-mono bg-amber-50 text-amber-900 px-3 py-1.5 rounded border border-amber-200 font-bold">
+              <Award className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                {completedCount >= 3
+                  ? "Polar Fellow Badge"
+                  : completedCount >= 1
+                  ? "Cryosphere Explorer Badge"
+                  : "Initiate Quiz to Earn Badges"}
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-emerald-700 font-mono bg-emerald-50 px-3 py-1.5 rounded border border-emerald-200">
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span>Controlled Approved Curriculum</span>
+            </span>
+          </div>
+        </div>
+      ) : (
+        /* Teacher Workspace: Classroom Management & Curriculum Analytics (Sections 7 & 30 — Isolated from Students) */
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded-xl border border-vistaar-border shadow-xs space-y-1">
+            <div className="text-[11px] font-mono uppercase text-vistaar-scientific font-bold flex items-center gap-1.5">
+              <BarChart3 className="w-4 h-4" />
+              <span>Curriculum Coverage</span>
+            </div>
+            <div className="text-xl font-extrabold text-vistaar-text">
+              {lessons.length} NCERT Modules Active
+            </div>
+            <p className="text-xs text-vistaar-muted">
+              Spanning Physics, Geography, Earth Sciences & Climatology (Classes 8–12).
+            </p>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl border border-vistaar-border shadow-xs space-y-1">
+            <div className="text-[11px] font-mono uppercase text-emerald-700 font-bold flex items-center gap-1.5">
+              <Users className="w-4 h-4" />
+              <span>Classroom Assignment Mode</span>
+            </div>
+            <div className="text-xl font-extrabold text-vistaar-text">
+              4 Observatory Tracks
+            </div>
+            <p className="text-xs text-vistaar-muted">
+              Maitri, Bharati, Himadri & Himansh real NPDC telemetry inquiry activities.
+            </p>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl border border-vistaar-border shadow-xs space-y-1">
+            <div className="text-[11px] font-mono uppercase text-amber-800 font-bold flex items-center gap-1.5">
+              <Download className="w-4 h-4" />
+              <span>Educator Lesson Guides</span>
+            </div>
+            <div className="text-xl font-extrabold text-vistaar-text">
+              Print-Ready Rubrics
+            </div>
+            <p className="text-xs text-vistaar-muted">
+              Includes answer keys, learning objectives, and verified NPDC dataset citations.
+            </p>
           </div>
         </div>
       )}

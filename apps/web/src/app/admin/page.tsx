@@ -41,8 +41,10 @@ export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [submissionsList, setSubmissionsList] = useState<any[]>([]);
+  const [applicationsList, setApplicationsList] = useState<any[]>([]);
+  const [appStatusFilter, setAppStatusFilter] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "audit" | "submissions" | "operations">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "applications" | "audit" | "submissions" | "operations">("overview");
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("");
   const [auditResourceTypeFilter, setAuditResourceTypeFilter] = useState("");
@@ -68,8 +70,34 @@ export default function AdminPage() {
       loadAdminOverview(),
       loadAuditLogs(),
       loadUsers(),
-      loadSubmissions()
+      loadSubmissions(),
+      loadApplications(),
     ]);
+  }
+
+  async function loadApplications() {
+    try {
+      const q = appStatusFilter ? `?status=${appStatusFilter}` : "";
+      const res = await fetchApi(`/auth/role-applications${q}`);
+      setApplicationsList(res.items || []);
+    } catch {
+      setApplicationsList([]);
+    }
+  }
+
+  async function handleReviewApplication(appId: string, action: "APPROVE" | "REJECT" | "REQUEST_INFO" | "SUSPEND") {
+    const reason = window.prompt(`Enter administrative justification for ${action}:`, "Administrative verification complete");
+    if (!reason) return;
+    try {
+      await fetchApi(`/auth/role-applications/${appId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action, reason }),
+      });
+      showNotification(`Role application marked as ${action} with immutable audit log.`);
+      await Promise.all([loadApplications(), loadUsers(), loadAuditLogs()]);
+    } catch (e: any) {
+      showNotification(e.message || "Failed to update role application", true);
+    }
   }
 
   async function loadAdminOverview(stationOverride?: string, fromOverride?: string, toOverride?: string) {
@@ -360,6 +388,19 @@ export default function AdminPage() {
           User Accounts & RBAC
         </button>
         <button
+          onClick={() => {
+            setActiveTab("applications");
+            loadApplications();
+          }}
+          className={`px-4 py-2 rounded-md transition-colors ${
+            activeTab === "applications"
+              ? "bg-vistaar-primary text-white"
+              : "text-vistaar-muted hover:text-vistaar-text hover:bg-white"
+          }`}
+        >
+          Role Approval Queue ({applicationsList.length})
+        </button>
+        <button
           onClick={() => setActiveTab("audit")}
           className={`px-4 py-2 rounded-md transition-colors ${
             activeTab === "audit"
@@ -390,6 +431,112 @@ export default function AdminPage() {
           Operations, AI Telemetry & Config
         </button>
       </div>
+
+      {/* TAB: ROLE APPROVAL QUEUE (Sections 10, 11, 36) */}
+      {activeTab === "applications" && (
+        <Card className="bg-white border-vistaar-border">
+          <CardHeader className="p-5 border-b border-vistaar-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-bold flex items-center space-x-2">
+                <UserCheck className="w-4 h-4 text-vistaar-primary" />
+                <span>Institutional Role Verification & Approval Queue (Section 36)</span>
+              </CardTitle>
+              <CardDescription className="text-xs mt-1">
+                Review Scientist, Researcher, Journalist, and Educator verification applications. Every decision records an immutable audit log entry.
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <select
+                value={appStatusFilter}
+                onChange={(e) => {
+                  setAppStatusFilter(e.target.value);
+                }}
+                className="px-3 py-1.5 rounded border border-vistaar-border bg-[#FAF7F0] text-xs font-mono"
+              >
+                <option value="">All Statuses</option>
+                <option value="PENDING_REVIEW">PENDING_REVIEW</option>
+                <option value="APPROVED">APPROVED</option>
+                <option value="REJECTED">REJECTED</option>
+                <option value="MORE_INFO_REQUESTED">MORE_INFO_REQUESTED</option>
+                <option value="SUSPENDED">SUSPENDED</option>
+              </select>
+              <Button variant="outline" size="sm" onClick={loadApplications}>
+                <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                Refresh
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-5">
+            {applicationsList.length === 0 ? (
+              <div className="p-6 text-center text-xs text-vistaar-muted bg-[#FAF7F0] rounded-lg border border-vistaar-border">
+                No role verification applications found for the selected filter. Applicants can submit requests via <code>POST /api/v1/auth/role-applications</code>.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {applicationsList.map((app: any) => (
+                  <div
+                    key={app.application_id}
+                    className="p-4 rounded-lg border border-vistaar-border bg-[#FAF7F0]/60 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-vistaar-text text-sm">{app.name || app.email}</span>
+                        <Badge variant="scientific">{app.requested_role}</Badge>
+                        <Badge variant={app.verification_status === "APPROVED" ? "success" : "outline"}>
+                          {app.verification_status}
+                        </Badge>
+                        <span className="font-mono text-[10px] text-vistaar-muted">{app.application_id}</span>
+                      </div>
+                      <p className="text-vistaar-muted">
+                        <strong>Institution:</strong> {app.institution} • <strong>Designation:</strong> {app.designation} •{" "}
+                        <strong>Location:</strong> {app.location?.city || "N/A"}, {app.location?.state || "India"}
+                      </p>
+                      {app.orcid && (
+                        <p className="font-mono text-[11px] text-vistaar-scientific">
+                          ORCID: {app.orcid} | Domain: {app.research_domain || "Polar Sciences"}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => handleReviewApplication(app.application_id, "APPROVE")}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleReviewApplication(app.application_id, "REQUEST_INFO")}
+                        className="text-xs"
+                      >
+                        Request Info
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleReviewApplication(app.application_id, "REJECT")}
+                        className="text-red-700 border-red-200 hover:bg-red-50 text-xs"
+                      >
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleReviewApplication(app.application_id, "SUSPEND")}
+                        className="text-amber-800 border-amber-200 hover:bg-amber-50 text-xs"
+                      >
+                        Suspend
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === "overview" && (
