@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { AuthGate } from "@/components/layout/AuthGate";
 import { ToastProvider } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
@@ -59,7 +60,7 @@ export default function RootLayout({
         <ToastProvider>
           <Navbar />
           <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
-            {children}
+            <AuthGate>{children}</AuthGate>
           </main>
           <Footer />
         </ToastProvider>
