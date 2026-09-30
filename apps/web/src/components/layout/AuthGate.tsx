@@ -301,21 +301,28 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-sky-200/60 flex items-center justify-between text-xs">
+          <div className="pt-3 border-t border-sky-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
             <Link
               href="/"
               className="inline-flex items-center space-x-1.5 text-blue-700 font-semibold hover:underline"
             >
               <Home className="w-3.5 h-3.5" />
-              <span>Return to Public Dissemination Portal</span>
+              <span>Return to Polar Bear Landing Page</span>
             </Link>
-            {user && (
+            {user ? (
               <Link
                 href={getRolePortalRoute(user.role)}
                 className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-blue-600 text-white font-semibold"
               >
                 <span>Open My Authorized Portal ({getRolePortalRoute(user.role)})</span>
                 <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : (
+              <Link
+                href="/login?mode=signup"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-sky-100 hover:bg-sky-200 text-vistaar-primary font-bold border border-sky-300"
+              >
+                <span>New User? Sign Up (Non-Admin) →</span>
               </Link>
             )}
           </div>
@@ -328,8 +335,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     <>
       {/* Active Role Portal Command Bar when authenticated */}
       {user && roleSpec && (
-        <div className="bg-white/65 backdrop-blur-xl border-b border-sky-200/70 px-4 sm:px-6 lg:px-8 py-2">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="bg-white/65 backdrop-blur-xl border-b border-sky-200/70 px-4 sm:px-6 lg:px-10 py-2">
+          <div className="w-full flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="font-bold text-vistaar-text">{roleSpec.title}</span>

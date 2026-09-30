@@ -21,6 +21,8 @@ import {
   FlaskConical,
   Building2,
   Image as ImageIcon,
+  UserPlus,
+  LogIn,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +33,19 @@ import { getRolePortalLabel, getRolePortalRoute } from "@/components/layout/Auth
 
 const HERO_SLIDES = [
   {
+    regionTag: "ARCTIC SENTINEL",
+    title: "Arctic Polar Bear Sentinel & Cryosphere Gateway",
+    titleHi: "आर्कटिक ध्रुवीय भालू और क्रायोस्फीयर प्रवेश द्वार",
+    subtitle:
+      "Click the Polar Bear showcase to Sign In or Register a User Account. Year-round Arctic sea-ice, fjord oceanography, and climate amplification monitoring at Himadri & IndARC (79°N).",
+    subtitleHi:
+      "पोर्टल में लॉगिन या उपयोगकर्ता पंजीकरण के लिए ध्रुवीय भालू कार्ड पर क्लिक करें। हिमाद्री और IndARC (79°N) में आर्कटिक समुद्री-बर्फ और जलवायु निगरानी।",
+    bgImage: "https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=1800&q=85",
+    stationId: "himadri",
+    coordinates: "78°55' N, 11°55' E • Svalbard Arctic",
+    elevation: "Click Image → Redirects to Portal Login & User Sign-Up",
+  },
+  {
     regionTag: "ANTARCTICA",
     title: "Antarctica: Maitri & Bharati Observatories",
     titleHi: "अंटार्कटिका: मैत्री और भारती वेधशालाएँ",
@@ -38,23 +53,10 @@ const HERO_SLIDES = [
       "Continuous atmospheric, geomagnetic, and ice-shelf monitoring across the Schirmacher Oasis and Larsemann Hills under the Indian Antarctic Programme.",
     subtitleHi:
       "भारतीय अंटार्कटिक कार्यक्रम के अंतर्गत शूमाकर ओएसिस और लार्समन हिल्स में सतत वायुमंडलीय, भू-चुंबकीय और हिम-शेल्फ निगरानी।",
-    bgImage: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1400&q=85",
+    bgImage: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=85",
     stationId: "maitri",
     coordinates: "70°45' S, 11°44' E • 69°24' S, 76°11' E",
     elevation: "Schirmacher Oasis & Larsemann Hills",
-  },
-  {
-    regionTag: "ARCTIC",
-    title: "The Arctic: Himadri & IndARC Mooring",
-    titleHi: "आर्कटिक: हिमाद्री और IndARC वेधशाला",
-    subtitle:
-      "Year-round fjord oceanography, precipitation microphysics, and Arctic amplification research at Ny-Ålesund, Svalbard (79°N).",
-    subtitleHi:
-      "नाइ-आलेसुंड, स्वालबार्ड (79°N) में वर्ष भर फ्योर्ड समुद्र विज्ञान, वर्षण सूक्ष्म भौतिकी और आर्कटिक प्रवर्धन अनुसंधान।",
-    bgImage: "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=1400&q=85",
-    stationId: "himadri",
-    coordinates: "78°55' N, 11°55' E",
-    elevation: "Kongsfjorden, Svalbard (79°N)",
   },
   {
     regionTag: "HIMALAYAS",
@@ -64,7 +66,7 @@ const HERO_SLIDES = [
       "High-altitude glacier mass balance, snow water equivalent, and monsoon teleconnection telemetry at 4,080m in the Chandra Basin, Spiti Valley.",
     subtitleHi:
       "चंद्रा बेसिन, स्पीति घाटी में 4,080 मीटर की ऊँचाई पर हिमनद द्रव्यमान संतुलन और मानसून टेलीकनेक्शन टेलीमेट्री।",
-    bgImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1400&q=85",
+    bgImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=85",
     stationId: "himansh",
     coordinates: "32°24' N, 77°37' E",
     elevation: "4,080m AMSL • Chandra Basin",
@@ -223,9 +225,7 @@ export default function HomePage() {
         router.push(getRolePortalRoute(res.user?.role));
       }
     } catch {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("vistaar-open-login-modal"));
-      }
+      router.push("/login");
     } finally {
       setLaunchingRole(null);
     }
@@ -237,157 +237,140 @@ export default function HomePage() {
     ? (["student", "teacher", "journalist", "scientist"] as const)
     : (["student", "teacher", "journalist"] as const);
 
-  const openLoginModal = () => {
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("vistaar-open-login-modal"));
-    }
-  };
-
   return (
     <div className="w-full px-4 sm:px-6 lg:px-10 pb-14 overflow-x-hidden text-vistaar-text">
       {/* FULL-SCREEN LANDING DASHBOARD (100% Viewport Width & Height Below Navbar) */}
       <div className="w-full min-h-[calc(100vh-6rem)] flex flex-col justify-between py-4 gap-4">
-        {/* 1. MAIN LANDING SHOWCASE & DIRECT ROLE PORTAL LAUNCHPAD (Stretches to fill viewport height) */}
+        {/* 1. BIG POLAR BEAR LANDING HERO (Redirects to /login) + DIRECT ROLE PORTAL & USER SIGN-UP */}
         <section
-          aria-label="VISTAAR Ice-Mountain Landing Showcase"
+          aria-label="VISTAAR Polar Bear & Ice-Mountain Landing Showcase"
           className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch"
         >
-          {/* Left Framed Landing Showcase Card (7 cols) */}
-          <div className="lg:col-span-7 rounded-3xl ice-glass-strong p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
-            {/* Subtle decorative SVG Ice-Mountain ridgeline */}
-            <svg
-              viewBox="0 0 600 130"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="absolute bottom-0 right-0 w-full h-28 opacity-25 pointer-events-none"
-              preserveAspectRatio="none"
+          {/* Left Column (7 cols): Big Polar Bear Visual Hero Card — Clicking Redirects to /login */}
+          <div className="lg:col-span-7 rounded-3xl overflow-hidden relative min-h-[420px] flex flex-col justify-between p-6 sm:p-8 text-white shadow-xl border-2 border-white/85 group">
+            {/* Big Polar Bear Background Image (Clickable Redirect to /login) */}
+            <Link
+              href={currentUser ? getRolePortalRoute(currentUser.role) : "/login"}
+              aria-label="Click Polar Bear Hero to Sign In or Register User Account"
+              className="absolute inset-0 z-0 block cursor-pointer"
             >
-              <path d="M0 130L110 48L205 98L330 16L455 88L535 40L600 130H0Z" fill="#BAE6FD" />
-              <path d="M160 130L330 16L455 88L600 28V130H160Z" fill="#7DD3FC" />
-            </svg>
+              <div
+                className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                style={{ backgroundImage: `url('${currentSlide.bgImage}')` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#061527]/90 via-[#08223E]/45 to-[#08223E]/25" />
+            </Link>
 
-            <div className="relative z-10 space-y-5">
-              {/* Brand Mountain Logo + Region Tabs */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-sky-200/70">
-                <div className="flex items-center space-x-3.5 min-w-0">
-                  <MountainLogo size="lg" />
-                  <div className="min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-mono uppercase tracking-wider font-bold text-vistaar-scientific truncate">
-                        NCPOR • MINISTRY OF EARTH SCIENCES
-                      </span>
-                      <Badge variant="scientific">SIH 26063</Badge>
-                    </div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-vistaar-text truncate mt-0.5">
-                      VISTAAR <span className="text-vistaar-scientific font-semibold">(विस्तार)</span> Landing Portal
-                    </h1>
+            {/* Top Header Bar Inside Polar Bear Hero */}
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+              <div className="flex items-center space-x-3">
+                <MountainLogo size="lg" />
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[11px] font-mono uppercase tracking-widest font-bold text-sky-200">
+                      NCPOR • MINISTRY OF EARTH SCIENCES
+                    </span>
+                    <Badge variant="scientific" className="bg-white/90 text-sky-900 border-white">
+                      SIH 26063
+                    </Badge>
                   </div>
-                </div>
-
-                <div
-                  role="tablist"
-                  aria-label="Polar Region Hero Slides"
-                  className="flex space-x-1.5 bg-sky-50/90 p-1.5 rounded-full border border-sky-200/80 shrink-0"
-                >
-                  {HERO_SLIDES.map((slide, idx) => (
-                    <button
-                      key={slide.regionTag}
-                      role="tab"
-                      aria-selected={activeSlide === idx}
-                      aria-label={`View ${slide.regionTag} highlight`}
-                      onClick={() => setActiveSlide(idx)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                        activeSlide === idx
-                          ? "bg-gradient-to-r from-vistaar-primary to-vistaar-scientific text-white shadow-xs"
-                          : "text-vistaar-muted hover:text-vistaar-text"
-                      }`}
-                    >
-                      {slide.regionTag}
-                    </button>
-                  ))}
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-xs">
+                    VISTAAR <span className="text-sky-300 font-semibold">(विस्तार)</span> Polar Portal
+                  </h1>
                 </div>
               </div>
 
-              {/* Active Cryospheric Realm Highlight */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center py-2">
-                <div className="sm:col-span-7 space-y-3 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs uppercase font-mono tracking-wider font-bold text-[#0E7490] bg-sky-50 px-3 py-1 rounded-full border border-sky-200 flex items-center gap-1.5">
-                      <MountainSnow className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                      {currentSlide.regionTag}
-                    </span>
-                    <span className="text-xs font-mono text-vistaar-muted truncate">{currentSlide.coordinates}</span>
-                  </div>
-
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-vistaar-text leading-tight">
-                    {language === "hi" ? currentSlide.titleHi : currentSlide.title}
-                  </h2>
-
-                  <p className="text-sm text-vistaar-muted leading-relaxed">
-                    {language === "hi" ? currentSlide.subtitleHi : currentSlide.subtitle}
-                  </p>
-                </div>
-
-                {/* Framed Snow-Mountain Card */}
-                <div className="sm:col-span-5">
-                  <div className="relative h-48 sm:h-52 rounded-2xl overflow-hidden border-2 border-white shadow-md group">
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                      style={{ backgroundImage: `url('${currentSlide.bgImage}')` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-sky-950/85 via-sky-950/25 to-transparent" />
-                    <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-sky-200 block truncate">
-                        {currentSlide.elevation}
-                      </span>
-                      <span className="text-xs sm:text-sm font-bold leading-snug block truncate">
-                        {currentSlide.title}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <div
+                role="tablist"
+                aria-label="Polar Region Hero Slides"
+                className="flex space-x-1 bg-white/90 backdrop-blur-md p-1 rounded-full border border-white shadow-sm pointer-events-auto"
+              >
+                {HERO_SLIDES.map((slide, idx) => (
+                  <button
+                    key={slide.regionTag}
+                    role="tab"
+                    aria-selected={activeSlide === idx}
+                    aria-label={`View ${slide.regionTag} highlight`}
+                    onClick={() => setActiveSlide(idx)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      activeSlide === idx
+                        ? "bg-gradient-to-r from-vistaar-primary to-vistaar-scientific text-white shadow-2xs"
+                        : "text-vistaar-text hover:bg-sky-50"
+                    }`}
+                  >
+                    {slide.regionTag}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Primary Landing Actions */}
-            <div className="relative z-10 pt-4 mt-2 border-t border-sky-200/70 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2.5">
+            {/* Bottom Content Overlay on Big Polar Bear Card */}
+            <div className="relative z-10 space-y-4 max-w-2xl pt-12 pointer-events-none">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs uppercase font-mono tracking-wider font-bold text-[#0E7490] bg-white/95 px-3 py-1 rounded-full border border-sky-200 flex items-center gap-1.5 shadow-2xs">
+                  <MountainSnow className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                  {currentSlide.regionTag}
+                </span>
+                <span className="text-xs font-mono text-sky-100 bg-sky-950/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/25">
+                  {currentSlide.coordinates}
+                </span>
+              </div>
+
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-white leading-tight drop-shadow-sm">
+                {language === "hi" ? currentSlide.titleHi : currentSlide.title}
+              </h2>
+
+              <p className="text-xs sm:text-sm text-sky-100/95 leading-relaxed max-w-xl">
+                {language === "hi" ? currentSlide.subtitleHi : currentSlide.subtitle}
+              </p>
+
+              {/* Action Buttons (Redirect to /login and /login?mode=signup) */}
+              <div className="flex flex-wrap items-center gap-3 pt-2 pointer-events-auto">
                 {currentUser ? (
                   <Link href={getRolePortalRoute(currentUser.role)}>
-                    <Button size="md" className="bg-gradient-to-r from-blue-600 to-cyan-700 text-white font-bold text-xs shadow-sm">
+                    <Button size="md" className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold shadow-lg border border-white/30">
                       Open {getRolePortalLabel(currentUser.role)} →
                     </Button>
                   </Link>
                 ) : (
-                  <Button
-                    size="md"
-                    onClick={openLoginModal}
-                    className="bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white font-bold text-xs shadow-sm cursor-pointer"
-                  >
-                    Sign In to Role Portal →
-                  </Button>
+                  <>
+                    <Link href="/login">
+                      <Button
+                        size="md"
+                        className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-lg border border-white/40 flex items-center space-x-2"
+                      >
+                        <LogIn className="w-4 h-4" />
+                        <span>Sign In to Role Portal →</span>
+                      </Button>
+                    </Link>
+                    <Link href="/login?mode=signup">
+                      <Button
+                        size="md"
+                        variant="outline"
+                        className="bg-white/95 hover:bg-white text-vistaar-primary font-bold border-white shadow-md flex items-center space-x-1.5"
+                      >
+                        <UserPlus className="w-4 h-4 text-blue-600" />
+                        <span>Sign Up (User Only)</span>
+                      </Button>
+                    </Link>
+                  </>
                 )}
                 <Link href={`/weather?station=${currentSlide.stationId}`}>
-                  <Button size="md" variant="outline" className="bg-white/85 text-vistaar-text border-sky-200 hover:bg-white font-semibold text-xs">
-                    Weather Telemetry
-                  </Button>
-                </Link>
-                <Link href="/research">
-                  <Button size="md" variant="outline" className="bg-white/85 text-vistaar-text border-sky-200 hover:bg-white font-semibold text-xs">
-                    Published Research
+                  <Button
+                    size="md"
+                    variant="outline"
+                    className="bg-white/15 backdrop-blur-md text-white border-white/35 hover:bg-white/25 font-semibold"
+                  >
+                    Live Weather Telemetry
                   </Button>
                 </Link>
               </div>
-
-              <span className="text-xs font-mono text-vistaar-scientific font-bold">
-                4 Stations • 100% Verified
-              </span>
             </div>
           </div>
 
-          {/* Right Framed Direct Role Portal Launchpad (5 cols) */}
-          <div className="lg:col-span-5 rounded-3xl ice-glass-strong p-6 sm:p-8 flex flex-col justify-between">
-            <div className="space-y-4">
+          {/* Right Framed Direct Role Portal & User Sign-Up Card (5 cols) */}
+          <div className="lg:col-span-5 rounded-3xl ice-glass-strong p-6 sm:p-7 flex flex-col justify-between">
+            <div className="space-y-3.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-mono uppercase tracking-wider font-bold text-vistaar-primary flex items-center gap-1.5 truncate">
                   {currentUser ? (
@@ -398,12 +381,12 @@ export default function HomePage() {
                   ) : (
                     <>
                       <Lock className="w-4 h-4 text-vistaar-primary shrink-0" />
-                      <span>1-CLICK DIRECT ROLE PORTAL LOGIN</span>
+                      <span>LOGIN & USER SIGN-UP GATEWAY</span>
                     </>
                   )}
                 </span>
                 <Badge variant="scientific">
-                  {currentUser ? currentUser.role : "Direct Launch"}
+                  {currentUser ? currentUser.role : "Non-Admin Sign Up Enabled"}
                 </Badge>
               </div>
 
@@ -411,107 +394,122 @@ export default function HomePage() {
                 <h2 className="text-xl sm:text-2xl font-extrabold text-vistaar-text leading-snug">
                   {currentUser
                     ? `Active: ${currentUser.full_name || currentUser.name || currentUser.email}`
-                    : "Click Any Role to Sign In & Open Portal Directly"}
+                    : "Sign In or Register as User (Opens Portal Directly)"}
                 </h2>
-                <p className="text-xs sm:text-sm text-vistaar-muted leading-relaxed mt-1">
+                <p className="text-xs text-vistaar-muted leading-relaxed mt-1">
                   {currentUser
                     ? "Click any role card below to switch or open that dedicated workspace immediately."
-                    : "Without login, internal tools stay locked and only public outreach is shown. Click a role below to sign in and open its portal directly:"}
+                    : "Without login, internal tools remain locked and only public outreach is shown. Sign up as a new User (not Admin) or click a role below to launch directly:"}
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handleDirectPortalLaunch("admin@vistaar.ncpor.res.in", "VistaarAdmin@2026!", "SUPER_ADMIN")}
-                  className="p-4 rounded-2xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs hover:shadow-md cursor-pointer"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-bold text-sm text-vistaar-text flex items-center gap-1.5 truncate">
-                      <Shield className="w-4 h-4 text-red-600 shrink-0" />
-                      <span className="truncate">Super Admin</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-vistaar-scientific shrink-0">/admin</span>
-                  </div>
-                  <span className="text-xs text-vistaar-muted mt-1.5 truncate">
-                    {launchingRole === "SUPER_ADMIN" ? "Opening /admin..." : "Governance & RBAC"}
-                  </span>
-                </button>
+              {/* Prominent Sign In & Sign Up (User Only) Buttons */}
+              {!currentUser && (
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <Link
+                    href="/login"
+                    className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm transition-all"
+                  >
+                    <LogIn className="w-4 h-4 shrink-0" />
+                    <span>Login to Portal</span>
+                  </Link>
+                  <Link
+                    href="/login?mode=signup"
+                    className="py-2.5 px-3 rounded-xl bg-white hover:bg-sky-50 text-vistaar-primary border border-sky-300 text-xs font-bold flex items-center justify-center space-x-1.5 shadow-2xs transition-all"
+                  >
+                    <UserPlus className="w-4 h-4 shrink-0" />
+                    <span>Sign Up (User)</span>
+                  </Link>
+                </div>
+              )}
 
-                <button
-                  type="button"
-                  onClick={() => handleDirectPortalLaunch("editor@vistaar.ncpor.res.in", "Editor@Vistaar2026!", "OUTREACH_EDITOR")}
-                  className="p-4 rounded-2xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs hover:shadow-md cursor-pointer"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-bold text-sm text-vistaar-text flex items-center gap-1.5 truncate">
-                      <Edit3 className="w-4 h-4 text-blue-600 shrink-0" />
-                      <span className="truncate">Outreach Editor</span>
+              <div className="pt-1">
+                <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-vistaar-scientific block mb-2">
+                  1-Click Instant Role Portal Launchers:
+                </span>
+                <div className="grid grid-cols-2 gap-2.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleDirectPortalLaunch("student@vistaar.ncpor.res.in", "Student@Vistaar2026!", "PUBLIC_USER")}
+                    className="p-3 rounded-2xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs hover:shadow-md cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold text-xs text-vistaar-text flex items-center gap-1.5 truncate">
+                        <GraduationCap className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span className="truncate">Student User</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-vistaar-scientific shrink-0">/education</span>
+                    </div>
+                    <span className="text-[11px] text-vistaar-muted mt-1 truncate">
+                      {launchingRole === "PUBLIC_USER" ? "Opening /education..." : "NCERT 8–12 Classroom"}
                     </span>
-                    <span className="text-[10px] font-mono text-vistaar-scientific shrink-0">/workspace</span>
-                  </div>
-                  <span className="text-xs text-vistaar-muted mt-1.5 truncate">
-                    {launchingRole === "OUTREACH_EDITOR" ? "Opening /workspace..." : "Review & PIB Studio"}
-                  </span>
-                </button>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleDirectPortalLaunch("scientist@vistaar.ncpor.res.in", "Scientist@Vistaar2026!", "FIELD_SCIENTIST")}
-                  className="p-4 rounded-2xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs hover:shadow-md cursor-pointer"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-bold text-sm text-vistaar-text flex items-center gap-1.5 truncate">
-                      <FlaskConical className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="truncate">Field Scientist</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDirectPortalLaunch("scientist@vistaar.ncpor.res.in", "Scientist@Vistaar2026!", "FIELD_SCIENTIST")}
+                    className="p-3 rounded-2xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs hover:shadow-md cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold text-xs text-vistaar-text flex items-center gap-1.5 truncate">
+                        <FlaskConical className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="truncate">Field Scientist</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-vistaar-scientific shrink-0">/documents</span>
+                    </div>
+                    <span className="text-[11px] text-vistaar-muted mt-1 truncate">
+                      {launchingRole === "FIELD_SCIENTIST" ? "Opening /documents..." : "Document AI & NPDC"}
                     </span>
-                    <span className="text-[10px] font-mono text-vistaar-scientific shrink-0">/documents</span>
-                  </div>
-                  <span className="text-xs text-vistaar-muted mt-1.5 truncate">
-                    {launchingRole === "FIELD_SCIENTIST" ? "Opening /documents..." : "Document AI & NPDC"}
-                  </span>
-                </button>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleDirectPortalLaunch("student@vistaar.ncpor.res.in", "Student@Vistaar2026!", "PUBLIC_USER")}
-                  className="p-4 rounded-2xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs hover:shadow-md cursor-pointer"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-bold text-sm text-vistaar-text flex items-center gap-1.5 truncate">
-                      <GraduationCap className="w-4 h-4 text-amber-600 shrink-0" />
-                      <span className="truncate">Student Portal</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDirectPortalLaunch("editor@vistaar.ncpor.res.in", "Editor@Vistaar2026!", "OUTREACH_EDITOR")}
+                    className="p-3 rounded-2xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs hover:shadow-md cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold text-xs text-vistaar-text flex items-center gap-1.5 truncate">
+                        <Edit3 className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span className="truncate">Outreach Editor</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-vistaar-scientific shrink-0">/workspace</span>
+                    </div>
+                    <span className="text-[11px] text-vistaar-muted mt-1 truncate">
+                      {launchingRole === "OUTREACH_EDITOR" ? "Opening /workspace..." : "Review & PIB Studio"}
                     </span>
-                    <span className="text-[10px] font-mono text-vistaar-scientific shrink-0">/education</span>
-                  </div>
-                  <span className="text-xs text-vistaar-muted mt-1.5 truncate">
-                    {launchingRole === "PUBLIC_USER" ? "Opening /education..." : "NCERT 8–12 Classroom"}
-                  </span>
-                </button>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDirectPortalLaunch("admin@vistaar.ncpor.res.in", "VistaarAdmin@2026!", "SUPER_ADMIN")}
+                    className="p-3 rounded-2xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs hover:shadow-md cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold text-xs text-vistaar-text flex items-center gap-1.5 truncate">
+                        <Shield className="w-4 h-4 text-red-600 shrink-0" />
+                        <span className="truncate">Super Admin</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-vistaar-scientific shrink-0">/admin</span>
+                    </div>
+                    <span className="text-[11px] text-vistaar-muted mt-1 truncate">
+                      {launchingRole === "SUPER_ADMIN" ? "Opening /admin..." : "Governance & RBAC"}
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="pt-4 mt-3 border-t border-sky-200/70 flex items-center justify-between gap-2">
-              <span className="text-xs font-mono text-vistaar-muted truncate">
-                {currentUser ? `Logged in: ${currentUser.role}` : "Public Read-Only Mode"}
+            <div className="pt-3 mt-3 border-t border-sky-200/70 flex items-center justify-between gap-2">
+              <span className="text-[11px] font-mono text-vistaar-muted truncate">
+                {currentUser ? `Logged in: ${currentUser.role}` : "User Sign-Up Blocks Admin Escalation"}
               </span>
-              {currentUser ? (
-                <Link
-                  href={getRolePortalRoute(currentUser.role)}
-                  className="text-xs font-bold text-vistaar-primary hover:underline flex items-center gap-1 whitespace-nowrap"
-                >
-                  <span>Open My Portal</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              ) : (
-                <button
-                  onClick={openLoginModal}
-                  className="text-xs font-bold text-vistaar-primary hover:underline flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                >
-                  <span>Custom Email Login</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              )}
+              <Link
+                href={currentUser ? getRolePortalRoute(currentUser.role) : "/login?mode=signup"}
+                className="text-xs font-bold text-vistaar-primary hover:underline flex items-center gap-1 whitespace-nowrap"
+              >
+                <span>{currentUser ? "Open My Portal" : "Register New User Account"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
         </section>

@@ -431,13 +431,21 @@ export function Navbar() {
                   )}
                 </div>
               ) : (
-                <button
-                  onClick={() => setAuthModalOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white shadow-sm hover:shadow-md transition-all cursor-pointer whitespace-nowrap shrink-0"
-                >
-                  <User className="w-3.5 h-3.5 shrink-0" />
-                  <span>Sign In</span>
-                </button>
+                <div className="flex items-center space-x-2 shrink-0">
+                  <Link
+                    href="/login?mode=signup"
+                    className="hidden sm:inline-flex items-center space-x-1 px-3 py-1.5 text-xs font-bold rounded-xl border border-sky-300 bg-white/85 hover:bg-white text-vistaar-primary shadow-2xs transition-all whitespace-nowrap shrink-0"
+                  >
+                    <span>Sign Up</span>
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white shadow-sm hover:shadow-md transition-all cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <User className="w-3.5 h-3.5 shrink-0" />
+                    <span>Sign In</span>
+                  </Link>
+                </div>
               )}
 
               {/* Mobile Hamburger Toggle */}
