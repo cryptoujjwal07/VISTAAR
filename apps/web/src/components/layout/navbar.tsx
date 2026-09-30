@@ -177,8 +177,8 @@ export function Navbar() {
     <>
       <header className="sticky top-0 z-50 w-full">
         {/* Top Ice-Mountain Glassmorphic Institutional Strip */}
-        <div className="bg-white/80 backdrop-blur-xl border-b border-sky-200/70 text-vistaar-text px-4 sm:px-6 lg:px-8 py-1.5 text-[11px] font-medium">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="bg-white/80 backdrop-blur-xl border-b border-sky-200/70 text-vistaar-text px-4 sm:px-6 lg:px-10 py-1.5 text-[11px] font-medium">
+          <div className="w-full flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
               <span className="flex items-center space-x-0.5 shadow-2xs" title="Government of India">
                 <span className="w-1.5 h-3 rounded-l-xs bg-[#FF9933]"></span>
@@ -250,7 +250,7 @@ export function Navbar() {
 
         {/* Main Ice-Mountain Frosted Glass Navigation Bar */}
         <div className="ice-glass border-b border-sky-200/70">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          <div className="w-full px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between gap-3">
             {/* Left: Brand Mountain Logo & Title */}
             <Link href="/" className="flex items-center space-x-2.5 group shrink-0">
               <MountainLogo size="md" className="group-hover:scale-105 transition-transform" />

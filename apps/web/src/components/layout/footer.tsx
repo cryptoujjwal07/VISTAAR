@@ -4,7 +4,7 @@ import { MountainLogo } from "@/components/ui/MountainLogo";
 export function Footer() {
   return (
     <footer className="w-full border-t border-sky-200/80 ice-glass py-10 text-sm text-vistaar-muted">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="w-full px-4 sm:px-6 lg:px-10 grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="space-y-3">
           <div className="flex items-center space-x-2.5">
             <MountainLogo size="sm" />
@@ -50,7 +50,7 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pt-6 border-t border-vistaar-border/60 flex flex-col sm:flex-row justify-between items-center text-xs">
+      <div className="w-full px-4 sm:px-6 lg:px-10 mt-8 pt-6 border-t border-vistaar-border/60 flex flex-col sm:flex-row justify-between items-center text-xs">
         <p>© 2026 National Centre for Polar and Ocean Research (NCPOR), Ministry of Earth Sciences. All rights reserved.</p>
         <p className="mt-2 sm:mt-0 font-medium text-vistaar-scientific">Designed for Indian Polar Science Dissemination</p>
       </div>
