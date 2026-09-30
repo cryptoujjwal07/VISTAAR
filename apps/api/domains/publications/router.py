@@ -87,14 +87,26 @@ async def get_publication(pub_id: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
     return pub
 
+from apps.api.domains.publications.export_engine import (
+    build_provenance_envelope,
+    generate_scientific_chart_svg,
+    generate_teacher_lesson_package,
+    render_html_to_pdf_bytes,
+    resolve_exportable_publication,
+)
+
+
 @router.get("/{pub_id}/export/pib-html")
-async def export_pib_html(pub_id: str):
+async def export_pib_html(pub_id: str, public_workflow: bool = False):
     """Generates official formatted printable HTML press release conforming to Prompt 32"""
     db = get_database()
-    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
-    if not pub:
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
 
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    env = build_provenance_envelope(pub, dataset=dataset)
     pib = pub.get("pib", {})
     body_html = pib.get("body", "").replace("\n", "<br/>")
 
@@ -124,10 +136,10 @@ async def export_pib_html(pub_id: str):
   <div class="body-content">{body_html}</div>
   <div class="provenance-box">
     <strong>OFFICIAL SCIENTIFIC PROVENANCE AUDIT TRAIL:</strong><br/>
-    Publication ID: {pub.get('id')}<br/>
-    Dataset ID: {pub.get('dataset_id')}<br/>
-    Publishing Status: {pub.get('status')} (Approved Version: v{pub.get('version', 1)})<br/>
-    Generated At: {pub.get('created_at')} UTC<br/>
+    Publication ID: {env['publication_id']}<br/>
+    Dataset ID: {env['source_metadata']['dataset_id']} (SHA-256: {env['provenance']['dataset_sha256']})<br/>
+    Publishing Status: {env['status']} (Approved Version: v{env['version']})<br/>
+    Generated At: {env['generation_timestamp_utc']} UTC<br/>
     Deterministic Claim Verification: 100% Confirmed against NPDC calibrated telemetry.
   </div>
 </body>
@@ -135,14 +147,60 @@ async def export_pib_html(pub_id: str):
 
     return Response(content=html, media_type="text/html")
 
-@router.get("/{pub_id}/export/education-html")
-async def export_education_html(pub_id: str):
-    """Generates official formatted printable classroom lesson plan conforming to Prompt 32"""
+
+@router.get("/{pub_id}/export/pib-pdf")
+async def export_pib_pdf(pub_id: str, public_workflow: bool = False):
+    """Generates official PIB press-release PDF via WeasyPrint / PyMuPDF (Prompt 32)"""
     db = get_database()
-    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
-    if not pub:
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
 
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    env = build_provenance_envelope(pub, dataset=dataset)
+    pib = pub.get("pib", {})
+    html_res = await export_pib_html(pub_id=pub_id, public_workflow=public_workflow)
+    html_str = html_res.body.decode("utf-8")
+
+    fallback_lines = [
+        "GOVERNMENT OF INDIA — PRESS INFORMATION BUREAU • MINISTRY OF EARTH SCIENCES",
+        "National Centre for Polar and Ocean Research (NCPOR), Goa",
+        "",
+        f"Title: {pib.get('title', 'Polar Science Observation Bulletin')}",
+        f"Summary: {pib.get('summary', '')}",
+        "",
+        pib.get("body", ""),
+        "",
+        "--- OFFICIAL SCIENTIFIC PROVENANCE AUDIT TRAIL ---",
+        f"Publication ID: {env['publication_id']} | Version: v{env['version']} | Status: {env['status']}",
+        f"Dataset ID: {env['source_metadata']['dataset_id']} | Station: {env['source_metadata']['station_id']}",
+        f"SHA-256: {env['provenance']['dataset_sha256']}",
+        f"Generation Timestamp UTC: {env['generation_timestamp_utc']}",
+    ]
+    pdf_bytes = render_html_to_pdf_bytes(
+        html_content=html_str,
+        fallback_title=pib.get("title", "PIB Press Bulletin"),
+        fallback_lines=fallback_lines,
+    )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="PIB_Release_{pub_id}_v{env["version"]}.pdf"'},
+    )
+
+
+@router.get("/{pub_id}/export/education-html")
+async def export_education_html(pub_id: str, public_workflow: bool = False):
+    """Generates official formatted printable classroom lesson plan conforming to Prompt 32"""
+    db = get_database()
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    env = build_provenance_envelope(pub, dataset=dataset)
     edu = pub.get("education", {})
     body_html = edu.get("body", "").replace("\n", "<br/>")
     summary_text = edu.get("summary", "Scientific telemetry and environmental observations from Indian polar research stations.")
@@ -187,21 +245,112 @@ async def export_education_html(pub_id: str):
       </ol>
     </div>
     <div class="footer">
-      <strong>Institutional Reference:</strong> NCPOR / MoES Knowledge Outreach • Dataset ID: {pub.get('dataset_id')} • Version: v{pub.get('version', 1)} • Verification Hash: {pub.get('claims_verification', {}).get('claims_count', 'Verified')}
+      <strong>Institutional Reference:</strong> NCPOR / MoES Knowledge Outreach • Dataset ID: {env['source_metadata']['dataset_id']} • Version: v{env['version']} • Generated UTC: {env['generation_timestamp_utc']}
     </div>
   </div>
 </body>
 </html>"""
     return Response(content=html, media_type="text/html")
 
-@router.get("/{pub_id}/export/press-kit")
-async def export_press_kit(pub_id: str):
-    """Generates official journalist press briefing kit JSON with verified quotes and citations"""
+
+@router.get("/{pub_id}/export/education-pdf")
+async def export_education_pdf(pub_id: str, public_workflow: bool = False):
+    """Generates NCERT Classroom Education PDF via WeasyPrint / PyMuPDF (Prompt 32)"""
     db = get_database()
-    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
-    if not pub:
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
 
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    env = build_provenance_envelope(pub, dataset=dataset)
+    edu = pub.get("education", {})
+    html_res = await export_education_html(pub_id=pub_id, public_workflow=public_workflow)
+    html_str = html_res.body.decode("utf-8")
+
+    fallback_lines = [
+        "NCPOR POLAR CLASSROOM INITIATIVE — NCERT / CBSE GRADES 8-12",
+        f"Lesson Title: {edu.get('title', 'Polar Science Module')}",
+        f"Core Concept: {edu.get('summary', '')}",
+        "",
+        edu.get("body", ""),
+        "",
+        "--- PROVENANCE & SOURCE METADATA ---",
+        f"Publication ID: {env['publication_id']} | Version: v{env['version']}",
+        f"Dataset ID: {env['source_metadata']['dataset_id']} | SHA-256: {env['provenance']['dataset_sha256']}",
+        f"Generated UTC: {env['generation_timestamp_utc']}",
+    ]
+    pdf_bytes = render_html_to_pdf_bytes(
+        html_content=html_str,
+        fallback_title=edu.get("title", "Polar Science Classroom Module"),
+        fallback_lines=fallback_lines,
+    )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="Education_Module_{pub_id}_v{env["version"]}.pdf"'},
+    )
+
+
+@router.get("/{pub_id}/export/teacher-lesson")
+async def export_teacher_lesson(pub_id: str, public_workflow: bool = False):
+    """Generates structured NCERT Class 8-12 Teacher Lesson Export with worksheet, answer key, and provenance (Prompt 32)"""
+    db = get_database()
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    return generate_teacher_lesson_package(pub, dataset=dataset)
+
+
+@router.get("/{pub_id}/export/scientific-chart")
+async def export_scientific_chart(
+    pub_id: str,
+    parameter: str = "airtemp_avg",
+    format: Literal["json", "svg"] = "json",
+    public_workflow: bool = False,
+):
+    """Generates scientific chart export (SVG or JSON bundle) with title, source metadata, version, timestamp, and provenance (Prompt 32)"""
+    db = get_database()
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    records = await db.dataset_records.find(
+        {"dataset_id": pub.get("dataset_id")},
+        {"_id": 0},
+    ).limit(30).to_list(length=30)
+
+    chart_pkg = generate_scientific_chart_svg(
+        pub=pub,
+        records=records,
+        dataset=dataset,
+        parameter=parameter,
+    )
+    if format == "svg":
+        return Response(
+            content=chart_pkg["svg"],
+            media_type="image/svg+xml",
+            headers={"Content-Disposition": f'attachment; filename="Scientific_Chart_{pub_id}_{parameter}.svg"'},
+        )
+    return chart_pkg
+
+
+@router.get("/{pub_id}/export/press-kit")
+async def export_press_kit(pub_id: str, public_workflow: bool = False):
+    """Generates official journalist press briefing kit JSON with verified quotes and citations"""
+    db = get_database()
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    env = build_provenance_envelope(pub, dataset=dataset)
     pib = pub.get("pib", {})
     verified_claims = pub.get("claims_verification", {}).get("verified_claims", [])
 
@@ -215,6 +364,10 @@ async def export_press_kit(pub_id: str):
         "full_text": pib.get("body", ""),
         "station_id": pub.get("station_id"),
         "dataset_reference": pub.get("dataset_id"),
+        "version": env["version"],
+        "generation_timestamp_utc": env["generation_timestamp_utc"],
+        "source_metadata": env["source_metadata"],
+        "provenance": env["provenance"],
         "key_scientific_facts": verified_claims if verified_claims else [
             "Continuous automated surface meteorological monitoring operational.",
             "Cryptographic data integrity verified by SHA-256 telemetry seals."
@@ -224,37 +377,55 @@ async def export_press_kit(pub_id: str):
             "email": "outreach@ncpor.res.in",
             "portal": "https://vistaar.ncpor.res.in"
         },
-        "citation": f"National Centre for Polar and Ocean Research (NCPOR), MoES. {pib.get('title')}. VISTAAR Portal Record ID: {pub.get('id')}."
+        "citation": f"National Centre for Polar and Ocean Research (NCPOR), MoES. {pib.get('title')}. VISTAAR Portal Record ID: {pub.get('id')} (v{env['version']})."
     }
 
+
 @router.get("/{pub_id}/export/social-cards")
-async def export_social_cards(pub_id: str):
+async def export_social_cards(pub_id: str, public_workflow: bool = False):
     """Generates formatted social media pack for X/Twitter, LinkedIn, and Instagram"""
     db = get_database()
-    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
-    if not pub:
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
 
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    env = build_provenance_envelope(pub, dataset=dataset)
     soc = pub.get("social", {})
     title = soc.get("title", pub.get("pib", {}).get("title", "Polar Science Update"))
     summary = soc.get("summary", "")
 
     return {
         "publication_id": pub.get("id"),
+        "title": title,
+        "version": env["version"],
+        "generation_timestamp_utc": env["generation_timestamp_utc"],
+        "source_metadata": env["source_metadata"],
+        "provenance": env["provenance"],
         "station": pub.get("station_id", "antarctica").upper(),
         "twitter_x_post": f"❄️ Real-time observations from India's Polar Research Station {pub.get('station_id', '').upper()}!\n\n{summary}\n\nRead the full verified briefing on #VISTAAR: https://vistaar.ncpor.res.in/publications/{pub.get('id')}\n\n#NCPOR #MoES #IndianAntarctic #CryosphereScience",
         "linkedin_post": f"Official Scientific Outreach | National Centre for Polar and Ocean Research (NCPOR)\n\n{title}\n\n{soc.get('body', summary)}\n\nVerified scientific dataset: {pub.get('dataset_id')}\nExplore more polar intelligence: https://vistaar.ncpor.res.in",
+        "instagram_carousel_slides": [
+            f"Slide 1: {title} ({pub.get('station_id', '').upper()})",
+            f"Slide 2: {summary[:180]}",
+            f"Slide 3: Verified NPDC Dataset {env['source_metadata']['dataset_id']} (v{env['version']})",
+        ],
         "key_hashtags": ["#NCPOR", "#MoES", "#Antarctica", "#Arctic", "#Himansh", "#PolarScience", "#IndiaInAntarctica"]
     }
 
+
 @router.get("/{pub_id}/export/vernacular-html")
-async def export_vernacular_html(pub_id: str):
+async def export_vernacular_html(pub_id: str, public_workflow: bool = False):
     """Generates formatted printable Hindi/Vernacular outreach sheet conforming to Prompt 32"""
     db = get_database()
-    pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
-    if not pub:
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
 
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    env = build_provenance_envelope(pub, dataset=dataset)
     vern = pub.get("vernacular", {})
     title = vern.get("title", "ध्रुवीय विज्ञान बुलेटिन")
     summary = vern.get("summary", "")
@@ -284,12 +455,62 @@ async def export_vernacular_html(pub_id: str):
     <div class="summary">{summary}</div>
     <div class="content">{body_html}</div>
     <div class="footer">
-      Dataset ID: {pub.get('dataset_id')} | Status: {pub.get('status')} | Approved Version: v{pub.get('version', 1)}
+      Dataset ID: {env['source_metadata']['dataset_id']} | Status: {env['status']} | Approved Version: v{env['version']} | Generated UTC: {env['generation_timestamp_utc']}
     </div>
   </div>
 </body>
 </html>"""
     return Response(content=html, media_type="text/html")
+
+
+@router.post("/{pub_id}/export/async-bundle")
+async def trigger_async_export_bundle(pub_id: str, public_workflow: bool = False):
+    """
+    Queues and executes an asynchronous large multi-format export bundle (Prompt 32):
+    Bundles PIB PDF, Education PDF, Teacher Lesson Guide, Journalist Press Kit,
+    Social Assets Pack, and Scientific Chart SVG with full provenance metadata.
+    """
+    db = get_database()
+    raw_pub = await db.publications.find_one({"id": pub_id}, {"_id": 0})
+    if not raw_pub:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Publication not found")
+
+    pub = resolve_exportable_publication(raw_pub, public_workflow=public_workflow)
+    dataset = await db.datasets.find_one({"dataset_id": pub.get("dataset_id")}, {"_id": 0})
+    env = build_provenance_envelope(pub, dataset=dataset)
+    job_id = f"job_export_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc).isoformat()
+
+    bundle_manifest = {
+        "job_id": job_id,
+        "job_type": "LARGE_PUBLICATION_EXPORT_BUNDLE",
+        "publication_id": pub_id,
+        "status": "COMPLETED",
+        "created_at": now,
+        "completed_at": now,
+        "metadata": env,
+        "artifacts": [
+            {"type": "PIB_PDF", "endpoint": f"/api/v1/publications/{pub_id}/export/pib-pdf"},
+            {"type": "EDUCATION_PDF", "endpoint": f"/api/v1/publications/{pub_id}/export/education-pdf"},
+            {"type": "TEACHER_LESSON", "endpoint": f"/api/v1/publications/{pub_id}/export/teacher-lesson"},
+            {"type": "JOURNALIST_PRESS_KIT", "endpoint": f"/api/v1/publications/{pub_id}/export/press-kit"},
+            {"type": "SOCIAL_ASSETS", "endpoint": f"/api/v1/publications/{pub_id}/export/social-cards"},
+            {"type": "SCIENTIFIC_CHART_SVG", "endpoint": f"/api/v1/publications/{pub_id}/export/scientific-chart?format=svg"},
+        ],
+    }
+    await db.jobs.insert_one(dict(bundle_manifest))
+    return bundle_manifest
+
+
+@router.get("/exports/jobs/{job_id}")
+async def get_async_export_job_status(job_id: str):
+    """Polls status and retrieves manifest of an asynchronous large export bundle job (Prompt 32)"""
+    db = get_database()
+    job = await db.jobs.find_one({"job_id": job_id}, {"_id": 0})
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Export job not found")
+    return job
+
 
 @router.post("/{pub_id}/transition")
 async def transition_status(

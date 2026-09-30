@@ -2,14 +2,35 @@ name: VISTAAR Production CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, staging, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, staging ]
+
+permissions:
+  contents: read
 
 jobs:
-  backend-test:
-    name: Backend Validation & Pytest
+  security-and-secret-scan:
+    name: Security, Secret Scan & Environment Isolation Check
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Secret Scan & Environment Config Validation
+        run: |
+          python scripts/ci_cd_verify_and_deploy.py --step secret-scan
+          python scripts/ci_cd_verify_and_deploy.py --step env-validate
+
+  backend-validation:
+    name: Backend Lint, Typecheck, Unit, Integration & Security Tests
+    runs-on: ubuntu-latest
+    needs: [ security-and-secret-scan ]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -26,21 +47,27 @@ jobs:
           pip install -r apps/api/requirements.txt
           pip install httpx pytest pytest-asyncio email-validator
 
-      - name: Run Backend Integration & Health Tests
+      - name: Static Syntax & Module Compilation Check
+        run: |
+          python -m compileall -q apps/api apps/worker scripts tests
+
+      - name: Run Backend Unit, Scientific, Security & Integration Tests
         env:
           PYTHONPATH: .
-          MONGODB_URI: "mongodb+srv://ayushmang06_db_user:1234567890@polarbearvistaar.qmtf9h5.mongodb.net/?appName=polarbearVISTAAR"
-          MONGODB_DB_NAME: "vistaar_production"
+          ENVIRONMENT: test
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.MONGODB_DB_NAME || 'vistaar_production' }}
           USE_IN_MEMORY_QUEUE: "true"
-          JWT_SECRET: "vistaar_secure_production_secret_key_polar_science_2026_ncpor"
-          SUPER_ADMIN_EMAIL: "admin@vistaar.ncpor.res.in"
-          SUPER_ADMIN_PASSWORD: "VistaarAdmin@2026!"
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci_ephemeral_test_signing_key_only' }}
+          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL || 'admin@vistaar.ncpor.res.in' }}
+          SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD || 'VistaarAdmin@2026!' }}
         run: |
           python -m pytest -v --tb=short tests/
 
-  frontend-build:
-    name: Frontend Lint, Typecheck & Production Build
+  frontend-validation:
+    name: Frontend Component Tests, Typecheck & Production Build
     runs-on: ubuntu-latest
+    needs: [ security-and-secret-scan ]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -54,8 +81,90 @@ jobs:
         working-directory: ./apps/web
         run: npm install
 
-      - name: Typecheck & Build Next.js Application
+      - name: Run Frontend Automated Component & Accessibility Tests
+        working-directory: ./apps/web
+        run: npm test
+
+      - name: Run TypeScript Compiler Verification
+        working-directory: ./apps/web
+        run: npx tsc --noEmit
+
+      - name: Build Production Next.js Bundle
         working-directory: ./apps/web
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          NODE_ENV: production
         run: npm run build
+
+  deploy-staging:
+    name: Staging Migration & Post-Deployment Health Gate
+    runs-on: ubuntu-latest
+    needs: [ security-and-secret-scan, backend-validation, frontend-validation ]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main')
+    environment: staging
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          pip install -r apps/api/requirements.txt
+          pip install httpx
+
+      - name: Execute Idempotent Database Index Migration & Health Gate (Staging)
+        env:
+          PYTHONPATH: .
+          ENVIRONMENT: staging
+          MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI || secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.STAGING_MONGODB_DB_NAME || 'vistaar_staging' }}
+          JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET || secrets.JWT_SECRET || 'staging_ephemeral_verification_key' }}
+        run: |
+          python scripts/ci_cd_verify_and_deploy.py --env staging --step migrate-indexes
+          python scripts/ci_cd_verify_and_deploy.py --env staging --step health-gate
+
+  deploy-production:
+    name: Production Pre-Deploy Snapshot, Index Migration & Health Gate
+    runs-on: ubuntu-latest
+    needs: [ deploy-staging ]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          pip install -r apps/api/requirements.txt
+          pip install httpx
+
+      - name: Pre-Deployment Disaster Recovery Snapshot
+        env:
+          PYTHONPATH: .
+          ENVIRONMENT: production
+          MONGODB_URI: ${{ secrets.PROD_MONGODB_URI || secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.PROD_MONGODB_DB_NAME || 'vistaar_production' }}
+        run: |
+          python scripts/backup_and_restore.py snapshot --label pre_deploy_${{ github.sha }}
+
+      - name: Production Database Index Migration & Mandatory Health Gate
+        env:
+          PYTHONPATH: .
+          ENVIRONMENT: production
+          MONGODB_URI: ${{ secrets.PROD_MONGODB_URI || secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ secrets.PROD_MONGODB_DB_NAME || 'vistaar_production' }}
+          JWT_SECRET: ${{ secrets.PROD_JWT_SECRET || secrets.JWT_SECRET || 'prod_ephemeral_verification_key' }}
+        run: |
+          python scripts/ci_cd_verify_and_deploy.py --env production --step migrate-indexes
+          python scripts/ci_cd_verify_and_deploy.py --env production --step health-gate
