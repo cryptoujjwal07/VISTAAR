@@ -229,3 +229,182 @@ def verify_ownership(resource_owner_id: str, current_user: dict, allow_roles: Op
         status_code=status.HTTP_403_FORBIDDEN,
         detail="IDOR Protection: Access denied. You do not own this resource and lack administrative override permissions."
     )
+
+
+# ============================================================================
+# Prompt 26 Security Hardening Guards
+# (Path Traversal, Malicious Filenames, CSV Injection, SSRF, Prompt Injection, Log Redaction)
+# ============================================================================
+
+import ipaddress
+import os
+import re
+from urllib.parse import urlparse
+
+DANGEROUS_EXTENSIONS = {
+    ".exe", ".bat", ".cmd", ".sh", ".ps1", ".vbs", ".js", ".jar",
+    ".msi", ".dll", ".so", ".php", ".jsp", ".asp", ".aspx", ".html", ".htm", ".svg"
+}
+
+PROMPT_INJECTION_PATTERNS = [
+    re.compile(r"ignore\s+(all\s+)?(previous|prior|above)\s+instructions", re.IGNORECASE),
+    re.compile(r"disregard\s+(all\s+)?(previous|prior|system)\s+(instructions|rules|prompts)", re.IGNORECASE),
+    re.compile(r"system\s+prompt\s*:", re.IGNORECASE),
+    re.compile(r"you\s+are\s+now\s+(in\s+developer\s+mode|unrestricted|dan)", re.IGNORECASE),
+    re.compile(r"override\s+system\s+instructions", re.IGNORECASE),
+    re.compile(r"<\s*script\b[^>]*>.*?<\s*/\s*script\s*>", re.IGNORECASE | re.DOTALL),
+]
+
+
+def sanitize_filename(filename: str, allowed_extensions: Optional[Set[str]] = None) -> str:
+    """
+    Validates and sanitizes uploaded or referenced filenames (Prompt 26).
+    Blocks path traversal (../, ..\\), null bytes, control chars, shell metacharacters,
+    and malicious double extensions (.pdf.exe, .exe.pdf).
+    """
+    if not filename or not filename.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or empty filename.")
+
+    if "\x00" in filename or ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Security violation: Path traversal or illegal path separator in filename.",
+        )
+
+    base = os.path.basename(filename.strip())
+    if not re.match(r"^[A-Za-z0-9._\- ()]+$", base):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Security violation: Filename contains disallowed special or control characters.",
+        )
+
+    parts = base.lower().split(".")
+    if len(parts) < 2:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filename must include a valid file extension.")
+
+    for sub_ext in [f".{p}" for p in parts[1:]]:
+        if sub_ext in DANGEROUS_EXTENSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Security violation:Executable or dangerous extension '{sub_ext}' is prohibited.",
+            )
+
+    final_ext = f".{parts[-1]}"
+    if allowed_extensions and final_ext not in {ext.lower() for ext in allowed_extensions}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file extension '{final_ext}'. Allowed: {sorted(allowed_extensions)}",
+        )
+
+    return base
+
+
+def sanitize_csv_cell(value: Any) -> str:
+    """
+    Prevents CSV Formula Injection (DDE / Excel macro injection) while preserving
+    legitimate negative scientific measurements like -38.4 (Prompt 26).
+    """
+    if value is None:
+        return ""
+    text = str(value)
+    if not text:
+        return ""
+
+    # Allow legitimate negative/positive numbers (e.g., -38.4, +12.5)
+    if re.match(r"^[-+]?\d+(\.\d+)?([eE][-+]?\d+)?$", text.strip()):
+        return text
+
+    if text[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return f"'{text}"
+    return text
+
+
+def validate_outbound_url_against_ssrf(url: str) -> str:
+    """
+    Blocks Server-Side Request Forgery (SSRF) against loopback, link-local cloud metadata
+    (169.254.169.254), private RFC1918 networks, and non-HTTP(S) schemes (Prompt 26).
+    """
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"SSRF Protection: Disallowed URL scheme '{parsed.scheme}'. Only http/https allowed.",
+        )
+
+    host = (parsed.hostname or "").lower().strip()
+    if not host or host in ("localhost", "0.0.0.0", "::1", "metadata.google.internal"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="SSRF Protection: Loopback and internal metadata hosts are blocked.",
+        )
+
+    try:
+        ip_obj = ipaddress.ip_address(host)
+        if (
+            ip_obj.is_loopback
+            or ip_obj.is_private
+            or ip_obj.is_link_local
+            or ip_obj.is_multicast
+            or ip_obj.is_reserved
+            or ip_obj.is_unspecified
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"SSRF Protection: Private, loopback, or link-local IP '{host}' is blocked.",
+            )
+    except ValueError:
+        # Hostname is a domain name; block internal suffixes
+        if host.endswith(".local") or host.endswith(".internal"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="SSRF Protection: Internal domain suffixes are blocked.",
+            )
+
+    return url
+
+
+def sanitize_untrusted_document_text(text: str) -> Dict[str, Any]:
+    """
+    Treats uploaded documents and retrieved chunks strictly as untrusted DATA (Prompt 26).
+    Neutralizes prompt injection instructions ('Ignore previous instructions', etc.) and XSS tags
+    so retrieved text never overrides system instructions.
+    """
+    if not text:
+        return {
+            "clean_text": "",
+            "prompt_injection_detected": False,
+            "matched_patterns": [],
+            "data_envelope": "<UNTRUSTED_SCIENTIFIC_DATA></UNTRUSTED_SCIENTIFIC_DATA>",
+        }
+
+    cleaned = text
+    matched: List[str] = []
+    for pat in PROMPT_INJECTION_PATTERNS:
+        found = pat.findall(cleaned)
+        if found:
+            matched.append(pat.pattern)
+            cleaned = pat.sub("[REDACTED_UNTRUSTED_INSTRUCTION]", cleaned)
+
+    # Neutralize raw HTML script/iframe tags for XSS safety
+    cleaned = re.sub(r"<\s*(script|iframe|object|embed)\b[^>]*>", "[REDACTED_HTML_TAG]", cleaned, flags=re.IGNORECASE)
+
+    return {
+        "clean_text": cleaned,
+        "prompt_injection_detected": len(matched) > 0,
+        "matched_patterns": matched,
+        "data_envelope": f"<UNTRUSTED_SCIENTIFIC_DATA>{cleaned}</UNTRUSTED_SCIENTIFIC_DATA>",
+    }
+
+
+def redact_sensitive_log_text(message: str) -> str:
+    """
+    Redacts API keys, Bearer JWTs, and password fields from log lines to prevent secret exposure (Prompt 26).
+    """
+    if not message:
+        return ""
+    msg = re.sub(r"(Bearer\s+)[A-Za-z0-9\-._~+/]+=*", r"\1[REDACTED_TOKEN]", message)
+    msg = re.sub(r"\bAIza[0-9A-Za-z\-_]{20,}\b", "[REDACTED_GEMINI_KEY]", msg)
+    msg = re.sub(r"\bsk-[0-9A-Za-z\-_]{16,}\b", "[REDACTED_API_KEY]", msg)
+    msg = re.sub(r'("password"\s*:\s*)"[^"]*"', r'\1"[REDACTED]"', msg, flags=re.IGNORECASE)
+    return msg
+

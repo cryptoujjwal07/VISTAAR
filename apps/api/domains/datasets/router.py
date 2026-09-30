@@ -67,7 +67,8 @@ class IngestDatasetRequest(BaseModel):
     dataset_id: str
     file_name: str
 
-from apps.api.core.security import require_roles
+from fastapi import UploadFile, File
+from apps.api.core.security import require_roles, sanitize_filename, sanitize_csv_cell
 from apps.api.domains.audit.service import record_audit_event
 
 @router.post("/ingest")
@@ -78,13 +79,21 @@ async def trigger_async_ingestion(
     """
     Triggers asynchronous dataset processing via background worker queue.
     Calculates SHA-256 cryptographic hashes and updates database catalog.
-    Requires SUPER_ADMIN or FIELD_SCIENTIST role (Prompt 07).
+    Requires SUPER_ADMIN or FIELD_SCIENTIST role (Prompt 07 & Prompt 26 path traversal protection).
     """
-    file_path = os.path.join(os.path.abspath("DATASETS"), req.file_name)
+    safe_name = sanitize_filename(req.file_name, allowed_extensions={".csv", ".txt", ".nc", ".json"})
+    datasets_root = os.path.abspath("DATASETS")
+    file_path = os.path.abspath(os.path.join(datasets_root, safe_name))
+    if not file_path.startswith(datasets_root):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Security violation: Path traversal attempt blocked.",
+        )
+
     if not os.path.exists(file_path):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dataset file '{req.file_name}' not found in DATASETS/ directory."
+            detail=f"Dataset file '{safe_name}' not found in DATASETS/ directory."
         )
 
     job_id = await job_queue.enqueue(
@@ -100,15 +109,69 @@ async def trigger_async_ingestion(
         action="TRIGGER_DATASET_INGESTION",
         resource_type="DATASET",
         resource_id=req.dataset_id,
-        details={"job_id": job_id, "file_name": req.file_name}
+        details={"job_id": job_id, "file_name": safe_name}
     )
 
     return {
         "job_id": job_id,
         "dataset_id": req.dataset_id,
         "status": "PROCESSING",
-        "file_name": req.file_name,
+        "file_name": safe_name,
         "message": "Dataset ingestion enqueued into asynchronous worker queue."
+    }
+
+
+@router.post("/upload-csv")
+async def upload_and_validate_csv(
+    file: UploadFile = File(...),
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR", "FIELD_SCIENTIST"]))
+):
+    """
+    Secure CSV Upload & Formula Injection Sanitizer (Prompt 26).
+    Blocks malicious filenames, path traversal, oversized files (>25MB), binary content-type spoofing,
+    and neutralizes CSV formula injection (=, +, @, -cmd) while preserving negative scientific numbers.
+    """
+    import csv as csv_mod
+    import io
+
+    safe_name = sanitize_filename(file.filename or "", allowed_extensions={".csv"})
+    content = await file.read()
+    if len(content) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="CSV file exceeds 25MB limit.")
+
+    # Block binary content-type spoofing (PDF, PE executable, ELF, PNG, ZIP, or null bytes)
+    if (
+        content.startswith((b"%PDF-", b"MZ", b"\x7fELF", b"\x89PNG", b"PK\x03\x04"))
+        or b"\x00" in content[:4096]
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Security violation: Content-type spoofing blocked. Binary payload disguised as CSV.",
+        )
+
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="CSV file must be valid UTF-8 text.")
+
+    reader = csv_mod.reader(io.StringIO(text))
+    sanitized_rows = []
+    formula_cells_neutralized = 0
+    for row in reader:
+        clean_row = []
+        for cell in row:
+            san = sanitize_csv_cell(cell)
+            if san != cell:
+                formula_cells_neutralized += 1
+            clean_row.append(san)
+        sanitized_rows.append(clean_row)
+
+    return {
+        "filename": safe_name,
+        "row_count": len(sanitized_rows),
+        "formula_cells_neutralized": formula_cells_neutralized,
+        "preview_rows": sanitized_rows[:5],
+        "status": "SANITIZED_AND_VALIDATED",
     }
 
 @router.get("/jobs/{job_id}")

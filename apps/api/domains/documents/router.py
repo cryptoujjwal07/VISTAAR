@@ -9,7 +9,12 @@ from fastapi.responses import Response, FileResponse
 from typing import Optional, List
 from apps.api.core.database import get_database
 from apps.api.core.storage import storage_service
-from apps.api.core.security import get_current_user, require_roles
+from apps.api.core.security import (
+    get_current_user,
+    require_roles,
+    sanitize_filename,
+    sanitize_untrusted_document_text,
+)
 from apps.api.domains.documents.service import (
     process_document_pipeline,
     render_page_image,
@@ -30,39 +35,48 @@ async def upload_document(
     current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR", "FIELD_SCIENTIST"]))
 ):
     """
-    Production scientific PDF upload and intelligence ingestion pipeline (Prompt 09).
-    Pipeline: PDF upload -> checksum -> metadata -> pages -> text/layout -> table awareness -> chunking -> embeddings -> indexing.
+    Production scientific PDF upload and intelligence ingestion pipeline (Prompt 09 & Prompt 26).
+    Enforces filename sanitization, magic-byte content-type spoofing protection, size limits,
+    and untrusted document prompt-injection isolation.
     """
-    if not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only PDF documents are supported.")
+    safe_original_name = sanitize_filename(file.filename or "", allowed_extensions={".pdf"})
 
     content = await file.read()
     if len(content) > 50 * 1024 * 1024:
         raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Document exceeds 50MB limit.")
 
+    if not content.startswith(b"%PDF-"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Security violation: Content-type spoofing blocked. File does not begin with valid %PDF- magic bytes.",
+        )
+
     checksums = compute_pdf_checksums(content)
     sha256 = checksums["sha256"]
     doc_id = f"doc_{uuid.uuid4().hex[:12]}"
-    filename = f"{doc_id}_{file.filename}"
+    filename = f"{doc_id}_{safe_original_name}"
     
     # Save to storage
     file_path = await storage_service.save_file("documents", filename, content)
 
-    # Initial PDF validation
+    # Initial PDF validation & untrusted prompt-injection scan
     try:
         quick_doc = fitz.open(stream=content, filetype="pdf")
         page_count = len(quick_doc)
         metadata = extract_pdf_metadata(quick_doc)
+        raw_preview_text = "\n".join(quick_doc[i].get_text("text") for i in range(min(page_count, 5)))
         quick_doc.close()
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Malformed PDF document: {str(e)}")
+
+    scan_info = sanitize_untrusted_document_text(raw_preview_text)
 
     db = get_database()
     now = datetime.now(timezone.utc).isoformat()
     doc_record = {
         "document_id": doc_id,
-        "title": title or metadata.get("title") or file.filename.replace(".pdf", ""),
-        "original_filename": file.filename,
+        "title": title or metadata.get("title") or safe_original_name.replace(".pdf", ""),
+        "original_filename": safe_original_name,
         "storage_path": file_path,
         "sha256": sha256,
         "md5": checksums["md5"],
@@ -77,6 +91,11 @@ async def upload_document(
         "pages": [],
         "chunk_count": 0,
         "table_count": 0,
+        "security_scan": {
+            "untrusted_data_isolated": True,
+            "prompt_injection_detected": scan_info["prompt_injection_detected"],
+            "matched_patterns": scan_info["matched_patterns"],
+        },
         "created_at": now,
         "updated_at": now
     }
@@ -90,7 +109,12 @@ async def upload_document(
         action="UPLOAD_DOCUMENT",
         resource_type="DOCUMENT",
         resource_id=doc_id,
-        details={"title": doc_record["title"], "page_count": page_count, "size_bytes": len(content)}
+        details={
+            "title": doc_record["title"],
+            "page_count": page_count,
+            "size_bytes": len(content),
+            "prompt_injection_detected": scan_info["prompt_injection_detected"],
+        }
     )
 
     # If small document or requested synchronously, process immediately
@@ -104,7 +128,8 @@ async def upload_document(
             "page_count": page_count,
             "chunk_count": result.get("chunk_count", 0),
             "table_count": result.get("table_count", 0),
-            "sha256": sha256
+            "sha256": sha256,
+            "security_scan": doc_record["security_scan"],
         }
     else:
         # Schedule asynchronous processing with background task

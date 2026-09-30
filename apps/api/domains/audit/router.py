@@ -103,6 +103,7 @@ async def export_audit_trail(
     records = await cursor.to_list(length=5000)
 
     if format == 'csv':
+        from apps.api.core.security import sanitize_csv_cell
         output = io.StringIO()
         fieldnames = [
             "event_id", "timestamp", "actor_id", "actor_email", "action",
@@ -112,16 +113,16 @@ async def export_audit_trail(
         writer.writeheader()
         for r in records:
             writer.writerow({
-                "event_id": r.get("event_id"),
-                "timestamp": r.get("timestamp"),
-                "actor_id": r.get("actor_id"),
-                "actor_email": r.get("actor_email"),
-                "action": r.get("action"),
-                "resource_type": r.get("resource_type"),
-                "resource_id": r.get("resource_id"),
-                "reason": r.get("reason"),
-                "before_version": json.dumps(r.get("before_version")) if r.get("before_version") is not None else "",
-                "after_version": json.dumps(r.get("after_version")) if r.get("after_version") is not None else ""
+                "event_id": sanitize_csv_cell(r.get("event_id")),
+                "timestamp": sanitize_csv_cell(r.get("timestamp")),
+                "actor_id": sanitize_csv_cell(r.get("actor_id")),
+                "actor_email": sanitize_csv_cell(r.get("actor_email")),
+                "action": sanitize_csv_cell(r.get("action")),
+                "resource_type": sanitize_csv_cell(r.get("resource_type")),
+                "resource_id": sanitize_csv_cell(r.get("resource_id")),
+                "reason": sanitize_csv_cell(r.get("reason")),
+                "before_version": sanitize_csv_cell(json.dumps(r.get("before_version")) if r.get("before_version") is not None else ""),
+                "after_version": sanitize_csv_cell(json.dumps(r.get("after_version")) if r.get("after_version") is not None else "")
             })
         return Response(
             content=output.getvalue(),

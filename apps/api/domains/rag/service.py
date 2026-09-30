@@ -388,9 +388,16 @@ async def execute_rag_pipeline(req: RAGQueryRequest, current_user_email: Optiona
     evidence_items: List[EvidenceItem] = []
     citations: List[Citation] = []
 
+    from apps.api.core.security import sanitize_untrusted_document_text
+    prompt_injection_flagged = sanitize_untrusted_document_text(req.question)["prompt_injection_detected"]
+
     for idx, item in enumerate(selected_raw, 1):
         ev_id = f"ev_{query_id}_{idx}"
         is_ds = item["source_type"] == "DATASET_RECORD"
+        scan_res = sanitize_untrusted_document_text(item["text"])
+        if scan_res["prompt_injection_detected"]:
+            prompt_injection_flagged = True
+        safe_snippet = scan_res["clean_text"]
         
         ev_obj = EvidenceItem(
             evidence_id=ev_id,
@@ -410,7 +417,7 @@ async def execute_rag_pipeline(req: RAGQueryRequest, current_user_email: Optiona
             field=item.get("field"),
             value=item.get("value"),
             unit=item.get("unit"),
-            text_snippet=item["text"][:400],
+            text_snippet=safe_snippet[:400],
             heading_context=item.get("heading_context")
         )
         evidence_items.append(ev_obj)
@@ -431,7 +438,7 @@ async def execute_rag_pipeline(req: RAGQueryRequest, current_user_email: Optiona
                 label=item.get("document_title", "Technical Report"),
                 identifier=item.get("chunk_id", ""),
                 location=f"Page {item.get('page_number')}, Chunk {item.get('chunk_id')}",
-                quote_or_value=item["text"][:120].strip() + "..."
+                quote_or_value=safe_snippet[:120].strip() + "..."
             )
         citations.append(cit_obj)
 
@@ -445,8 +452,9 @@ async def execute_rag_pipeline(req: RAGQueryRequest, current_user_email: Optiona
         )
         confidence = 0.0
     else:
+        safe_question = sanitize_untrusted_document_text(req.question)["clean_text"]
         # Try LLM synthesis with Gemini
-        llm_answer = await generate_llm_rag_answer(req.question, evidence_items, api_key=settings.GEMINI_API_KEY)
+        llm_answer = await generate_llm_rag_answer(safe_question, evidence_items, api_key=settings.GEMINI_API_KEY)
         if (
             llm_answer
             and len(llm_answer) > 20
@@ -456,7 +464,7 @@ async def execute_rag_pipeline(req: RAGQueryRequest, current_user_email: Optiona
         ):
             final_answer = llm_answer
         else:
-            final_answer = generate_deterministic_scientific_answer(req.question, evidence_items)
+            final_answer = generate_deterministic_scientific_answer(safe_question, evidence_items)
         confidence = float(np.mean([e.relevance_score for e in evidence_items]))
 
     latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
@@ -470,6 +478,8 @@ async def execute_rag_pipeline(req: RAGQueryRequest, current_user_email: Optiona
         "candidates_evaluated": len(all_candidates),
         "evidence_selected_count": len(evidence_items),
         "status": status_str,
+        "untrusted_data_guard": "ENFORCED",
+        "prompt_injection_flagged": prompt_injection_flagged,
         "filters_applied": {
             "station_id": req.station_id,
             "region": req.region,
