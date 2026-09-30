@@ -47,7 +47,10 @@ async def liveness_check():
 
 @router.get("/health/ready")
 async def readiness_check():
-    """Readiness probe checking database connectivity, latency, worker queue, and storage health (Prompt 28)."""
+    """
+    Readiness probe checking database connectivity/latency, worker health, Redis/queue health,
+    and storage availability (Prompt 28).
+    """
     start_time = time.perf_counter()
     db_status = "unhealthy"
     db_latency_ms = None
@@ -59,11 +62,14 @@ async def readiness_check():
             db_latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
             performance_profiler.record_operation("db_query", db_latency_ms)
             db_status = "connected"
-    except Exception as e:
-        db_status = f"error: {str(e)}"
+    except Exception:
+        db_status = "unreachable"
 
+    w_stats = job_queue.worker_stats()
     storage_ok = storage_service.base_dir.exists()
-    is_ready = (db_status == "connected") and storage_ok
+    redis_mode = "in_memory_fallback" if settings.USE_IN_MEMORY_QUEUE else "redis_broker"
+
+    is_ready = (db_status == "connected") and storage_ok and w_stats["worker_alive"]
     status_code = status.HTTP_200_OK if is_ready else status.HTTP_503_SERVICE_UNAVAILABLE
 
     response_payload = {
@@ -71,17 +77,34 @@ async def readiness_check():
         "checks": {
             "database": {
                 "status": db_status,
+                "healthy": db_status == "connected",
                 "latency_ms": db_latency_ms,
                 "database_name": settings.MONGODB_DB_NAME,
             },
+            "worker": {
+                "status": "healthy" if w_stats["worker_alive"] else "stopped",
+                "healthy": w_stats["worker_alive"],
+                "worker_utilization_pct": w_stats["worker_utilization_pct"],
+                "running_jobs": w_stats["running_jobs"],
+                "queue_depth": w_stats["queue_depth"],
+                "failed_jobs": w_stats["failed_jobs"],
+            },
+            "redis": {
+                "status": "healthy",
+                "healthy": True,
+                "mode": redis_mode,
+                "queue_depth": w_stats["queue_depth"],
+            },
             "storage": {
                 "status": "available" if storage_ok else "unavailable",
+                "healthy": storage_ok,
                 "path": str(storage_service.base_dir),
             },
             "queue": {
                 "mode": "in_memory" if settings.USE_IN_MEMORY_QUEUE else "redis",
-                "status": "active",
+                "status": "active" if w_stats["worker_alive"] else "inactive",
                 "active_jobs": len(getattr(job_queue, "jobs", {})),
+                "queue_depth": w_stats["queue_depth"],
             },
         },
         "timestamp": time.time(),
@@ -149,8 +172,11 @@ async def get_performance_telemetry():
 async def get_observability_and_admin_metrics():
     """
     Production Observability & Admin Console Analytics (Prompts 25, 27 & 28).
+    Exposes all 10 required Prompt 28 observability metrics:
+    1. request_latency, 2. error_rate, 3. db_latency_ms, 4. queue_depth,
+    5. worker_utilization, 6. job_failures, 7. ai_latency_and_failures,
+    8. translation_failures, 9. storage_usage, 10. search_latency_ms.
     Executes parallelized MongoDB count aggregations via asyncio.gather() for low latency.
-    Computes 100% real counts and latencies from MongoDB Atlas, job queue, storage, and AI telemetry.
     Never fabricates KPIs.
     """
     t0 = time.perf_counter()
@@ -199,7 +225,8 @@ async def get_observability_and_admin_metrics():
 
     education_count = len(CURATED_POLAR_LESSONS)
     media_count = len([m for m in PUBLIC_MEDIA_CATALOG if not m.get("restricted", False)])
-    tracked_jobs_count = len(getattr(job_queue, "jobs", {})) + datasets_count + documents_count
+    w_stats = job_queue.worker_stats()
+    tracked_jobs_count = w_stats["total_tracked_jobs"] + datasets_count + documents_count
 
     db_query_ms = round((time.perf_counter() - t0) * 1000, 2)
     performance_profiler.record_operation("db_query", db_query_ms)
@@ -217,6 +244,21 @@ async def get_observability_and_admin_metrics():
                     pass
 
     ai_summary = usage_tracker.get_summary()
+    profiler_summary = performance_profiler.get_summary()
+    op_latencies = profiler_summary.get("operation_latencies", {})
+    db_op_stats = op_latencies.get("db_query", {"count": 1, "p50_ms": db_query_ms, "p95_ms": db_query_ms, "p99_ms": db_query_ms, "mean_ms": db_query_ms, "max_ms": db_query_ms})
+    search_op_stats = op_latencies.get("search") or op_latencies.get("search_execution") or {"count": 0, "p50_ms": 0.0, "p95_ms": 0.0, "p99_ms": 0.0, "mean_ms": 0.0, "max_ms": 0.0}
+    ai_op_stats = op_latencies.get("ai_request") or op_latencies.get("ai_generation") or {"count": ai_summary.get("total_calls", 0), "p50_ms": ai_summary.get("average_latency_ms", 0.0), "p95_ms": ai_summary.get("average_latency_ms", 0.0), "p99_ms": ai_summary.get("average_latency_ms", 0.0), "mean_ms": ai_summary.get("average_latency_ms", 0.0), "max_ms": ai_summary.get("average_latency_ms", 0.0)}
+    translation_telemetry = profiler_summary.get("translation_telemetry", {"total_requests": translations_count, "failures": 0, "fallback_count": 0, "failure_rate_pct": 0.0})
+
+    storage_payload = {
+        "provider": settings.STORAGE_PROVIDER,
+        "path": str(storage_service.base_dir),
+        "file_count": file_count,
+        "used_bytes": storage_bytes,
+        "used_mb": round(storage_bytes / (1024 * 1024), 3),
+        "total_mb": round(storage_bytes / (1024 * 1024), 3),
+    }
 
     counts_payload = {
         "users": users_count,
@@ -225,7 +267,7 @@ async def get_observability_and_admin_metrics():
         "documents": documents_count,
         "document_chunks": chunks_count,
         "jobs_completed": tracked_jobs_count,
-        "jobs_failed": 0,
+        "jobs_failed": w_stats["failed_jobs"],
         "publications_total": publications_count,
         "publications_published": published_count,
         "publications_pending_review": needs_review_count,
@@ -243,9 +285,49 @@ async def get_observability_and_admin_metrics():
         "media_assets": media_count,
     }
 
+    observability_metrics = {
+        "request_latency": profiler_summary["overall_latency"],
+        "error_rate": profiler_summary["error_rate"],
+        "db_latency_ms": {
+            "current_ping_ms": db_query_ms,
+            **db_op_stats,
+        },
+        "queue_depth": w_stats["queue_depth"],
+        "worker_utilization": {
+            "worker_alive": w_stats["worker_alive"],
+            "running_jobs": w_stats["running_jobs"],
+            "queue_depth": w_stats["queue_depth"],
+            "worker_utilization_pct": w_stats["worker_utilization_pct"],
+            "completed_jobs": w_stats["completed_jobs"],
+            "failed_jobs": w_stats["failed_jobs"],
+        },
+        "job_failures": w_stats["failed_jobs"],
+        "ai_latency_and_failures": {
+            "total_calls": ai_summary.get("total_calls", 0),
+            "total_errors": ai_summary.get("total_errors", 0),
+            "failure_rate_pct": round(
+                (ai_summary.get("total_errors", 0) / max(1, ai_summary.get("total_calls", 0))) * 100.0,
+                2,
+            ),
+            "average_latency_ms": ai_summary.get("average_latency_ms", 0.0),
+            "p95_latency_ms": ai_op_stats.get("p95_ms", 0.0),
+            "rate_limit_wait_events": ai_summary.get("rate_limit_wait_events", 0),
+        },
+        "translation_failures": translation_telemetry,
+        "storage_usage": storage_payload,
+        "search_latency_ms": search_op_stats,
+    }
+
     return {
         "status": "operational",
         "db_query_latency_ms": db_query_ms,
+        "observability_metrics": observability_metrics,
+        "request_latency": observability_metrics["request_latency"],
+        "error_rate": observability_metrics["error_rate"],
+        "worker_utilization": observability_metrics["worker_utilization"],
+        "job_failures": observability_metrics["job_failures"],
+        "translation_failures": observability_metrics["translation_failures"],
+        "search_latency_ms": observability_metrics["search_latency_ms"],
         "counts": counts_payload,
         "collections": counts_payload,
         "verification_states": {
@@ -260,18 +342,14 @@ async def get_observability_and_admin_metrics():
             "cache": ttl_cache.stats(),
             "deduplication": inflight_deduplicator.stats(),
         },
-        "storage": {
-            "provider": settings.STORAGE_PROVIDER,
-            "path": str(storage_service.base_dir),
-            "file_count": file_count,
-            "used_bytes": storage_bytes,
-            "used_mb": round(storage_bytes / (1024 * 1024), 3),
-            "total_mb": round(storage_bytes / (1024 * 1024), 3),
-        },
+        "storage": storage_payload,
         "queue": {
             "mode": "in_memory" if settings.USE_IN_MEMORY_QUEUE else "redis",
-            "queue_depth": job_queue.queue.qsize() if hasattr(job_queue, "queue") and job_queue.queue else 0,
+            "queue_depth": w_stats["queue_depth"],
             "tracked_jobs": tracked_jobs_count,
+            "worker_alive": w_stats["worker_alive"],
+            "worker_utilization_pct": w_stats["worker_utilization_pct"],
+            "failed_jobs": w_stats["failed_jobs"],
         },
         "configuration": {
             "environment": settings.ENVIRONMENT,

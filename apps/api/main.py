@@ -8,7 +8,12 @@ from fastapi.responses import JSONResponse
 from apps.api.core.config import settings
 from apps.api.core.database import connect_to_mongo, close_mongo_connection
 from apps.api.core.queue import job_queue
-from apps.api.core.logging import get_logger
+from apps.api.core.logging import (
+    clear_log_context,
+    get_logger,
+    redact_sensitive_text,
+    set_log_context,
+)
 
 # Import domain routers
 from apps.api.domains.health.router import router as health_router
@@ -62,13 +67,48 @@ app.add_middleware(
 
 from apps.api.core.performance import idempotency_store, performance_profiler
 
-# Request ID, Idempotency, Performance Profiling & Security Headers Middleware
+
+def _extract_resource_id_from_path(path: str) -> str | None:
+    """Extract resource_id from common REST path patterns for structured log correlation (Prompt 28)."""
+    parts = [p for p in path.strip("/").split("/") if p]
+    resource_collections = {"datasets", "documents", "publications", "claims", "media", "lessons", "jobs"}
+    for idx, seg in enumerate(parts[:-1]):
+        if seg in resource_collections:
+            candidate = parts[idx + 1]
+            if candidate not in {"upload", "search", "verify", "generate", "translate", "stream", "export"}:
+                return candidate
+    return None
+
+
+@app.exception_handler(Exception)
+async def production_safe_exception_handler(request: Request, exc: Exception):
+    """
+    Production-safe global exception handler (Prompt 28).
+    Never exposes stack traces, internal file paths, or sensitive credentials publicly.
+    """
+    req_id = getattr(request.state, "request_id", f"req_{uuid.uuid4().hex[:12]}")
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}: {redact_sensitive_text(str(exc))}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error occurred.",
+            "detail": "An unexpected internal error occurred. Please reference request_id for support.",
+            "request_id": req_id,
+        },
+        headers={"X-Request-ID": req_id},
+    )
+
+
+# Request ID, Log Context Correlation, Idempotency, Performance Profiling & Security Headers Middleware
 @app.middleware("http")
 async def request_logging_middleware(request: Request, call_next):
     req_id = request.headers.get("X-Request-ID", f"req_{uuid.uuid4().hex[:12]}")
     idem_key = request.headers.get("Idempotency-Key")
+    resource_id = _extract_resource_id_from_path(request.url.path)
     request.state.request_id = req_id
     request.state.idempotency_key = idem_key
+    clear_log_context()
+    set_log_context(request_id=req_id, resource_id=resource_id)
     start_time = time.perf_counter()
 
     def _apply_security_headers(resp: Response, duration_ms: float) -> Response:
@@ -95,6 +135,7 @@ async def request_logging_middleware(request: Request, call_next):
                 content=cached_idem["body"],
                 headers={"X-Idempotent-Replay": "true", "X-Cache": "HIT"},
             )
+            clear_log_context()
             return _apply_security_headers(replay_resp, duration_ms)
 
     try:
@@ -129,20 +170,27 @@ async def request_logging_middleware(request: Request, call_next):
 
         # Suppress routine health check log spam
         if request.url.path not in ["/health", "/health/ready"]:
-            logger.info(f"{request.method} {request.url.path} -> {response.status_code} ({duration_ms}ms)")
+            logger.info(
+                f"{request.method} {request.url.path} -> {response.status_code} ({duration_ms}ms)",
+                extra={"request_id": req_id, "resource_id": resource_id},
+            )
         return response
     except Exception as e:
         duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
         performance_profiler.record_route(request.method, request.url.path, 500, duration_ms)
-        logger.error(f"Unhandled error on {request.method} {request.url.path}: {str(e)}")
-        return JSONResponse(
+        logger.error(f"Unhandled error on {request.method} {request.url.path}: {redact_sensitive_text(str(e))}")
+        err_resp = JSONResponse(
             status_code=500,
             content={
                 "error": "Internal server error occurred.",
-                "request_id": req_id
+                "detail": "An unexpected internal error occurred. Please reference request_id for support.",
+                "request_id": req_id,
             },
-            headers={"X-Request-ID": req_id}
+            headers={"X-Request-ID": req_id},
         )
+        return _apply_security_headers(err_resp, duration_ms)
+    finally:
+        clear_log_context()
 
 # Direct root health endpoints (Prompt 01 requirement)
 app.include_router(health_router, prefix="")

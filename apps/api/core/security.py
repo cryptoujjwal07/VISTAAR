@@ -167,11 +167,14 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
     if not user.get("is_active", True):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive or suspended user account")
 
-    # Attach computed permissions
+    # Attach computed permissions & structured logging user_id context (Prompt 28)
     user_role = user.get("role", "PUBLIC_USER")
     permissions = ROLE_PERMISSIONS.get(user_role, set())
     user["permissions"] = list(permissions)
     user["current_jti"] = jti
+
+    from apps.api.core.logging import set_log_context
+    set_log_context(user_id=str(user.get("id") or user.get("email")))
 
     return user
 

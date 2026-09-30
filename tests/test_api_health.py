@@ -249,3 +249,123 @@ async def test_prompt_27_deduplication_idempotency_retries_timeouts_and_etag():
                 )
                 assert render_304.status_code == 304
                 break
+
+
+@pytest.mark.asyncio
+async def test_prompt_28_observability_structured_logs_redaction_and_metrics():
+    """
+    Prompt 28 Verification:
+    - Structured logs with request_id, job_id, resource_id, and user_id correlation
+    - Secret redaction (passwords, JWTs, API keys, Bearer tokens, MongoDB URIs)
+    - Health/readiness checks for worker, DB, Redis, and storage
+    - All 10 required observability metrics on /health/metrics
+    - Production-safe error responses without stack traces
+    """
+    import logging
+    from apps.api.core.logging import (
+        StructuredJsonFormatter,
+        clear_log_context,
+        redact_sensitive_data,
+        redact_sensitive_text,
+        set_log_context,
+    )
+
+    # 1. Verify StructuredJsonFormatter correlates request_id, job_id, resource_id, and user_id
+    formatter = StructuredJsonFormatter()
+    clear_log_context()
+    set_log_context(
+        request_id="req_obs_001",
+        job_id="job_obs_002",
+        resource_id="ds_himansh_003",
+        user_id="usr_scientist_004",
+    )
+    record = logging.LogRecord(
+        name="vistaar.test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=10,
+        msg='User login password="SuperSecretPassword123!" token=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.sig',
+        args=(),
+        exc_info=None,
+    )
+    formatted_json = json.loads(formatter.format(record))
+    clear_log_context()
+
+    assert formatted_json["request_id"] == "req_obs_001"
+    assert formatted_json["job_id"] == "job_obs_002"
+    assert formatted_json["resource_id"] == "ds_himansh_003"
+    assert formatted_json["user_id"] == "usr_scientist_004"
+    assert "SuperSecretPassword123!" not in formatted_json["message"]
+    assert "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" not in formatted_json["message"]
+    assert "[REDACTED]" in formatted_json["message"]
+
+    # 2. Verify dictionary & nested structure redaction
+    raw_nested = {
+        "user": "scientist@ncpor.res.in",
+        "password": "my_raw_password",
+        "GEMINI_API_KEY": "AIzaSySecretKey999999999999999999",
+        "nested": {
+            "authorization": "Bearer secret_jwt_token_value",
+            "mongo": "mongodb+srv://admin:Pass1234@cluster0.mongodb.net/vistaar",
+        },
+    }
+    scrubbed = redact_sensitive_data(raw_nested)
+    assert scrubbed["password"] == "[REDACTED]"
+    assert scrubbed["GEMINI_API_KEY"] == "[REDACTED]"
+    assert scrubbed["nested"]["authorization"] == "[REDACTED]"
+    assert "Pass1234" not in scrubbed["nested"]["mongo"]
+
+    # 3. Verify /health/ready exposes database, worker, redis, and storage health
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        ready_res = await ac.get("/health/ready", headers={"X-Request-ID": "req_ready_check_28"})
+        assert ready_res.status_code == 200
+        assert ready_res.headers.get("X-Request-ID") == "req_ready_check_28"
+        ready_body = ready_res.json()
+        checks = ready_body["checks"]
+        assert checks["database"]["healthy"] is True
+        assert checks["worker"]["healthy"] is True
+        assert checks["redis"]["healthy"] is True
+        assert checks["storage"]["healthy"] is True
+
+        # Trigger a search and translation so latency/failure metrics record live samples
+        await ac.get("/api/v1/search?q=Maitri")
+        trans_res = await ac.post(
+            "/api/v1/localization/translate",
+            json={"text": "Maitri Research Station in Antarctica", "source_language": "en", "target_language": "hi"},
+        )
+        assert trans_res.status_code == 200
+
+        # 4. Verify all 10 required Prompt 28 observability metrics on /health/metrics
+        metrics_res = await ac.get("/api/v1/health/metrics")
+        assert metrics_res.status_code == 200
+        m_body = metrics_res.json()
+        obs = m_body["observability_metrics"]
+
+        required_10_metrics = [
+            "request_latency",
+            "error_rate",
+            "db_latency_ms",
+            "queue_depth",
+            "worker_utilization",
+            "job_failures",
+            "ai_latency_and_failures",
+            "translation_failures",
+            "storage_usage",
+            "search_latency_ms",
+        ]
+        for key in required_10_metrics:
+            assert key in obs, f"Missing required Prompt 28 metric: {key}"
+
+        assert obs["request_latency"]["count"] >= 1
+        assert "error_rate_pct" in obs["error_rate"]
+        assert obs["db_latency_ms"]["current_ping_ms"] >= 0
+        assert "worker_utilization_pct" in obs["worker_utilization"]
+        assert obs["translation_failures"]["total_requests"] >= 1
+        assert obs["search_latency_ms"]["count"] >= 1
+
+        # 5. Verify production-safe error response (never expose stack traces publicly)
+        not_found_res = await ac.get("/api/v1/datasets/non_existent_dataset_99999")
+        assert not_found_res.status_code == 404
+        assert "Traceback" not in not_found_res.text
+        assert "File \"" not in not_found_res.text
+

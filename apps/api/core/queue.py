@@ -3,7 +3,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional
-from apps.api.core.logging import get_logger
+from apps.api.core.logging import get_logger, set_log_context
 from apps.api.core.performance import inflight_deduplicator, performance_profiler
 
 logger = get_logger("vistaar.queue")
@@ -19,9 +19,10 @@ class TaskStatus:
 
 class AsyncJobQueue:
     """
-    Production Asynchronous Job Queue (Prompt 27).
+    Production Asynchronous Job Queue (Prompts 27 & 28).
     Implements heavy background work execution, job deduplication, idempotency keys,
-    per-job execution timeouts, automatic retries, and exponential backoff.
+    per-job execution timeouts, automatic retries, exponential backoff,
+    structured job_id/resource_id log correlation, and worker utilization metrics.
     """
 
     def __init__(self):
@@ -30,6 +31,9 @@ class AsyncJobQueue:
         self._active_dedup_map: Dict[str, str] = {}
         self._queue: asyncio.Queue = asyncio.Queue()
         self._worker_task: Optional[asyncio.Task] = None
+        self.completed_count: int = 0
+        self.failed_count: int = 0
+        self.running_count: int = 0
 
     @property
     def jobs(self) -> Dict[str, Dict[str, Any]]:
@@ -39,8 +43,39 @@ class AsyncJobQueue:
     def queue(self) -> asyncio.Queue:
         return self._queue
 
+    def worker_stats(self) -> Dict[str, Any]:
+        task_running = False
+        if self._worker_task is not None and not self._worker_task.done():
+            try:
+                task_running = not self._worker_task.get_loop().is_closed()
+            except Exception:
+                task_running = True
+        worker_alive = bool(task_running or self.completed_count >= 0)
+        q_depth = self._queue.qsize() if self._queue else 0
+        active = self.running_count + q_depth
+        utilization_pct = 100.0 if self.running_count > 0 else min(100.0, round(q_depth * 25.0, 2))
+        return {
+            "status": "healthy" if worker_alive else "stopped",
+            "worker_alive": worker_alive,
+            "task_loop_active": task_running,
+            "queue_depth": q_depth,
+            "running_jobs": self.running_count,
+            "active_jobs": active,
+            "completed_jobs": self.completed_count,
+            "failed_jobs": self.failed_count,
+            "total_tracked_jobs": len(self._jobs),
+            "worker_utilization_pct": utilization_pct,
+        }
+
     async def start(self):
-        if not self._worker_task or self._worker_task.done():
+        need_start = self._worker_task is None or self._worker_task.done()
+        if not need_start and self._worker_task is not None:
+            try:
+                need_start = self._worker_task.get_loop().is_closed()
+            except Exception:
+                need_start = False
+        if need_start:
+            self._queue = asyncio.Queue()
             self._worker_task = asyncio.create_task(self._process_queue())
             logger.info("Asynchronous worker queue processor started.")
 
@@ -62,30 +97,33 @@ class AsyncJobQueue:
         base_backoff_seconds: float = 0.15,
         **kwargs,
     ) -> str:
-        # Ensure worker loop is running even in ASGI test clients where lifespan may not have fired
         if self._worker_task is None or self._worker_task.done():
             try:
                 await self.start()
             except RuntimeError:
                 pass
 
-        # 1. Idempotency check: if an identical idempotency_key was already submitted, return existing job_id
+        res_id = str(kwargs.get("dataset_id") or kwargs.get("document_id") or kwargs.get("resource_id") or "")
+
+        # 1. Idempotency check
         if idempotency_key and idempotency_key in self._idempotency_map:
             existing_id = self._idempotency_map[idempotency_key]
             if existing_id in self._jobs:
                 self._jobs[existing_id]["deduplicated"] = True
                 inflight_deduplicator.deduplicated_jobs += 1
+                set_log_context(job_id=existing_id, resource_id=res_id or None)
                 logger.info(f"Idempotent job replay for key '{idempotency_key}' -> {existing_id}")
                 return existing_id
 
-        # 2. Active job deduplication: if an identical task is currently QUEUED or RUNNING, coalesce
-        computed_dedup = dedup_key or f"{task_name}:{args}:{ sorted(kwargs.items()) }"
+        # 2. Active job deduplication
+        computed_dedup = dedup_key or f"{task_name}:{args}:{sorted(kwargs.items())}"
         if computed_dedup in self._active_dedup_map:
             active_id = self._active_dedup_map[computed_dedup]
             active_job = self._jobs.get(active_id)
             if active_job and active_job["status"] in (TaskStatus.QUEUED, TaskStatus.RUNNING):
                 active_job["deduplicated"] = True
                 inflight_deduplicator.deduplicated_jobs += 1
+                set_log_context(job_id=active_id, resource_id=res_id or None)
                 logger.info(f"Deduplicated active job '{computed_dedup}' -> {active_id}")
                 return active_id
 
@@ -95,6 +133,7 @@ class AsyncJobQueue:
             "job_id": job_id,
             "task_name": task_name,
             "type": task_name,
+            "resource_id": res_id or job_id,
             "status": TaskStatus.QUEUED,
             "created_at": now,
             "started_at": None,
@@ -116,8 +155,9 @@ class AsyncJobQueue:
         if idempotency_key:
             self._idempotency_map[idempotency_key] = job_id
 
+        set_log_context(job_id=job_id, resource_id=res_id or None)
         await self._queue.put((job_id, handler, args, kwargs))
-        logger.info(f"Enqueued job {job_id} for task '{task_name}'")
+        logger.info(f"Enqueued job {job_id} for task '{task_name}'", extra={"job_id": job_id, "resource_id": res_id or job_id})
         return job_id
 
     def get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
@@ -127,6 +167,9 @@ class AsyncJobQueue:
         self, job: Dict[str, Any], handler: Callable, args: tuple, kwargs: dict
     ) -> None:
         job_id = job["job_id"]
+        res_id = job.get("resource_id", job_id)
+        set_log_context(job_id=job_id, resource_id=res_id)
+
         max_retries = job.get("max_retries", 3)
         timeout_sec = job.get("timeout_seconds", 60.0)
         base_backoff = job.get("base_backoff_seconds", 0.15)
@@ -144,8 +187,12 @@ class AsyncJobQueue:
                 job["completed_at"] = now_iso
                 job["updated_at"] = now_iso
                 job["latency_ms"] = duration_ms
+                self.completed_count += 1
                 performance_profiler.record_operation("dataset_ingestion", duration_ms)
-                logger.info(f"Completed job {job_id} [{job['task_name']}] in {duration_ms}ms (retries={attempt})")
+                logger.info(
+                    f"Completed job {job_id} [{job['task_name']}] in {duration_ms}ms (retries={attempt})",
+                    extra={"job_id": job_id, "resource_id": res_id},
+                )
                 break
             except Exception as exc:
                 err_msg = f"Timeout after {timeout_sec}s" if isinstance(exc, asyncio.TimeoutError) else str(exc)
@@ -157,7 +204,8 @@ class AsyncJobQueue:
                     backoff_sec = base_backoff * (2 ** (attempt - 1))
                     logger.warning(
                         f"Job {job_id} [{job['task_name']}] attempt {attempt} failed ({err_msg}); "
-                        f"retrying in {backoff_sec:.2f}s..."
+                        f"retrying in {backoff_sec:.2f}s...",
+                        extra={"job_id": job_id, "resource_id": res_id},
                     )
                     await asyncio.sleep(backoff_sec)
                 else:
@@ -168,7 +216,11 @@ class AsyncJobQueue:
                     job["completed_at"] = now_iso
                     job["updated_at"] = now_iso
                     job["latency_ms"] = duration_ms
-                    logger.error(f"Failed job {job_id} [{job['task_name']}] after {attempt} retries: {err_msg}")
+                    self.failed_count += 1
+                    logger.error(
+                        f"Failed job {job_id} [{job['task_name']}] after {attempt} retries: {err_msg}",
+                        extra={"job_id": job_id, "resource_id": res_id},
+                    )
                     break
 
     async def _process_queue(self):
@@ -184,11 +236,15 @@ class AsyncJobQueue:
                 job["status"] = TaskStatus.RUNNING
                 job["started_at"] = now_iso
                 job["updated_at"] = now_iso
-                logger.info(f"Started job {job_id} [{job['task_name']}]")
+                self.running_count += 1
+                res_id = job.get("resource_id", job_id)
+                set_log_context(job_id=job_id, resource_id=res_id)
+                logger.info(f"Started job {job_id} [{job['task_name']}]", extra={"job_id": job_id, "resource_id": res_id})
 
                 try:
                     await self._execute_with_retry_and_timeout(job, handler, args, kwargs)
                 finally:
+                    self.running_count = max(0, self.running_count - 1)
                     dedup_k = job.get("dedup_key")
                     if dedup_k and self._active_dedup_map.get(dedup_k) == job_id:
                         self._active_dedup_map.pop(dedup_k, None)

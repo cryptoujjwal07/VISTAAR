@@ -8,9 +8,9 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 class PerformanceProfiler:
     """
-    Production Performance Measurement & Telemetry Profiler (Prompt 27: 'Measure first; do not optimize from guesses').
-    Tracks per-route and per-operation latency distributions (p50, p95, p99, mean, min, max)
-    with bounded sliding windows to guarantee zero memory growth.
+    Production Performance Measurement & Telemetry Profiler (Prompts 27 & 28).
+    Tracks per-route and per-operation latency distributions (p50, p95, p99, mean, min, max),
+    HTTP error rates (4xx/5xx), and translation failure rates with bounded sliding windows.
     """
 
     def __init__(self, window_size: int = 500, slow_threshold_ms: float = 500.0):
@@ -24,12 +24,21 @@ class PerformanceProfiler:
             "pdf_render": [],
             "dataset_ingestion": [],
             "ai_request": [],
+            "translation": [],
         }
         self._total_requests = 0
         self._slow_requests = 0
+        self._error_4xx_count = 0
+        self._error_5xx_count = 0
+        self._translation_requests = 0
+        self._translation_failures = 0
 
     def record_route(self, method: str, path: str, status_code: int, duration_ms: float) -> None:
         self._total_requests += 1
+        if 400 <= status_code < 500:
+            self._error_4xx_count += 1
+        elif status_code >= 500:
+            self._error_5xx_count += 1
         if duration_ms >= self.slow_threshold_ms:
             self._slow_requests += 1
         key = f"{method.upper()} {path}"
@@ -43,6 +52,12 @@ class PerformanceProfiler:
         bucket.append(float(duration_ms))
         if len(bucket) > self.window_size:
             del bucket[: len(bucket) - self.window_size]
+
+    def record_translation(self, success: bool, duration_ms: float) -> None:
+        self._translation_requests += 1
+        if not success:
+            self._translation_failures += 1
+        self.record_operation("translation", duration_ms)
 
     @staticmethod
     def _summarize(samples: List[float]) -> Dict[str, Any]:
@@ -84,11 +99,35 @@ class PerformanceProfiler:
         for op_key, vals in self._op_samples.items():
             op_breakdown[op_key] = self._summarize(vals)
 
+        total_errors = self._error_4xx_count + self._error_5xx_count
+        error_rate_pct = round((total_errors / self._total_requests) * 100.0, 2) if self._total_requests > 0 else 0.0
+        server_error_rate_pct = (
+            round((self._error_5xx_count / self._total_requests) * 100.0, 2) if self._total_requests > 0 else 0.0
+        )
+        trans_failure_rate_pct = (
+            round((self._translation_failures / self._translation_requests) * 100.0, 2)
+            if self._translation_requests > 0
+            else 0.0
+        )
+
         return {
             "measured_first": True,
             "total_requests_measured": self._total_requests,
             "slow_requests_count": self._slow_requests,
             "slow_threshold_ms": self.slow_threshold_ms,
+            "error_rate": {
+                "total_requests": self._total_requests,
+                "error_count": total_errors,
+                "http_4xx_count": self._error_4xx_count,
+                "http_5xx_count": self._error_5xx_count,
+                "error_rate_pct": error_rate_pct,
+                "server_error_rate_pct": server_error_rate_pct,
+            },
+            "translation_telemetry": {
+                "total_requests": self._translation_requests,
+                "failures": self._translation_failures,
+                "failure_rate_pct": trans_failure_rate_pct,
+            },
             "overall_latency": self._summarize(all_route_vals),
             "route_latencies": route_breakdown,
             "operation_latencies": op_breakdown,
@@ -191,6 +230,7 @@ class InFlightDeduplicator:
         except Exception as exc:
             if not fut.done():
                 fut.set_exception(exc)
+                _ = fut.exception()
             raise
         finally:
             self._inflight.pop(key, None)

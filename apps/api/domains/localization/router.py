@@ -54,7 +54,12 @@ async def translate_text(req: TranslateRequest):
     Translates outreach text into target Indian language with strict numerical
     and scientific terminology preservation.
     """
+    import time as _time
+    from apps.api.core.performance import performance_profiler
+
+    t0 = _time.perf_counter()
     if req.target_language not in SUPPORTED_LANGUAGES:
+        performance_profiler.record_translation(False, round((_time.perf_counter() - t0) * 1000, 2))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Target language '{req.target_language}' is not supported. Supported: {list(SUPPORTED_LANGUAGES.keys())}"
@@ -64,6 +69,10 @@ async def translate_text(req: TranslateRequest):
         text=req.text,
         target_lang=req.target_language,
         source_lang=req.source_language or "en"
+    )
+    performance_profiler.record_translation(
+        bool(result.validation_passed),
+        round((_time.perf_counter() - t0) * 1000, 2),
     )
     return result
 
@@ -79,6 +88,10 @@ async def translate_publication(
     Stores source_language, target_language, translation, provider, version, timestamp, and review_status.
     Never silently replaces approved source with failed/unverified translation.
     """
+    import time as _time
+    from apps.api.core.performance import performance_profiler
+
+    t0 = _time.perf_counter()
     db = get_database()
     pub = await db.publications.find_one({"id": req.publication_id})
     if not pub:
@@ -108,6 +121,10 @@ async def translate_publication(
     now = datetime.now(timezone.utc).isoformat()
     all_valid = title_res.validation_passed and body_res.validation_passed
     review_status = "VERIFIED" if all_valid else "PENDING_REVIEW"
+    performance_profiler.record_translation(
+        bool(all_valid),
+        round((_time.perf_counter() - t0) * 1000, 2),
+    )
 
     translation_doc = {
         "id": f"trans_{uuid.uuid4().hex[:12]}",
