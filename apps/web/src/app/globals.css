@@ -4,12 +4,12 @@
 
 :root {
   --font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --background: #FAF7F0;
-  --surface: #FFFFFF;
-  --text: #17202A;
-  --muted: #5F6B76;
-  --border: #E7E0D5;
-  --primary: #2563EB;
+  --background: #EBF5FF;
+  --surface: rgba(255, 255, 255, 0.74);
+  --text: #0F172A;
+  --muted: #475569;
+  --border: rgba(186, 230, 253, 0.85);
+  --primary: #0284C7;
   --scientific: #0E7490;
   --success: #15803D;
   --warning: #B45309;
@@ -30,43 +30,134 @@ body {
   box-sizing: border-box;
 }
 
+/* ============================================================================
+   POLAR / ICE / SNOW SCIENTIFIC RESEARCH ATMOSPHERE
+   Layered Arctic/Antarctic sky gradients + faint telemetry grid + ice glow
+   ============================================================================ */
 body {
-  background-color: var(--background);
+  background-color: #E6F3FF;
   background-image:
-    radial-gradient(circle at 12% 8%, rgba(186, 230, 253, 0.55) 0%, transparent 42%),
-    radial-gradient(circle at 88% 14%, rgba(165, 243, 252, 0.45) 0%, transparent 38%),
-    radial-gradient(circle at 50% 92%, rgba(224, 242, 254, 0.6) 0%, transparent 50%),
-    linear-gradient(180deg, #F0F8FF 0%, #F8FBFF 48%, #FAF7F0 100%);
+    /* Subtle scientific coordinate grid */
+    linear-gradient(to right, rgba(14, 116, 144, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(14, 116, 144, 0.045) 1px, transparent 1px),
+    /* Polar aurora & glacier radial light sources */
+    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.28) 0%, transparent 42%),
+    radial-gradient(circle at 88% 12%, rgba(34, 211, 238, 0.24) 0%, transparent 38%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.75) 0%, transparent 65%),
+    radial-gradient(circle at 80% 88%, rgba(125, 211, 252, 0.32) 0%, transparent 48%),
+    radial-gradient(circle at 18% 85%, rgba(165, 243, 252, 0.28) 0%, transparent 45%),
+    /* Deep polar horizon gradient */
+    linear-gradient(180deg, #DFF0FF 0%, #F0F8FF 38%, #E6F4FE 75%, #F4FAFF 100%);
+  background-size:
+    36px 36px,
+    36px 36px,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
   background-attachment: fixed;
   color: var(--text);
   margin: 0;
   padding: 0;
+  position: relative;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Ice-Mountain Frosted Glassmorphic Utilities */
+/* Subtle snow particles & satellite orbital arc overlay behind content */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(2px 2px at 15% 22%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(2.5px 2.5px at 35% 68%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 62% 18%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(2px 2px at 82% 44%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(2.5px 2.5px at 48% 82%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 91% 76%, rgba(255, 255, 255, 0.8), transparent);
+  opacity: 0.75;
+}
+
+#main-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================================
+   PREMIUM POLAR GLASSMORPHISM UTILITIES
+   Frosted glass panels, translucent surfaces, luminous ice borders, soft glow
+   ============================================================================ */
 .ice-glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(20px) saturate(165%);
-  -webkit-backdrop-filter: blur(20px) saturate(165%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(240, 249, 255, 0.62) 100%
+  );
+  backdrop-filter: blur(22px) saturate(185%);
+  -webkit-backdrop-filter: blur(22px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, 0.88);
   box-shadow:
-    0 10px 36px -8px rgba(14, 116, 144, 0.12),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+    0 12px 38px -8px rgba(14, 116, 144, 0.14),
+    0 2px 6px -1px rgba(2, 132, 199, 0.06),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .ice-glass-strong {
-  background: rgba(255, 255, 255, 0.84);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(186, 230, 253, 0.85);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.86) 0%,
+    rgba(240, 249, 255, 0.74) 100%
+  );
+  backdrop-filter: blur(28px) saturate(195%);
+  -webkit-backdrop-filter: blur(28px) saturate(195%);
+  border: 1px solid rgba(186, 230, 253, 0.92);
   box-shadow:
-    0 16px 48px -10px rgba(37, 99, 235, 0.14),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+    0 18px 50px -10px rgba(2, 132, 199, 0.16),
+    0 4px 12px -2px rgba(14, 116, 144, 0.08),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.98);
 }
 
-/* Tabular numerals for scientific telemetry alignment (Prompt 02 & Prompt 33) */
+/* ============================================================================
+   GLOBAL POLAR GLASSMORPHISM SURFACE HARMONIZATION
+   Ensures all legacy page wrappers and cards render as translucent frosted ice
+   while preserving WCAG 2.1 AA high-contrast readability.
+   ============================================================================ */
+.bg-\[\#FAF7F0\],
+.bg-vistaar-bg {
+  background-color: transparent !important;
+}
+
+#main-content .bg-white {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.76) 0%,
+    rgba(240, 249, 255, 0.64) 100%
+  ) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-color: rgba(186, 230, 253, 0.85);
+  box-shadow:
+    0 10px 32px -8px rgba(14, 116, 144, 0.11),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.92);
+}
+
+#main-content .bg-\[\#FAF7F0\] {
+  background: rgba(240, 249, 255, 0.48) !important;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+.border-\[\#E7E0D5\],
+.border-vistaar-border {
+  border-color: rgba(186, 230, 253, 0.85) !important;
+}
+
+/* Tabular numerals for scientific telemetry alignment */
 .font-mono,
 code,
 pre,
@@ -92,18 +183,18 @@ table td {
   }
 }
 
-/* Custom Scrollbar for Scientific Panels */
+/* Custom Scrollbar for Polar Scientific Panels */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F0F8FF;
+  background: rgba(224, 242, 254, 0.6);
 }
 ::-webkit-scrollbar-thumb {
-  background: #BAE6FD;
+  background: #7DD3FC;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #0E7490;
+  background: #0284C7;
 }
