@@ -39,7 +39,7 @@ const PUBLIC_NAV_ITEMS = [
   { href: "/research", label: "Research", icon: BookOpen },
   { href: "/weather", label: "Weather", icon: CloudSun },
   { href: "/education", label: "Classroom", icon: GraduationCap },
-  { href: "/media", label: "Media & Press", icon: ImageIcon },
+  { href: "/media", label: "Media", icon: ImageIcon },
 ];
 
 const INTERNAL_SCIENTIST_EDITOR_ITEMS = [
@@ -250,27 +250,27 @@ export function Navbar() {
 
         {/* Main Ice-Mountain Frosted Glass Navigation Bar */}
         <div className="ice-glass border-b border-sky-200/70">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
             {/* Left: Brand Mountain Logo & Title */}
-            <Link href="/" className="flex items-center space-x-3 group">
+            <Link href="/" className="flex items-center space-x-2.5 group shrink-0">
               <MountainLogo size="md" className="group-hover:scale-105 transition-transform" />
-              <div className="flex flex-col">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl font-extrabold tracking-tight text-vistaar-text leading-none">
+              <div className="flex flex-col whitespace-nowrap">
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-lg font-extrabold tracking-tight text-vistaar-text leading-none">
                     VISTAAR
                   </span>
                   <span className="bg-sky-50/90 text-sky-800 border border-sky-200 text-[10px] font-semibold px-1.5 py-0.5 rounded tracking-wide font-mono">
                     विस्तार
                   </span>
                 </div>
-                <span className="text-[11px] text-vistaar-muted font-medium tracking-tight mt-0.5">
-                  Polar Science Knowledge & Outreach Portal
+                <span className="text-[10px] text-vistaar-muted font-medium tracking-tight mt-0.5 hidden sm:block">
+                  NCPOR Polar Science Portal
                 </span>
               </div>
             </Link>
 
             {/* Desktop Navigation Links (Strictly Public when logged out; includes Authorized Portals when logged in) */}
-            <nav className="hidden lg:flex items-center space-x-1" aria-label="Primary Navigation">
+            <nav className="hidden lg:flex items-center space-x-1 overflow-x-auto no-scrollbar" aria-label="Primary Navigation">
               {visibleNavItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
@@ -279,13 +279,13 @@ export function Navbar() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center space-x-1.5 px-3 py-1.5 text-[13px] rounded-xl transition-all",
+                      "flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-xl transition-all whitespace-nowrap shrink-0",
                       isActive
                         ? "bg-white/90 text-blue-700 font-bold border border-sky-200 shadow-xs"
                         : "text-vistaar-text/80 hover:text-vistaar-text hover:bg-white/60 font-medium"
                     )}
                   >
-                    <Icon className={cn("w-3.5 h-3.5", isActive ? "text-blue-600" : "text-vistaar-scientific")} />
+                    <Icon className={cn("w-3.5 h-3.5 shrink-0", isActive ? "text-blue-600" : "text-vistaar-scientific")} />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -293,16 +293,16 @@ export function Navbar() {
             </nav>
 
             {/* Right Action Controls */}
-            <div className="flex items-center space-x-2.5">
+            <div className="flex items-center space-x-2 shrink-0">
               {/* Quick Search Shortcut Pill */}
               <button
                 onClick={() => setSearchOpen(true)}
-                className="hidden xl:flex items-center space-x-2 px-3 py-1.5 rounded-xl border border-sky-200/80 bg-white/75 hover:bg-white text-xs text-vistaar-muted transition-all cursor-pointer shadow-2xs"
+                className="hidden xl:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl border border-sky-200/80 bg-white/75 hover:bg-white text-xs text-vistaar-muted transition-all cursor-pointer shadow-2xs whitespace-nowrap"
                 title="Search Portal (Ctrl+K)"
               >
-                <Search className="w-3.5 h-3.5 text-vistaar-scientific" />
-                <span className="font-medium">Search...</span>
-                <kbd className="text-[10px] bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded text-sky-800 font-mono font-medium">
+                <Search className="w-3.5 h-3.5 text-vistaar-scientific shrink-0" />
+                <span className="font-medium">Search</span>
+                <kbd className="text-[10px] bg-sky-50 border border-sky-200 px-1 py-0.5 rounded text-sky-800 font-mono font-medium">
                   ⌘K
                 </kbd>
               </button>
@@ -311,10 +311,10 @@ export function Navbar() {
               {canAccessWorkspace && (
                 <Link
                   href="/workspace"
-                  className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-sky-300 bg-sky-50/85 hover:bg-sky-100 text-sky-900 transition-all shadow-2xs"
+                  className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-bold rounded-xl border border-sky-300 bg-sky-50/85 hover:bg-sky-100 text-sky-900 transition-all shadow-2xs whitespace-nowrap shrink-0"
                   title="Editorial & Scientific Review Workspace"
                 >
-                  <FileSearch className="w-3.5 h-3.5 text-blue-600" />
+                  <FileSearch className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                   <span>Review Studio</span>
                 </Link>
               )}
@@ -433,10 +433,10 @@ export function Navbar() {
               ) : (
                 <button
                   onClick={() => setAuthModalOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white shadow-sm hover:shadow-md transition-all cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white shadow-sm hover:shadow-md transition-all cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Sign In to Portal</span>
+                  <User className="w-3.5 h-3.5 shrink-0" />
+                  <span>Sign In</span>
                 </button>
               )}
 

@@ -2,18 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Compass,
   Database,
   CloudSun,
   GraduationCap,
   ArrowRight,
-  ShieldCheck,
   MapPin,
   ChevronRight,
-  Globe2,
   BookOpen,
-  Camera,
   Languages,
   Users,
   Lock,
@@ -22,12 +20,14 @@ import {
   Shield,
   Edit3,
   FlaskConical,
+  Building2,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { MountainLogo } from "@/components/ui/MountainLogo";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, clearClientApiCache } from "@/lib/api";
 import { getRolePortalLabel, getRolePortalRoute } from "@/components/layout/AuthGate";
 
 const HERO_SLIDES = [
@@ -39,10 +39,10 @@ const HERO_SLIDES = [
       "Continuous atmospheric, geomagnetic, and ice-shelf monitoring across the Schirmacher Oasis and Larsemann Hills under the Indian Antarctic Programme.",
     subtitleHi:
       "भारतीय अंटार्कटिक कार्यक्रम के अंतर्गत शूमाकर ओएसिस और लार्समन हिल्स में सतत वायुमंडलीय, भू-चुंबकीय और हिम-शेल्फ निगरानी।",
-    bgImage: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1400&q=85",
+    bgImage: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=85",
     stationId: "maitri",
     coordinates: "70°45' S, 11°44' E • 69°24' S, 76°11' E",
-    elevation: "117m & 35m AMSL",
+    elevation: "Schirmacher Oasis & Larsemann Hills",
   },
   {
     regionTag: "ARCTIC",
@@ -52,10 +52,10 @@ const HERO_SLIDES = [
       "Year-round fjord oceanography, precipitation microphysics, and Arctic amplification research at Ny-Ålesund, Svalbard (79°N).",
     subtitleHi:
       "नाइ-आलेसुंड, स्वालबार्ड (79°N) में वर्ष भर फ्योर्ड समुद्र विज्ञान, वर्षण सूक्ष्म भौतिकी और आर्कटिक प्रवर्धन अनुसंधान।",
-    bgImage: "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=1400&q=85",
+    bgImage: "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=1200&q=85",
     stationId: "himadri",
     coordinates: "78°55' N, 11°55' E",
-    elevation: "Kongsfjorden, Svalbard",
+    elevation: "Kongsfjorden, Svalbard (79°N)",
   },
   {
     regionTag: "HIMALAYAS",
@@ -65,10 +65,10 @@ const HERO_SLIDES = [
       "High-altitude glacier mass balance, snow water equivalent, and monsoon teleconnection telemetry at 4,080m in the Chandra Basin, Spiti Valley.",
     subtitleHi:
       "चंद्रा बेसिन, स्पीति घाटी में 4,080 मीटर की ऊँचाई पर हिमनद द्रव्यमान संतुलन और मानसून टेलीकनेक्शन टेलीमेट्री।",
-    bgImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1400&q=85",
+    bgImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=85",
     stationId: "himansh",
     coordinates: "32°24' N, 77°37' E",
-    elevation: "4,080m AMSL • Spiti Valley",
+    elevation: "4,080m AMSL • Chandra Basin",
   },
 ];
 
@@ -79,7 +79,7 @@ const REGIONAL_PILLARS = [
     stations: "Maitri (1989) & Bharati (2012)",
     coordinates: "70°45'S, 11°44'E | 69°24'S, 76°11'E",
     summary:
-      "Investigating katabatic wind dynamics, tropospheric radiometry, ice-core paleoclimate records, and Southern Ocean carbon fluxes across East Antarctica.",
+      "Katabatic wind dynamics, tropospheric radiometry, ice-core paleoclimate records, and Southern Ocean carbon fluxes across East Antarctica.",
     stationLink: "/stations?station=maitri",
     weatherLink: "/weather?station=maitri",
   },
@@ -97,9 +97,9 @@ const REGIONAL_PILLARS = [
     region: "The Himalayas",
     regionHi: "हिमालय (तीसरा ध्रुव)",
     stations: "Himansh Glaciological Base (4,080m AMSL)",
-    coordinates: "32°24'N, 77°37'E (Chandra Basin, Western Himalayas)",
+    coordinates: "32°24'N, 77°37'E (Chandra Basin, Spiti)",
     summary:
-      "Benchmark glacier mass balance at Sutri Dhaka, automated weather station telemetry, and cryospheric freshwater security for the Indian subcontinent.",
+      "Benchmark glacier mass balance at Sutri Dhaka, automated weather station telemetry, and cryospheric freshwater security for India.",
     stationLink: "/stations?station=himansh",
     weatherLink: "/weather?station=himansh",
   },
@@ -109,23 +109,23 @@ const PERSONA_GUIDANCE: Record<string, { label: string; badge: string; desc: str
   student: {
     label: "Student",
     badge: "NCERT Classes 8–12 Aligned",
-    desc: "Explore interactive polar classroom modules, glacier mass-balance activities, and self-assessment quizzes grounded in real Indian polar observations.",
+    desc: "Interactive polar classroom modules, glacier mass-balance activities, and self-assessment quizzes grounded in real Indian polar observations.",
     primaryHref: "/education",
     primaryCta: "Open Polar Classroom",
   },
   teacher: {
     label: "Teacher",
     badge: "Educator Lesson Plans & Answer Keys",
-    desc: "Download print-ready CBSE/NCERT lesson plans, discussion guides, and calibrated NPDC classroom charts for Earth Science instruction.",
+    desc: "Print-ready CBSE/NCERT lesson plans, discussion guides, and calibrated NPDC classroom charts for Earth Science instruction.",
     primaryHref: "/education",
-    primaryCta: "Download Teacher Lesson Plans",
+    primaryCta: "Teacher Lesson Plans",
   },
   journalist: {
     label: "Journalist",
     badge: "Accredited PIB & MoES Press Kits",
-    desc: "Access human-approved PIB press releases, verified polar statistics with dataset provenance, and GODL-licensed media dispatches.",
+    desc: "Human-approved PIB press releases, verified polar statistics with dataset provenance, and GODL-licensed media dispatches.",
     primaryHref: "/media",
-    primaryCta: "Open Press Kit & Media Library",
+    primaryCta: "Open Press Kit",
   },
   scientist: {
     label: "Scientist",
@@ -137,10 +137,12 @@ const PERSONA_GUIDANCE: Record<string, { label: string; badge: string; desc: str
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const [activeSlide, setActiveSlide] = useState(0);
   const [persona, setPersona] = useState<"student" | "teacher" | "journalist" | "scientist">("student");
   const [language, setLanguage] = useState<"en" | "hi" | "ta">("en");
-  const [currentUser, setCurrentUser] = useState<{ email: string; role: string; full_name?: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ email: string; role: string; full_name?: string; name?: string } | null>(null);
+  const [launchingRole, setLaunchingRole] = useState<string | null>(null);
 
   // Live published data from backend (strictly published/approved only)
   const [publishedResearch, setPublishedResearch] = useState<any[]>([]);
@@ -201,6 +203,35 @@ export default function HomePage() {
     loadPortalData();
   }, [currentUser]);
 
+  async function handleDirectPortalLaunch(email: string, pass: string, roleLabel: string) {
+    setLaunchingRole(roleLabel);
+    try {
+      const res = await fetchApi("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password: pass }),
+      });
+      if (res?.access_token && typeof window !== "undefined") {
+        localStorage.setItem("vistaar_token", res.access_token);
+        if (res.refresh_token) {
+          localStorage.setItem("vistaar_refresh_token", res.refresh_token);
+        }
+        if (res.user) {
+          localStorage.setItem("vistaar_user", JSON.stringify(res.user));
+        }
+        clearClientApiCache();
+        setCurrentUser(res.user);
+        window.dispatchEvent(new Event("vistaar-auth-changed"));
+        router.push(getRolePortalRoute(res.user?.role));
+      }
+    } catch {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("vistaar-open-login-modal"));
+      }
+    } finally {
+      setLaunchingRole(null);
+    }
+  }
+
   const currentSlide = HERO_SLIDES[activeSlide];
   const activePersona = PERSONA_GUIDANCE[persona];
   const availablePersonas = currentUser
@@ -214,43 +245,42 @@ export default function HomePage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-10 pb-16 text-vistaar-text">
-      {/* 1. COMPACT FRAMED ICE-MOUNTAIN LANDING PAGE (NOT FULL-SCREEN) */}
-      <section aria-label="VISTAAR Ice-Mountain Landing Showcase" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* Left Framed Landing Hero Card (7 cols) */}
-        <div className="lg:col-span-7 rounded-3xl ice-glass-strong p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
-          {/* Subtle decorative SVG Ice-Mountain ridgeline watermark */}
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-6 pb-14 overflow-x-hidden text-vistaar-text">
+      {/* 1. ABOVE-THE-FOLD ICE-MOUNTAIN LANDING PAGE (FITS ON SCREEN, ZERO HORIZONTAL SCROLL) */}
+      <section aria-label="VISTAAR Ice-Mountain Landing Showcase" className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        {/* Left Framed Landing Showcase Card (7 cols) */}
+        <div className="lg:col-span-7 rounded-2xl ice-glass-strong p-5 sm:p-6 flex flex-col justify-between relative overflow-hidden">
+          {/* Subtle decorative SVG Ice-Mountain ridgeline */}
           <svg
-            viewBox="0 0 600 140"
+            viewBox="0 0 600 120"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="absolute bottom-0 right-0 w-full h-28 opacity-25 pointer-events-none"
+            className="absolute bottom-0 right-0 w-full h-24 opacity-20 pointer-events-none"
             preserveAspectRatio="none"
           >
-            <path d="M0 140L110 55L205 110L330 20L455 95L535 45L600 140H0Z" fill="#BAE6FD" />
-            <path d="M160 140L330 20L455 95L600 30V140H160Z" fill="#7DD3FC" />
+            <path d="M0 120L110 45L205 95L330 15L455 85L535 38L600 120H0Z" fill="#BAE6FD" />
+            <path d="M160 120L330 15L455 85L600 25V120H160Z" fill="#7DD3FC" />
           </svg>
 
-          <div className="relative z-10 space-y-4">
-            {/* Brand + Institutional Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-sky-200/70">
-              <div className="flex items-center space-x-3">
-                <MountainLogo size="lg" />
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-mono uppercase tracking-widest font-bold text-vistaar-scientific">
+          <div className="relative z-10 space-y-3.5">
+            {/* Brand Mountain Logo + Region Tabs */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-sky-200/70">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <MountainLogo size="md" />
+                <div className="min-w-0">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-vistaar-scientific truncate">
                       NCPOR • MINISTRY OF EARTH SCIENCES
                     </span>
                     <Badge variant="scientific">SIH 26063</Badge>
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-vistaar-text">
-                    VISTAAR <span className="text-vistaar-scientific font-semibold">(विस्तार)</span> Polar Portal
+                  <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-vistaar-text truncate">
+                    VISTAAR <span className="text-vistaar-scientific font-semibold">(विस्तार)</span> Landing Portal
                   </h1>
                 </div>
               </div>
 
-              {/* Region Tabs */}
-              <div role="tablist" aria-label="Polar Region Hero Slides" className="flex space-x-1 bg-sky-50/90 p-1 rounded-full border border-sky-200/80">
+              <div role="tablist" aria-label="Polar Region Hero Slides" className="flex space-x-1 bg-sky-50/90 p-1 rounded-full border border-sky-200/80 shrink-0">
                 {HERO_SLIDES.map((slide, idx) => (
                   <button
                     key={slide.regionTag}
@@ -258,7 +288,7 @@ export default function HomePage() {
                     aria-selected={activeSlide === idx}
                     aria-label={`View ${slide.regionTag} highlight`}
                     onClick={() => setActiveSlide(idx)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
                       activeSlide === idx
                         ? "bg-gradient-to-r from-vistaar-primary to-vistaar-scientific text-white shadow-2xs"
                         : "text-vistaar-muted hover:text-vistaar-text"
@@ -270,39 +300,39 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Active Cryospheric Realm Highlight inside Compact Framed Card */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center pt-1">
-              <div className="sm:col-span-7 space-y-2.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] uppercase font-mono tracking-wider font-bold text-[#0E7490] bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 flex items-center gap-1">
-                    <MountainSnow className="w-3.5 h-3.5 text-sky-600" />
+            {/* Active Cryospheric Realm Highlight */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+              <div className="sm:col-span-7 space-y-2 min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-[#0E7490] bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200 flex items-center gap-1">
+                    <MountainSnow className="w-3 h-3 text-sky-600 shrink-0" />
                     {currentSlide.regionTag}
                   </span>
-                  <span className="text-[11px] font-mono text-vistaar-muted">{currentSlide.coordinates}</span>
+                  <span className="text-[10px] font-mono text-vistaar-muted truncate">{currentSlide.coordinates}</span>
                 </div>
 
-                <h2 className="text-xl sm:text-2xl font-extrabold text-vistaar-text leading-snug">
+                <h2 className="text-lg sm:text-xl font-extrabold text-vistaar-text leading-snug">
                   {language === "hi" ? currentSlide.titleHi : currentSlide.title}
                 </h2>
 
-                <p className="text-xs sm:text-sm text-vistaar-muted leading-relaxed">
+                <p className="text-xs text-vistaar-muted leading-relaxed line-clamp-3">
                   {language === "hi" ? currentSlide.subtitleHi : currentSlide.subtitle}
                 </p>
               </div>
 
-              {/* Framed Ice-Mountain Thumbnail Card (Not Full Screen) */}
+              {/* Compact Framed Snow-Mountain Card */}
               <div className="sm:col-span-5">
-                <div className="relative h-44 rounded-2xl overflow-hidden border-2 border-white shadow-md group">
+                <div className="relative h-36 rounded-xl overflow-hidden border-2 border-white shadow-sm group">
                   <div
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                     style={{ backgroundImage: `url('${currentSlide.bgImage}')` }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-sky-950/80 via-sky-950/20 to-transparent" />
-                  <div className="absolute bottom-2.5 left-3 right-3 text-white">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-sky-200 block">
+                  <div className="absolute inset-0 bg-gradient-to-t from-sky-950/85 via-sky-950/25 to-transparent" />
+                  <div className="absolute bottom-2 left-2.5 right-2.5 text-white">
+                    <span className="text-[9px] font-mono uppercase tracking-wider text-sky-200 block truncate">
                       {currentSlide.elevation}
                     </span>
-                    <span className="text-xs font-bold leading-tight block">
+                    <span className="text-[11px] font-bold leading-tight block truncate">
                       {currentSlide.title}
                     </span>
                   </div>
@@ -311,12 +341,12 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Primary Landing Actions & Key Metrics */}
-          <div className="relative z-10 pt-5 mt-4 border-t border-sky-200/70 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2.5">
+          {/* Primary Landing Actions */}
+          <div className="relative z-10 pt-3.5 mt-3 border-t border-sky-200/70 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {currentUser ? (
                 <Link href={getRolePortalRoute(currentUser.role)}>
-                  <Button size="sm" className="bg-gradient-to-r from-blue-600 to-cyan-700 text-white font-bold shadow-sm">
+                  <Button size="sm" className="bg-gradient-to-r from-blue-600 to-cyan-700 text-white font-bold text-xs shadow-xs">
                     Open {getRolePortalLabel(currentUser.role)} →
                   </Button>
                 </Link>
@@ -324,149 +354,151 @@ export default function HomePage() {
                 <Button
                   size="sm"
                   onClick={openLoginModal}
-                  className="bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white font-bold shadow-sm cursor-pointer"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white font-bold text-xs shadow-xs cursor-pointer"
                 >
                   Sign In to Role Portal →
                 </Button>
               )}
               <Link href={`/weather?station=${currentSlide.stationId}`}>
-                <Button size="sm" variant="outline" className="bg-white/85 text-vistaar-text border-sky-200 hover:bg-white font-semibold">
-                  Live Weather Telemetry
+                <Button size="sm" variant="outline" className="bg-white/85 text-vistaar-text border-sky-200 hover:bg-white font-semibold text-xs">
+                  Weather Telemetry
                 </Button>
               </Link>
               <Link href="/research">
-                <Button size="sm" variant="outline" className="bg-white/85 text-vistaar-text border-sky-200 hover:bg-white font-semibold">
+                <Button size="sm" variant="outline" className="bg-white/85 text-vistaar-text border-sky-200 hover:bg-white font-semibold text-xs">
                   Published Research
                 </Button>
               </Link>
             </div>
 
-            <div className="flex items-center gap-3 text-[11px] font-mono text-vistaar-scientific font-bold">
-              <span>4 Polar Stations</span>
-              <span>•</span>
-              <span>100% Claim-Verified</span>
-            </div>
+            <span className="text-[10px] font-mono text-vistaar-scientific font-bold">
+              4 Stations • 100% Verified
+            </span>
           </div>
         </div>
 
-        {/* Right Framed Role Portal & Access Gate Card (5 cols) */}
-        <div className="lg:col-span-5 rounded-3xl ice-glass-strong p-6 flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider font-bold text-vistaar-primary flex items-center gap-1.5">
+        {/* Right Framed Direct Role Portal Launchpad (5 cols) */}
+        <div className="lg:col-span-5 rounded-2xl ice-glass-strong p-5 flex flex-col justify-between">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-vistaar-primary flex items-center gap-1.5 truncate">
                 {currentUser ? (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>AUTHENTICATED SESSION ACTIVE</span>
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>PORTAL SESSION ACTIVE</span>
                   </>
                 ) : (
                   <>
-                    <Lock className="w-3.5 h-3.5 text-vistaar-primary" />
-                    <span>DIRECT ROLE PORTAL LAUNCHPAD</span>
+                    <Lock className="w-3.5 h-3.5 text-vistaar-primary shrink-0" />
+                    <span>1-CLICK DIRECT ROLE PORTAL LOGIN</span>
                   </>
                 )}
               </span>
               <Badge variant="scientific">
-                {currentUser ? currentUser.role : "RBAC Protected"}
+                {currentUser ? currentUser.role : "Direct Launch"}
               </Badge>
             </div>
 
-            <h2 className="text-lg font-extrabold text-vistaar-text">
+            <h2 className="text-base sm:text-lg font-extrabold text-vistaar-text leading-snug">
               {currentUser
-                ? `Welcome, ${currentUser.full_name || currentUser.email}`
-                : "Sign In Opens Your Role Portal Directly"}
+                ? `Active: ${currentUser.full_name || currentUser.name || currentUser.email}`
+                : "Click Any Role to Sign In & Open Portal Directly"}
             </h2>
-            <p className="text-xs text-vistaar-muted leading-relaxed">
+            <p className="text-[11px] text-vistaar-muted leading-relaxed">
               {currentUser
-                ? "Your institutional credentials are active. Launch your assigned role workspace below or browse public modules."
-                : "Without login, internal workspaces are locked and only public outreach modules are visible. Select or sign in to open your role portal directly:"}
+                ? "Click any role card below to switch or open that dedicated workspace immediately."
+                : "Without login, internal tools stay locked and only public outreach is shown. Click a role below to sign in and open its portal directly:"}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs">
-              <Link
-                href="/admin"
-                className="p-3 rounded-xl border border-sky-200/80 bg-white/80 hover:bg-white transition-all flex flex-col justify-between shadow-2xs"
+            <div className="grid grid-cols-2 gap-2 pt-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => handleDirectPortalLaunch("admin@vistaar.ncpor.res.in", "VistaarAdmin@2026!", "SUPER_ADMIN")}
+                className="p-2.5 rounded-xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs cursor-pointer"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-vistaar-text flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-red-600" />
-                    Super Admin
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-vistaar-text flex items-center gap-1 truncate">
+                    <Shield className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                    <span className="truncate">Super Admin</span>
                   </span>
-                  <span className="text-[10px] font-mono text-vistaar-scientific">/admin</span>
+                  <span className="text-[9px] font-mono text-vistaar-scientific shrink-0">/admin</span>
                 </div>
-                <span className="text-[11px] text-vistaar-muted mt-1">
-                  RBAC, Audit Logs & Governance
+                <span className="text-[10px] text-vistaar-muted mt-1 truncate">
+                  {launchingRole === "SUPER_ADMIN" ? "Opening /admin..." : "Governance & RBAC"}
                 </span>
-              </Link>
+              </button>
 
-              <Link
-                href="/workspace"
-                className="p-3 rounded-xl border border-sky-200/80 bg-white/80 hover:bg-white transition-all flex flex-col justify-between shadow-2xs"
+              <button
+                type="button"
+                onClick={() => handleDirectPortalLaunch("editor@vistaar.ncpor.res.in", "Editor@Vistaar2026!", "OUTREACH_EDITOR")}
+                className="p-2.5 rounded-xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs cursor-pointer"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-vistaar-text flex items-center gap-1.5">
-                    <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                    Outreach Editor
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-vistaar-text flex items-center gap-1 truncate">
+                    <Edit3 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span className="truncate">Outreach Editor</span>
                   </span>
-                  <span className="text-[10px] font-mono text-vistaar-scientific">/workspace</span>
+                  <span className="text-[9px] font-mono text-vistaar-scientific shrink-0">/workspace</span>
                 </div>
-                <span className="text-[11px] text-vistaar-muted mt-1">
-                  Claim Verification & PIB Studio
+                <span className="text-[10px] text-vistaar-muted mt-1 truncate">
+                  {launchingRole === "OUTREACH_EDITOR" ? "Opening /workspace..." : "Review & PIB Studio"}
                 </span>
-              </Link>
+              </button>
 
-              <Link
-                href="/documents"
-                className="p-3 rounded-xl border border-sky-200/80 bg-white/80 hover:bg-white transition-all flex flex-col justify-between shadow-2xs"
+              <button
+                type="button"
+                onClick={() => handleDirectPortalLaunch("scientist@vistaar.ncpor.res.in", "Scientist@Vistaar2026!", "FIELD_SCIENTIST")}
+                className="p-2.5 rounded-xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs cursor-pointer"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-vistaar-text flex items-center gap-1.5">
-                    <FlaskConical className="w-3.5 h-3.5 text-emerald-600" />
-                    Field Scientist
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-vistaar-text flex items-center gap-1 truncate">
+                    <FlaskConical className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="truncate">Field Scientist</span>
                   </span>
-                  <span className="text-[10px] font-mono text-vistaar-scientific">/documents</span>
+                  <span className="text-[9px] font-mono text-vistaar-scientific shrink-0">/documents</span>
                 </div>
-                <span className="text-[11px] text-vistaar-muted mt-1">
-                  Document AI & NPDC Ingestion
+                <span className="text-[10px] text-vistaar-muted mt-1 truncate">
+                  {launchingRole === "FIELD_SCIENTIST" ? "Opening /documents..." : "Document AI & NPDC"}
                 </span>
-              </Link>
+              </button>
 
-              <Link
-                href="/education"
-                className="p-3 rounded-xl border border-sky-200/80 bg-white/80 hover:bg-white transition-all flex flex-col justify-between shadow-2xs"
+              <button
+                type="button"
+                onClick={() => handleDirectPortalLaunch("student@vistaar.ncpor.res.in", "Student@Vistaar2026!", "PUBLIC_USER")}
+                className="p-2.5 rounded-xl border border-sky-200/80 bg-white/85 hover:bg-white text-left transition-all flex flex-col justify-between shadow-2xs cursor-pointer"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-vistaar-text flex items-center gap-1.5">
-                    <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
-                    Student / Public
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-vistaar-text flex items-center gap-1 truncate">
+                    <GraduationCap className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span className="truncate">Student Portal</span>
                   </span>
-                  <span className="text-[10px] font-mono text-vistaar-scientific">/education</span>
+                  <span className="text-[9px] font-mono text-vistaar-scientific shrink-0">/education</span>
                 </div>
-                <span className="text-[11px] text-vistaar-muted mt-1">
-                  NCERT Classroom & Quizzes
+                <span className="text-[10px] text-vistaar-muted mt-1 truncate">
+                  {launchingRole === "PUBLIC_USER" ? "Opening /education..." : "NCERT 8–12 Classroom"}
                 </span>
-              </Link>
+              </button>
             </div>
           </div>
 
-          <div className="pt-4 mt-3 border-t border-sky-200/70 flex items-center justify-between">
-            <span className="text-[11px] font-mono text-vistaar-muted">
-              {currentUser ? `Signed in as ${currentUser.role}` : "Public Read-Only Mode Active"}
+          <div className="pt-3 mt-2.5 border-t border-sky-200/70 flex items-center justify-between gap-2">
+            <span className="text-[10px] font-mono text-vistaar-muted truncate">
+              {currentUser ? `Logged in: ${currentUser.role}` : "Public Read-Only Mode"}
             </span>
             {currentUser ? (
               <Link
                 href={getRolePortalRoute(currentUser.role)}
-                className="text-xs font-bold text-vistaar-primary hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-vistaar-primary hover:underline flex items-center gap-1 whitespace-nowrap"
               >
-                <span>Go to My Portal</span>
+                <span>Open My Portal</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             ) : (
               <button
                 onClick={openLoginModal}
-                className="text-xs font-bold text-vistaar-primary hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-vistaar-primary hover:underline flex items-center gap-1 cursor-pointer whitespace-nowrap"
               >
-                <span>1-Click Institutional Sign In</span>
+                <span>Custom Email Login</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
@@ -474,29 +506,57 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PERSONA & MULTILINGUAL BAR — ICE-MOUNTAIN GLASSMORPHIC */}
-      <section aria-label="Persona and Language Selection">
+      {/* 2. QUICK PUBLIC MODULES DOCK + PERSONA/LANGUAGE BAR (FITS ABOVE THE FOLD) */}
+      <section aria-label="Public Modules and Persona Bar" className="space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            { href: "/explore", label: "Knowledge Search", sub: "Public RAG & AI", icon: Compass },
+            { href: "/stations", label: "4 Observatories", sub: "Maitri • Bharati • Himadri", icon: Building2 },
+            { href: "/weather", label: "Polar Weather", sub: "Live Station Telemetry", icon: CloudSun },
+            { href: "/research", label: "Published Research", sub: "Verified Bulletins", icon: BookOpen },
+            { href: "/education", label: "Polar Classroom", sub: "NCERT Classes 8–12", icon: GraduationCap },
+            { href: "/media", label: "Media & Press Kit", sub: "PIB & GODL Archive", icon: ImageIcon },
+          ].map((mod) => {
+            const Icon = mod.icon;
+            return (
+              <Link
+                key={mod.href}
+                href={mod.href}
+                className="p-3 rounded-xl ice-glass hover:bg-white/95 transition-all flex items-center space-x-2.5 group min-w-0"
+              >
+                <div className="w-8 h-8 rounded-lg bg-sky-100/80 border border-sky-200 flex items-center justify-center text-vistaar-primary group-hover:bg-vistaar-primary group-hover:text-white transition-colors shrink-0">
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-xs font-bold text-vistaar-text block truncate">{mod.label}</span>
+                  <span className="text-[10px] text-vistaar-muted block truncate">{mod.sub}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
         <Card className="ice-glass-strong">
-          <CardContent className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <Users className="w-4 h-4 text-vistaar-primary" />
+          <CardContent className="p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="space-y-0.5 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Users className="w-4 h-4 text-vistaar-primary shrink-0" />
                 <span className="text-xs font-mono uppercase tracking-wider font-bold text-vistaar-scientific">
-                  Tailor Public Portal by Persona ({activePersona.label})
+                  Tailor Public View by Persona ({activePersona.label})
                 </span>
                 <Badge variant="scientific">{activePersona.badge}</Badge>
               </div>
-              <p className="text-xs text-vistaar-muted max-w-2xl">{activePersona.desc}</p>
+              <p className="text-xs text-vistaar-muted truncate">{activePersona.desc}</p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <div role="group" aria-label="Select User Persona" className="flex items-center bg-sky-50/80 backdrop-blur-md p-1 rounded-lg border border-sky-200/80">
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <div role="group" aria-label="Select User Persona" className="flex items-center bg-sky-50/80 p-1 rounded-lg border border-sky-200/80">
                 {availablePersonas.map((p) => (
                   <button
                     key={p}
                     aria-pressed={persona === p}
                     onClick={() => setPersona(p)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold capitalize transition-all cursor-pointer ${
                       persona === p
                         ? "bg-gradient-to-r from-vistaar-primary to-vistaar-scientific text-white shadow-xs"
                         : "text-vistaar-muted hover:text-vistaar-text"
@@ -507,8 +567,8 @@ export default function HomePage() {
                 ))}
               </div>
 
-              <div className="flex items-center space-x-1.5 bg-sky-50/80 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-sky-200/80">
-                <Languages className="w-4 h-4 text-vistaar-scientific" />
+              <div className="flex items-center space-x-1.5 bg-sky-50/80 px-2.5 py-1 rounded-lg border border-sky-200/80">
+                <Languages className="w-3.5 h-3.5 text-vistaar-scientific shrink-0" />
                 <select
                   aria-label="Select Portal Language"
                   value={language}
@@ -522,7 +582,7 @@ export default function HomePage() {
               </div>
 
               <Link href={activePersona.primaryHref}>
-                <Button size="sm" className="text-xs flex items-center space-x-1 shadow-xs">
+                <Button size="sm" className="text-xs flex items-center space-x-1 shadow-xs whitespace-nowrap">
                   <span>{activePersona.primaryCta}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
@@ -532,36 +592,36 @@ export default function HomePage() {
         </Card>
       </section>
 
-      {/* 2. INDIA'S POLAR SCIENCE & 3. ANTARCTICA, ARCTIC, HIMALAYAS */}
-      <section aria-labelledby="heading-polar-science" className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-sky-200/80 pb-3 gap-4">
+      {/* 3. INDIA'S POLAR SCIENCE ACROSS THREE CRYOSPHERIC REALMS */}
+      <section aria-labelledby="heading-polar-science" className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-sky-200/80 pb-2.5 gap-2">
           <div>
-            <span className="text-xs font-mono uppercase tracking-widest text-vistaar-scientific font-bold">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-vistaar-scientific font-bold">
               NATIONAL CENTRE FOR POLAR AND OCEAN RESEARCH (NCPOR) • MINISTRY OF EARTH SCIENCES
             </span>
-            <h2 id="heading-polar-science" className="text-2xl font-extrabold text-vistaar-text mt-1">
+            <h2 id="heading-polar-science" className="text-xl sm:text-2xl font-extrabold text-vistaar-text mt-0.5">
               {language === "hi"
                 ? "भारत का ध्रुवीय विज्ञान: अंटार्कटिका, आर्कटिक और हिमालय"
                 : "India's Polar Science Across Three Cryospheric Realms"}
             </h2>
           </div>
-          <Link href="/about" className="text-xs font-bold text-vistaar-primary hover:underline flex items-center space-x-1">
-            <span>Institutional Mandate & Charter</span>
+          <Link href="/about" className="text-xs font-bold text-vistaar-primary hover:underline flex items-center space-x-1 shrink-0">
+            <span>Institutional Mandate</span>
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {REGIONAL_PILLARS.map((item) => (
             <Card key={item.region} className="ice-glass hover:shadow-lg transition-all">
-              <CardHeader className="p-5 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60">
-                <div className="flex items-center justify-between mb-1">
+              <CardHeader className="p-4 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60">
+                <div className="flex items-center justify-between mb-1 gap-2">
                   <Badge variant="scientific">{language === "hi" ? item.regionHi : item.region}</Badge>
-                  <span className="text-[10px] font-mono text-vistaar-muted">{item.coordinates}</span>
+                  <span className="text-[10px] font-mono text-vistaar-muted truncate">{item.coordinates}</span>
                 </div>
-                <CardTitle className="text-lg font-bold text-vistaar-text">{item.stations}</CardTitle>
+                <CardTitle className="text-base font-bold text-vistaar-text">{item.stations}</CardTitle>
               </CardHeader>
-              <CardContent className="p-5 space-y-4 text-xs">
+              <CardContent className="p-4 space-y-3 text-xs">
                 <p className="text-vistaar-muted leading-relaxed">{item.summary}</p>
                 <div className="flex items-center justify-between pt-2 border-t border-sky-100/80 font-semibold">
                   <Link href={item.stationLink} className="text-vistaar-primary hover:underline flex items-center space-x-1">
@@ -579,27 +639,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. LATEST PUBLISHED RESEARCH (Strictly APPROVED/PUBLISHED only — Never shows internal drafts) */}
-      <section aria-labelledby="heading-latest-research" className="space-y-6">
-        <div className="flex items-end justify-between border-b border-sky-200/80 pb-3">
+      {/* 4. LATEST PUBLISHED RESEARCH (Strictly APPROVED/PUBLISHED only) */}
+      <section aria-labelledby="heading-latest-research" className="space-y-4">
+        <div className="flex items-end justify-between border-b border-sky-200/80 pb-2.5 gap-2">
           <div>
-            <span className="text-xs font-mono uppercase tracking-widest text-emerald-700 font-bold">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-emerald-700 font-bold">
               PUBLIC DISSEMINATION • VERIFIED & HUMAN-APPROVED ONLY
             </span>
-            <h2 id="heading-latest-research" className="text-2xl font-extrabold text-vistaar-text mt-1">
+            <h2 id="heading-latest-research" className="text-xl font-extrabold text-vistaar-text mt-0.5">
               Latest Published Polar Research & Bulletins
             </h2>
           </div>
-          <Link href="/research" className="text-xs font-bold text-vistaar-primary hover:underline flex items-center space-x-1">
-            <span>View All Published Research</span>
+          <Link href="/research" className="text-xs font-bold text-vistaar-primary hover:underline flex items-center space-x-1 shrink-0">
+            <span>View All Research</span>
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {publishedResearch.length === 0 ? (
             <Card className="md:col-span-3 ice-glass">
-              <CardContent className="p-6 text-center text-xs text-vistaar-muted">
+              <CardContent className="p-5 text-center text-xs text-vistaar-muted">
                 Only human-approved `PUBLISHED` research bulletins appear here. Internal `DRAFT` and `NEEDS_REVIEW` items are strictly isolated behind RBAC authentication.
               </CardContent>
             </Card>
@@ -613,22 +673,22 @@ export default function HomePage() {
                   : pub.pib;
               return (
                 <Card key={pub.id} className="ice-glass flex flex-col justify-between">
-                  <CardHeader className="p-5 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60">
+                  <CardHeader className="p-4 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60">
                     <div className="flex items-center justify-between mb-1">
                       <Badge variant="success">PUBLISHED v{pub.version || 1}</Badge>
                       <span className="text-[10px] font-mono uppercase text-vistaar-scientific font-bold">
                         {pub.station_id} • {pub.dataset_id}
                       </span>
                     </div>
-                    <CardTitle className="text-base font-bold text-vistaar-text line-clamp-2">
+                    <CardTitle className="text-sm font-bold text-vistaar-text line-clamp-2">
                       {trackBlock?.title || "Polar Observation Bulletin"}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-5 space-y-4 text-xs flex-1 flex flex-col justify-between">
-                    <p className="text-vistaar-muted line-clamp-4 leading-relaxed">
+                  <CardContent className="p-4 space-y-3 text-xs flex-1 flex flex-col justify-between">
+                    <p className="text-vistaar-muted line-clamp-3 leading-relaxed">
                       {trackBlock?.body || trackBlock?.summary}
                     </p>
-                    <div className="pt-3 border-t border-sky-100/80 flex items-center justify-between font-mono text-[11px]">
+                    <div className="pt-2.5 border-t border-sky-100/80 flex items-center justify-between font-mono text-[11px]">
                       <span className="text-emerald-700 font-bold">100% Claims Verified</span>
                       <Link href="/research" className="text-vistaar-primary font-sans font-bold hover:underline">
                         Read Bulletin →
@@ -642,25 +702,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. WEATHER INTELLIGENCE (Public) & 8. NPDC INTERNAL PORTAL GATE */}
-      <section aria-labelledby="heading-weather-datasets" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* 5. WEATHER INTELLIGENCE (Public) & NPDC INTERNAL PORTAL GATE */}
+      <section aria-labelledby="heading-weather-datasets" className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <Card className="lg:col-span-5 ice-glass flex flex-col justify-between">
-          <CardHeader className="p-5 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60">
+          <CardHeader className="p-4 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase text-vistaar-scientific font-bold">
+              <span className="text-[11px] font-mono uppercase text-vistaar-scientific font-bold">
                 PUBLIC TELEMETRY STREAM
               </span>
               <Badge variant="scientific">No Synthetic Fill</Badge>
             </div>
-            <CardTitle id="heading-weather-datasets" className="text-xl font-extrabold text-vistaar-text mt-1">
+            <CardTitle id="heading-weather-datasets" className="text-lg font-extrabold text-vistaar-text mt-1">
               Polar Weather Intelligence
             </CardTitle>
             <CardDescription className="text-xs">
-              Interactive station telemetry with dynamic parameter detection, missing-gap preservation, and record provenance.
+              Interactive station telemetry with dynamic parameter detection and record provenance.
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-5 space-y-4 text-xs">
-            <div className="grid grid-cols-3 gap-3 bg-sky-50/70 backdrop-blur-md p-3 rounded-lg border border-sky-200/70 font-mono">
+          <CardContent className="p-4 space-y-3 text-xs">
+            <div className="grid grid-cols-3 gap-2 bg-sky-50/70 p-2.5 rounded-lg border border-sky-200/70 font-mono">
               <div>
                 <span className="text-[10px] text-vistaar-muted block uppercase">Station</span>
                 <span className="font-bold text-vistaar-text">{weatherSample?.station_name || "Maitri"}</span>
@@ -672,13 +732,13 @@ export default function HomePage() {
                 </span>
               </div>
               <div>
-                <span className="text-[10px] text-vistaar-muted block uppercase">Valid Records</span>
+                <span className="text-[10px] text-vistaar-muted block uppercase">Records</span>
                 <span className="font-bold text-emerald-700">{weatherSample?.statistics?.count ?? 24}</span>
               </div>
             </div>
             <Link href="/weather" className="block">
-              <Button size="sm" className="w-full">
-                Launch Interactive Weather Intelligence
+              <Button size="sm" className="w-full text-xs">
+                Launch Weather Intelligence
               </Button>
             </Link>
           </CardContent>
@@ -686,12 +746,12 @@ export default function HomePage() {
 
         {currentUser ? (
           <Card className="lg:col-span-7 ice-glass-strong">
-            <CardHeader className="p-5 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60 flex flex-row items-center justify-between">
+            <CardHeader className="p-4 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60 flex flex-row items-center justify-between">
               <div>
-                <span className="text-xs font-mono uppercase text-vistaar-primary font-bold">
+                <span className="text-[11px] font-mono uppercase text-vistaar-primary font-bold">
                   AUTHENTICATED PORTAL • NATIONAL POLAR DATA CENTRE (NPDC)
                 </span>
-                <CardTitle className="text-xl font-extrabold text-vistaar-text mt-0.5">
+                <CardTitle className="text-lg font-extrabold text-vistaar-text mt-0.5">
                   Authoritative Scientific Datasets & Role Workspaces
                 </CardTitle>
               </div>
@@ -701,13 +761,13 @@ export default function HomePage() {
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent className="p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                 {datasets.map((ds) => (
                   <Link
                     key={ds.dataset_id}
                     href="/datasets"
-                    className="p-3 rounded-lg border border-sky-200/80 bg-white/80 hover:bg-white transition-all space-y-1 block shadow-2xs"
+                    className="p-2.5 rounded-lg border border-sky-200/80 bg-white/80 hover:bg-white transition-all space-y-1 block shadow-2xs"
                   >
                     <div className="flex items-center justify-between font-mono text-[10px]">
                       <span className="font-bold text-vistaar-primary">{ds.dataset_id}</span>
@@ -724,9 +784,9 @@ export default function HomePage() {
           </Card>
         ) : (
           <Card className="lg:col-span-7 ice-glass-strong flex flex-col justify-between">
-            <CardHeader className="p-5 border-b border-sky-200/70 bg-gradient-to-r from-sky-100/70 via-cyan-50/60 to-white/70">
+            <CardHeader className="p-4 border-b border-sky-200/70 bg-gradient-to-r from-sky-100/70 via-cyan-50/60 to-white/70">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase text-vistaar-primary font-bold flex items-center gap-1.5">
+                <span className="text-[11px] font-mono uppercase text-vistaar-primary font-bold flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-vistaar-primary" />
                   PROTECTED INSTITUTIONAL WORKSPACES (RBAC GATED)
                 </span>
@@ -734,42 +794,42 @@ export default function HomePage() {
                   Login Required
                 </Badge>
               </div>
-              <CardTitle className="text-xl font-extrabold text-vistaar-text mt-1">
+              <CardTitle className="text-lg font-extrabold text-vistaar-text mt-1">
                 Internal Scientific, Editorial & Governance Portals
               </CardTitle>
               <CardDescription className="text-xs">
-                Without institutional authentication, only public outreach, weather telemetry, classroom lessons, and approved press kits are visible. Sign in to directly open your dedicated role portal.
+                Without institutional authentication, internal tools remain locked and only public outreach modules are shown.
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-5 space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <Link href="/datasets" className="p-3 rounded-lg border border-sky-200/80 bg-white/75 hover:bg-white transition-all flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-vistaar-text block">NPDC Raw Datasets & SHA-256 Registry</span>
+            <CardContent className="p-4 space-y-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Link href="/datasets" className="p-2.5 rounded-lg border border-sky-200/80 bg-white/75 hover:bg-white transition-all flex items-center justify-between">
+                  <div className="min-w-0">
+                    <span className="font-bold text-vistaar-text block truncate">NPDC Raw Datasets Registry</span>
                     <span className="text-[10px] font-mono text-vistaar-muted">Requires Institutional Login</span>
                   </div>
-                  <Lock className="w-4 h-4 text-vistaar-scientific shrink-0" />
+                  <Lock className="w-3.5 h-3.5 text-vistaar-scientific shrink-0" />
                 </Link>
-                <Link href="/documents" className="p-3 rounded-lg border border-sky-200/80 bg-white/75 hover:bg-white transition-all flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-vistaar-text block">Field Scientist Portal (Document AI)</span>
+                <Link href="/documents" className="p-2.5 rounded-lg border border-sky-200/80 bg-white/75 hover:bg-white transition-all flex items-center justify-between">
+                  <div className="min-w-0">
+                    <span className="font-bold text-vistaar-text block truncate">Field Scientist Portal (/documents)</span>
                     <span className="text-[10px] font-mono text-vistaar-muted">Role: FIELD_SCIENTIST</span>
                   </div>
-                  <Lock className="w-4 h-4 text-vistaar-scientific shrink-0" />
+                  <Lock className="w-3.5 h-3.5 text-vistaar-scientific shrink-0" />
                 </Link>
-                <Link href="/workspace" className="p-3 rounded-lg border border-sky-200/80 bg-white/75 hover:bg-white transition-all flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-vistaar-text block">Outreach Editor Portal (Review Studio)</span>
+                <Link href="/workspace" className="p-2.5 rounded-lg border border-sky-200/80 bg-white/75 hover:bg-white transition-all flex items-center justify-between">
+                  <div className="min-w-0">
+                    <span className="font-bold text-vistaar-text block truncate">Outreach Editor Portal (/workspace)</span>
                     <span className="text-[10px] font-mono text-vistaar-muted">Role: OUTREACH_EDITOR</span>
                   </div>
-                  <Lock className="w-4 h-4 text-vistaar-scientific shrink-0" />
+                  <Lock className="w-3.5 h-3.5 text-vistaar-scientific shrink-0" />
                 </Link>
-                <Link href="/admin" className="p-3 rounded-lg border border-sky-200/80 bg-white/75 hover:bg-white transition-all flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-vistaar-text block">Super Admin Governance Portal</span>
+                <Link href="/admin" className="p-2.5 rounded-lg border border-sky-200/80 bg-white/75 hover:bg-white transition-all flex items-center justify-between">
+                  <div className="min-w-0">
+                    <span className="font-bold text-vistaar-text block truncate">Super Admin Portal (/admin)</span>
                     <span className="text-[10px] font-mono text-vistaar-muted">Role: SUPER_ADMIN</span>
                   </div>
-                  <Lock className="w-4 h-4 text-vistaar-scientific shrink-0" />
+                  <Lock className="w-3.5 h-3.5 text-vistaar-scientific shrink-0" />
                 </Link>
               </div>
             </CardContent>
@@ -778,14 +838,14 @@ export default function HomePage() {
       </section>
 
       {/* 6. EDUCATION (POLAR CLASSROOM) & 7. MEDIA & PRESS KIT (Public) */}
-      <section aria-labelledby="heading-edu-media" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section aria-labelledby="heading-edu-media" className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card className="ice-glass">
-          <CardHeader className="p-5 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60 flex flex-row items-center justify-between">
+          <CardHeader className="p-4 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60 flex flex-row items-center justify-between">
             <div>
-              <span className="text-xs font-mono uppercase text-vistaar-scientific font-bold">
-                PUBLIC EDUCATION • NCERT CLASSES 8–12 CURRICULUM
+              <span className="text-[11px] font-mono uppercase text-vistaar-scientific font-bold">
+                PUBLIC EDUCATION • NCERT CLASSES 8–12
               </span>
-              <CardTitle id="heading-edu-media" className="text-xl font-extrabold text-vistaar-text mt-0.5">
+              <CardTitle id="heading-edu-media" className="text-lg font-extrabold text-vistaar-text mt-0.5">
                 Polar Classroom & Teacher Guides
               </CardTitle>
             </div>
@@ -795,16 +855,16 @@ export default function HomePage() {
               </Button>
             </Link>
           </CardHeader>
-          <CardContent className="p-5 space-y-3 text-xs">
+          <CardContent className="p-4 space-y-2.5 text-xs">
             {lessons.map((les) => (
               <Link
                 key={les.id}
                 href="/education"
-                className="p-3 rounded-lg border border-sky-200/70 bg-white/75 hover:bg-white transition-all flex items-center justify-between"
+                className="p-2.5 rounded-lg border border-sky-200/70 bg-white/75 hover:bg-white transition-all flex items-center justify-between gap-2"
               >
-                <div>
-                  <span className="font-bold text-vistaar-text block">{les.title}</span>
-                  <span className="text-[11px] text-vistaar-muted">
+                <div className="min-w-0">
+                  <span className="font-bold text-vistaar-text block truncate">{les.title}</span>
+                  <span className="text-[11px] text-vistaar-muted block truncate">
                     Class {les.class_grade} • {les.subject} • {les.station}
                   </span>
                 </div>
@@ -815,31 +875,31 @@ export default function HomePage() {
         </Card>
 
         <Card className="ice-glass">
-          <CardHeader className="p-5 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60 flex flex-row items-center justify-between">
+          <CardHeader className="p-4 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60 flex flex-row items-center justify-between">
             <div>
-              <span className="text-xs font-mono uppercase text-vistaar-primary font-bold">
-                PUBLIC ARCHIVE • ACCREDITED JOURNALIST & PRESS KIT
+              <span className="text-[11px] font-mono uppercase text-vistaar-primary font-bold">
+                PUBLIC ARCHIVE • ACCREDITED PRESS KIT
               </span>
-              <CardTitle className="text-xl font-extrabold text-vistaar-text mt-0.5">
+              <CardTitle className="text-lg font-extrabold text-vistaar-text mt-0.5">
                 Media Library & Press Kits
               </CardTitle>
             </div>
             <Link href="/media">
               <Button size="sm" variant="outline" className="text-xs bg-white/80">
-                Open Media & Press Kit
+                Open Media Kit
               </Button>
             </Link>
           </CardHeader>
-          <CardContent className="p-5 space-y-3 text-xs">
+          <CardContent className="p-4 space-y-2.5 text-xs">
             {mediaAssets.map((asset) => (
               <Link
                 key={asset.id}
                 href="/media"
-                className="p-3 rounded-lg border border-sky-200/70 bg-white/75 hover:bg-white transition-all flex items-center justify-between"
+                className="p-2.5 rounded-lg border border-sky-200/70 bg-white/75 hover:bg-white transition-all flex items-center justify-between gap-2"
               >
-                <div>
-                  <span className="font-bold text-vistaar-text block">{asset.title}</span>
-                  <span className="text-[11px] text-vistaar-muted">
+                <div className="min-w-0">
+                  <span className="font-bold text-vistaar-text block truncate">{asset.title}</span>
+                  <span className="text-[11px] text-vistaar-muted block truncate">
                     {asset.region} • {asset.source} • License: {asset.license}
                   </span>
                 </div>
