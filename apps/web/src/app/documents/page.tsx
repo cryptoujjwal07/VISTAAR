@@ -89,7 +89,7 @@ export default function DocumentIntelligencePage() {
     try {
       const [detailRes, chunksRes, tablesRes] = await Promise.all([
         fetchApi(`/documents/${docId}`),
-        fetchApi(`/documents/${docId}/chunks?page_number=${selectedPage}`),
+        fetchApi(`/documents/${docId}/chunks?page_number=${selectedPage}&include_embeddings=false&limit=100`),
         fetchApi(`/documents/${docId}/tables`)
       ]);
       setDocumentDetail(detailRes);
@@ -568,6 +568,8 @@ export default function DocumentIntelligencePage() {
                   <img
                     src={`http://localhost:8000/api/v1/documents/${documentDetail.document_id}/pages/${selectedPage}/render?dpi=150`}
                     alt={`Page ${selectedPage} render`}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-contain pointer-events-none"
                   />
 

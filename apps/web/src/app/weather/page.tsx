@@ -57,7 +57,7 @@ export default function WeatherPage() {
     async function loadTimeSeries() {
       setLoading(true);
       try {
-        const params = new URLSearchParams({ station_id: selectedStation });
+        const params = new URLSearchParams({ station_id: selectedStation, downsample: "150" });
         if (selectedDataset) params.set("dataset_id", selectedDataset);
         if (selectedProvider) params.set("provider", selectedProvider);
         if (selectedParam) params.set("parameter", selectedParam);
