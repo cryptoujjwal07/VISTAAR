@@ -61,15 +61,16 @@ export default function WeatherPage() {
         const params = new URLSearchParams({
           station_id: selectedStation,
           range_mode: rangeMode,
-          downsample: "150",
         });
         if (selectedDataset) params.set("dataset_id", selectedDataset);
         if (selectedProvider) params.set("provider", selectedProvider);
         if (selectedParam) params.set("parameter", selectedParam);
-        if (startDate) params.set("start_date", startDate);
-        if (endDate) params.set("end_date", endDate);
+        if (rangeMode === "CUSTOM" && startDate) params.set("start_date", startDate);
+        if (rangeMode === "CUSTOM" && endDate) params.set("end_date", endDate);
 
-        const res = await fetchApi(`/weather/timeseries?${params.toString()}`);
+        const res = await fetchApi(`/weather/timeseries?${params.toString()}`, {
+          bypassCache: true,
+        });
         setData(res);
         if (!selectedParam && res.parameter) {
           setSelectedParam(res.parameter);
@@ -152,8 +153,8 @@ export default function WeatherPage() {
         <div className="flex items-center space-x-2">
           <Calendar className="w-4 h-4 text-vistaar-scientific" />
           <span className="font-bold text-vistaar-text">Time-Range Resolution:</span>
-          <span className="font-mono text-[11px] text-vistaar-muted">
-            ({data?.resolution || "ADAPTIVE_RESOLUTION"})
+          <span className="font-mono text-[11px] font-bold text-vistaar-primary">
+            [{rangeMode}] {data?.resolution || "ADAPTIVE_RESOLUTION"} • {points.length} Plotted Points ({stats?.count ?? 0} Raw Window Obs)
           </span>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -161,7 +162,13 @@ export default function WeatherPage() {
             <button
               key={mode}
               type="button"
-              onClick={() => setRangeMode(mode)}
+              onClick={() => {
+                setRangeMode(mode);
+                if (mode !== "CUSTOM") {
+                  setStartDate("");
+                  setEndDate("");
+                }
+              }}
               className={`px-3 py-1 rounded font-mono text-xs font-bold border transition-all cursor-pointer ${
                 rangeMode === mode
                   ? "bg-vistaar-primary text-white border-vistaar-primary shadow-2xs"

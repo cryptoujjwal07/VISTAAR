@@ -52,7 +52,9 @@ async def list_weather_stations():
 
     result = []
     for sid in distinct_stations:
-        sid_clean = sid.lower()
+        sid_clean = sid.lower().strip()
+        if sid_clean in ("unknown", ""):
+            continue
         if sid_clean in station_meta:
             result.append(station_meta[sid_clean])
         else:
@@ -80,7 +82,7 @@ async def get_weather_timeseries(
     ),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    limit: int = Query(500, ge=1, le=2000),
+    limit: int = Query(1500, ge=1, le=2000),
     downsample: Optional[int] = Query(None, ge=3, le=1000, description="LTTB peak-preserving downsampling target point count (Prompt 27)"),
 ):
     """
@@ -93,8 +95,8 @@ async def get_weather_timeseries(
     from apps.api.core.performance import lttb_downsample, ttl_cache
 
     sid = station_id.lower().strip()
-    mode_clean = (range_mode or "CUSTOM").upper().strip()
-    cache_key = f"weather:ts:{sid}:{dataset_id}:{provider}:{parameter}:{mode_clean}:{start_date}:{end_date}:{limit}:{downsample}"
+    mode_clean = (range_mode or ("CUSTOM" if (start_date or end_date) else "MONTH")).upper().strip()
+    cache_key = f"weather:ts:v2:{sid}:{dataset_id}:{provider}:{parameter}:{mode_clean}:{start_date}:{end_date}:{limit}:{downsample}"
     cached = ttl_cache.get(cache_key)
     if cached is not None:
         return cached
@@ -143,27 +145,51 @@ async def get_weather_timeseries(
         if end_date:
             query["timestamp"]["$lte"] = end_date
 
-    # Apply range_mode windowing over real dataset records so multi-year data is not compressed into one unreadable line
+    # Apply range_mode windowing & adaptive resolution over real dataset records
     effective_limit = limit
+    sort_dir = -1
+    target_downsample = downsample
     resolution_label = "RAW_OBSERVATION"
-    if mode_clean == "LIVE":
-        effective_limit = min(limit, 24)
-        resolution_label = "LATEST_24_OBSERVATIONS"
-    elif mode_clean == "DAY":
-        effective_limit = min(limit, 48)
-        resolution_label = "HOURLY_RESOLUTION"
-    elif mode_clean == "WEEK":
-        effective_limit = min(limit, 168)
-        resolution_label = "DAILY_WINDOW_RESOLUTION"
-    elif mode_clean == "MONTH":
-        effective_limit = min(limit, 360)
-        resolution_label = "MONTHLY_WINDOW_RESOLUTION"
-    elif mode_clean == "YEAR":
-        effective_limit = min(limit, 1000)
-        resolution_label = "ANNUAL_AGGREGATED_RESOLUTION"
 
-    cursor = db.dataset_records.find(query, {"_id": 0}).sort("timestamp", 1).limit(effective_limit)
+    if mode_clean == "LIVE":
+        effective_limit = 18
+        sort_dir = -1
+        target_downsample = None
+        resolution_label = "LIVE_SENSOR_BURST (LATEST 18 OBS)"
+    elif mode_clean == "DAY":
+        effective_limit = 36
+        sort_dir = -1
+        target_downsample = None
+        resolution_label = "DIURNAL_SYNOPTIC_WINDOW (36 OBS)"
+    elif mode_clean == "WEEK":
+        effective_limit = 84
+        sort_dir = -1
+        target_downsample = downsample or 84
+        resolution_label = "WEEKLY_SYNOPTIC_RESOLUTION (84 OBS)"
+    elif mode_clean == "MONTH":
+        effective_limit = 240
+        sort_dir = -1
+        target_downsample = downsample or 96
+        resolution_label = "MONTHLY_WINDOW_LTTB (240 RAW → 96 PTS)"
+    elif mode_clean == "YEAR":
+        effective_limit = 1500
+        sort_dir = -1
+        target_downsample = downsample or 140
+        resolution_label = "ANNUAL_ARCHIVE_LTTB (FULL CYCLE → 140 PTS)"
+    else:
+        effective_limit = min(limit, 500)
+        sort_dir = 1
+        target_downsample = downsample or 150
+        resolution_label = (
+            f"CUSTOM_DATE_WINDOW ({start_date or 'START'} → {end_date or 'END'})"
+            if (start_date or end_date)
+            else "HISTORICAL_BASELINE_WINDOW (EARLIEST 500 OBS)"
+        )
+
+    cursor = db.dataset_records.find(query, {"_id": 0}).sort("timestamp", sort_dir).limit(effective_limit)
     records = await cursor.to_list(length=effective_limit)
+    if sort_dir == -1:
+        records.reverse()
 
     points = []
     missing_points = []
@@ -240,8 +266,8 @@ async def get_weather_timeseries(
     }
 
     raw_point_count = len(points)
-    if downsample and len(points) > downsample:
-        points = lttb_downsample(points, downsample)
+    if target_downsample and len(points) > target_downsample:
+        points = lttb_downsample(points, target_downsample)
 
     provider_name = ds.get("provider", "National Centre for Polar and Ocean Research (NCPOR) / NPDC")
     source_citation = (
@@ -271,7 +297,7 @@ async def get_weather_timeseries(
         "statistics": stats,
         "anomalies": anomalies[:25],
         "anomaly_count": len(anomalies),
-        "downsampled": bool(downsample and raw_point_count > len(points)),
+        "downsampled": bool(target_downsample and raw_point_count > len(points)),
         "raw_point_count": raw_point_count,
         "returned_point_count": len(points),
         "points": points,
