@@ -369,3 +369,81 @@ async def test_prompt_28_observability_structured_logs_redaction_and_metrics():
         assert "Traceback" not in not_found_res.text
         assert "File \"" not in not_found_res.text
 
+
+@pytest.mark.asyncio
+async def test_prompt_29_backup_disaster_recovery_and_provenance_restore():
+    """
+    Prompt 29 Verification:
+    - Honest environment-based RPO/RTO profile (unsupported_guarantees_claimed is False)
+    - Sanitized configuration backup (no raw passwords or API keys)
+    - Snapshot creation (.json.gz + SHA-256 manifest + storage mirror)
+    - Provenance-intact restore of published scientific content
+    - Verification of docs/disaster-recovery.md operational checklists
+    """
+    from pathlib import Path
+    from apps.api.core.backup import (
+        build_sanitized_config_snapshot,
+        create_backup_snapshot,
+        get_actual_rpo_rto_profile,
+        restore_published_content_with_provenance,
+        verify_provenance_integrity,
+    )
+    from apps.api.core.database import get_database
+
+    # 1. Verify honest RPO/RTO profile without unsupported guarantees
+    rpo_rto = get_actual_rpo_rto_profile()
+    assert rpo_rto["unsupported_guarantees_claimed"] is False
+    assert "mongodb_database" in rpo_rto["components"]
+    assert "object_and_media_storage" in rpo_rto["components"]
+    assert "configuration_and_governance" in rpo_rto["components"]
+    assert "audit_trail_retention" in rpo_rto["components"]
+
+    # 2. Verify sanitized configuration backup never leaks secrets
+    cfg_snap = build_sanitized_config_snapshot({"strict_claim_verification": True, "secret_api_key": "DO_NOT_LEAK"})
+    assert cfg_snap["RUNTIME_ADMIN_CONFIG"]["secret_api_key"] == "[REDACTED]"
+    assert "JWT_SECRET_KEY" not in cfg_snap
+
+    # 3. Create a DR snapshot and verify provenance-intact restore
+    snap_meta = await create_backup_snapshot(label="pytest_dr_29", include_storage_copy=False)
+    assert snap_meta["snapshot_id"].startswith("snap_")
+    assert len(snap_meta["payload_sha256"]) == 64
+    assert Path(snap_meta["archive_path"]).exists()
+
+    # Simulate accidental corruption of a published article's title in MongoDB and restore from snapshot
+    db = get_database()
+    sample_pub = await db.publications.find_one({"status": "PUBLISHED"}, {"_id": 0})
+    if sample_pub:
+        id_field = "publication_id" if "publication_id" in sample_pub else "id"
+        pub_id = sample_pub[id_field]
+        original_title = sample_pub["title"]
+        await db.publications.update_one({id_field: pub_id}, {"$set": {"title": "CORRUPTED_DURING_OUTAGE"}})
+
+        restore_res = await restore_published_content_with_provenance(
+            snapshot_id=snap_meta["snapshot_id"],
+            publication_id=pub_id,
+            restore_storage_files=False,
+        )
+        assert restore_res["status"] == "restored"
+        assert restore_res["checksum_verified"] is True
+        assert restore_res["provenance_verification"]["all_provenance_intact"] is True
+
+        restored_pub = await db.publications.find_one({id_field: pub_id}, {"_id": 0})
+        assert restored_pub["title"] == original_title
+        assert restored_pub.get("evidence_links") == sample_pub.get("evidence_links")
+
+    # 4. Verify docs/disaster-recovery.md contains all required Prompt 29 sections & checklists
+    dr_doc = Path("docs/disaster-recovery.md").read_text(encoding="utf-8")
+    for required_heading in [
+        "RPO & RTO",
+        "MongoDB Backup",
+        "Object-Storage & Media Backup",
+        "Configuration Backup",
+        "Audit Retention",
+        "Database Restore",
+        "Media & Object-Storage Restore",
+        "Deployment Rollback",
+        "Operational Recovery Checklists",
+    ]:
+        assert required_heading in dr_doc, f"Missing section in docs/disaster-recovery.md: {required_heading}"
+
+

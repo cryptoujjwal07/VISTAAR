@@ -62,7 +62,10 @@ def redact_sensitive_data(data: Any) -> Any:
     if isinstance(data, dict):
         cleaned = {}
         for k, v in data.items():
-            if str(k).lower() in SENSITIVE_KEY_NAMES:
+            k_low = str(k).lower()
+            if k_low in SENSITIVE_KEY_NAMES or any(
+                sub in k_low for sub in ("password", "passwd", "secret", "api_key", "token", "private_key", "credential")
+            ):
                 cleaned[k] = "[REDACTED]"
             else:
                 cleaned[k] = redact_sensitive_data(v)

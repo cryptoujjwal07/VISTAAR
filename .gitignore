@@ -51,6 +51,7 @@ DATASETS/*.zip
 data/raw/*.zip
 data/extracted/
 data/storage/
+data/backups/
 *.tar.gz
 *.iso
 

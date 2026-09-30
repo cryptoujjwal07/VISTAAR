@@ -544,3 +544,115 @@ async def update_admin_configuration(
         "configuration": RUNTIME_ADMIN_CONFIG,
         "updated_by": current_user["email"],
     }
+
+
+class DRSnapshotRequest(BaseModel):
+    label: str = "scheduled"
+    include_storage_copy: bool = True
+    reason: str = "Operational disaster recovery snapshot"
+
+
+class DRRestoreRequest(BaseModel):
+    snapshot_id: str
+    publication_id: Optional[str] = None
+    restore_storage_files: bool = True
+    reason: str = "Provenance-intact disaster recovery verification & restore"
+
+
+@router.get("/admin/dr/status")
+async def get_disaster_recovery_status(
+    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR", "POLAR_SCIENTIST"])),
+):
+    """
+    Production Backup & Disaster-Recovery Status (Prompt 29).
+    Exposes honest environment-based RPO/RTO profile (without unsupported guarantees),
+    available snapshot archives, object storage cryptographic manifest, sanitized config snapshot,
+    and live provenance integrity check across all published scientific content.
+    """
+    from apps.api.core.backup import (
+        build_sanitized_config_snapshot,
+        build_storage_manifest,
+        get_actual_rpo_rto_profile,
+        list_backup_snapshots,
+        verify_provenance_integrity,
+    )
+
+    provenance_report = await verify_provenance_integrity()
+    return {
+        "status": "ready",
+        "rpo_rto_profile": get_actual_rpo_rto_profile(),
+        "snapshots": list_backup_snapshots(),
+        "storage_manifest": build_storage_manifest(),
+        "sanitized_configuration": build_sanitized_config_snapshot(RUNTIME_ADMIN_CONFIG),
+        "provenance_integrity": provenance_report,
+    }
+
+
+@router.post("/admin/dr/snapshot")
+async def trigger_dr_snapshot(
+    req: DRSnapshotRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN"])),
+):
+    """
+    Triggers an on-demand provenance-complete backup snapshot (`.json.gz`) in `./data/backups/`
+    and records an immutable audit event (Prompt 29).
+    """
+    from apps.api.core.backup import create_backup_snapshot
+    from apps.api.domains.audit.service import record_audit_event
+
+    summary = await create_backup_snapshot(
+        label=req.label,
+        runtime_admin_config=RUNTIME_ADMIN_CONFIG,
+        include_storage_copy=req.include_storage_copy,
+    )
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="CREATE_DR_SNAPSHOT",
+        resource_type="BACKUP_SNAPSHOT",
+        resource_id=summary["snapshot_id"],
+        reason=req.reason,
+        after_version=summary["payload_sha256"],
+        details=summary,
+    )
+    return summary
+
+
+@router.post("/admin/dr/verify-restore")
+async def verify_and_restore_dr_snapshot(
+    req: DRRestoreRequest,
+    current_user=Depends(require_roles(["SUPER_ADMIN"])),
+):
+    """
+    Verifies a DR snapshot archive by SHA-256 checksum and restores published scientific content
+    with full provenance chain intact (`datasets` -> `documents` -> `claims` -> `claim_verifications` -> `publications`) (Prompt 29).
+    """
+    from apps.api.core.backup import restore_published_content_with_provenance
+    from apps.api.domains.audit.service import record_audit_event
+
+    try:
+        restore_report = await restore_published_content_with_provenance(
+            snapshot_id=req.snapshot_id,
+            publication_id=req.publication_id,
+            restore_storage_files=req.restore_storage_files,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    await record_audit_event(
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        action="RESTORE_DR_SNAPSHOT",
+        resource_type="BACKUP_SNAPSHOT",
+        resource_id=req.snapshot_id,
+        reason=req.reason,
+        after_version=restore_report["payload_sha256"],
+        details={
+            "restored_counts": restore_report["restored_counts"],
+            "all_provenance_intact": restore_report["provenance_verification"]["all_provenance_intact"],
+        },
+    )
+    return restore_report
+
