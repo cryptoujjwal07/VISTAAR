@@ -16,42 +16,46 @@ import {
   Camera,
   Languages,
   Users,
-  FileCheck2,
-  Activity,
   Lock,
   Sparkles,
-  MountainSnow
+  MountainSnow,
+  Shield,
+  Edit3,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { MountainLogo } from "@/components/ui/MountainLogo";
 import { fetchApi } from "@/lib/api";
 import { getRolePortalLabel, getRolePortalRoute } from "@/components/layout/AuthGate";
 
 const HERO_SLIDES = [
   {
     regionTag: "ANTARCTICA",
-    title: "Antarctica: Maitri & Bharati",
+    title: "Antarctica: Maitri & Bharati Observatories",
     titleHi: "अंटार्कटिका: मैत्री और भारती वेधशालाएँ",
     subtitle:
       "Continuous atmospheric, geomagnetic, and ice-shelf monitoring across the Schirmacher Oasis and Larsemann Hills under the Indian Antarctic Programme.",
     subtitleHi:
       "भारतीय अंटार्कटिक कार्यक्रम के अंतर्गत शूमाकर ओएसिस और लार्समन हिल्स में सतत वायुमंडलीय, भू-चुंबकीय और हिम-शेल्फ निगरानी।",
-    bgImage: "https://images.unsplash.com/photo-1548263594-a71ea65a8598?auto=format&fit=crop&w=2000&q=85",
+    bgImage: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1400&q=85",
     stationId: "maitri",
     coordinates: "70°45' S, 11°44' E • 69°24' S, 76°11' E",
+    elevation: "117m & 35m AMSL",
   },
   {
     regionTag: "ARCTIC",
-    title: "The Arctic: Himadri & IndARC",
+    title: "The Arctic: Himadri & IndARC Mooring",
     titleHi: "आर्कटिक: हिमाद्री और IndARC वेधशाला",
     subtitle:
       "Year-round fjord oceanography, precipitation microphysics, and Arctic amplification research at Ny-Ålesund, Svalbard (79°N).",
     subtitleHi:
       "नाइ-आलेसुंड, स्वालबार्ड (79°N) में वर्ष भर फ्योर्ड समुद्र विज्ञान, वर्षण सूक्ष्म भौतिकी और आर्कटिक प्रवर्धन अनुसंधान।",
-    bgImage: "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=2000&q=85",
+    bgImage: "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=1400&q=85",
     stationId: "himadri",
     coordinates: "78°55' N, 11°55' E",
+    elevation: "Kongsfjorden, Svalbard",
   },
   {
     regionTag: "HIMALAYAS",
@@ -61,9 +65,10 @@ const HERO_SLIDES = [
       "High-altitude glacier mass balance, snow water equivalent, and monsoon teleconnection telemetry at 4,080m in the Chandra Basin, Spiti Valley.",
     subtitleHi:
       "चंद्रा बेसिन, स्पीति घाटी में 4,080 मीटर की ऊँचाई पर हिमनद द्रव्यमान संतुलन और मानसून टेलीकनेक्शन टेलीमेट्री।",
-    bgImage: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2000&q=85",
+    bgImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1400&q=85",
     stationId: "himansh",
     coordinates: "32°24' N, 77°37' E",
+    elevation: "4,080m AMSL • Spiti Valley",
   },
 ];
 
@@ -202,90 +207,278 @@ export default function HomePage() {
     ? (["student", "teacher", "journalist", "scientist"] as const)
     : (["student", "teacher", "journalist"] as const);
 
-  return (
-    <div className="space-y-16 pb-20 text-vistaar-text">
-      {/* 1. HERO SECTION — ICE-MOUNTAIN FROSTED GLASSMORPHIC THEME */}
-      <section aria-label="Polar Science Hero" className="relative h-[78vh] min-h-[540px] w-full flex items-center justify-start overflow-hidden border-b border-sky-200/70">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-all duration-700 scale-[1.01]"
-          style={{ backgroundImage: `url('${currentSlide.bgImage}')` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-[#081C34]/85 via-[#0B2948]/60 to-sky-900/20" />
-          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#F0F8FF] via-[#F0F8FF]/60 to-transparent" />
-        </div>
+  const openLoginModal = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("vistaar-open-login-modal"));
+    }
+  };
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-white">
-          <div className="max-w-2xl space-y-5 p-6 sm:p-8 rounded-2xl bg-white/12 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_-15px_rgba(8,28,52,0.55)]">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-xs uppercase font-mono tracking-[0.22em] font-bold text-[#0E7490] bg-white/95 px-3 py-1 rounded-full border border-sky-200 shadow-xs flex items-center gap-1.5">
-                <MountainSnow className="w-3.5 h-3.5 text-sky-600" />
-                {currentSlide.regionTag}
-              </span>
-              <span className="text-xs font-mono text-sky-100 bg-sky-950/40 px-2.5 py-1 rounded-full border border-white/20">
-                {currentSlide.coordinates}
-              </span>
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-10 pb-16 text-vistaar-text">
+      {/* 1. COMPACT FRAMED ICE-MOUNTAIN LANDING PAGE (NOT FULL-SCREEN) */}
+      <section aria-label="VISTAAR Ice-Mountain Landing Showcase" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* Left Framed Landing Hero Card (7 cols) */}
+        <div className="lg:col-span-7 rounded-3xl ice-glass-strong p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
+          {/* Subtle decorative SVG Ice-Mountain ridgeline watermark */}
+          <svg
+            viewBox="0 0 600 140"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="absolute bottom-0 right-0 w-full h-28 opacity-25 pointer-events-none"
+            preserveAspectRatio="none"
+          >
+            <path d="M0 140L110 55L205 110L330 20L455 95L535 45L600 140H0Z" fill="#BAE6FD" />
+            <path d="M160 140L330 20L455 95L600 30V140H160Z" fill="#7DD3FC" />
+          </svg>
+
+          <div className="relative z-10 space-y-4">
+            {/* Brand + Institutional Header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-sky-200/70">
+              <div className="flex items-center space-x-3">
+                <MountainLogo size="lg" />
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-mono uppercase tracking-widest font-bold text-vistaar-scientific">
+                      NCPOR • MINISTRY OF EARTH SCIENCES
+                    </span>
+                    <Badge variant="scientific">SIH 26063</Badge>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-vistaar-text">
+                    VISTAAR <span className="text-vistaar-scientific font-semibold">(विस्तार)</span> Polar Portal
+                  </h1>
+                </div>
+              </div>
+
+              {/* Region Tabs */}
+              <div role="tablist" aria-label="Polar Region Hero Slides" className="flex space-x-1 bg-sky-50/90 p-1 rounded-full border border-sky-200/80">
+                {HERO_SLIDES.map((slide, idx) => (
+                  <button
+                    key={slide.regionTag}
+                    role="tab"
+                    aria-selected={activeSlide === idx}
+                    aria-label={`View ${slide.regionTag} highlight`}
+                    onClick={() => setActiveSlide(idx)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                      activeSlide === idx
+                        ? "bg-gradient-to-r from-vistaar-primary to-vistaar-scientific text-white shadow-2xs"
+                        : "text-vistaar-muted hover:text-vistaar-text"
+                    }`}
+                  >
+                    {slide.regionTag}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl tracking-tight font-extrabold text-white leading-tight drop-shadow-xs">
-              {language === "hi" ? currentSlide.titleHi : currentSlide.title}
-            </h1>
+            {/* Active Cryospheric Realm Highlight inside Compact Framed Card */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center pt-1">
+              <div className="sm:col-span-7 space-y-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] uppercase font-mono tracking-wider font-bold text-[#0E7490] bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 flex items-center gap-1">
+                    <MountainSnow className="w-3.5 h-3.5 text-sky-600" />
+                    {currentSlide.regionTag}
+                  </span>
+                  <span className="text-[11px] font-mono text-vistaar-muted">{currentSlide.coordinates}</span>
+                </div>
 
-            <p className="text-sm sm:text-base text-sky-50/95 leading-relaxed font-sans max-w-xl">
-              {language === "hi" ? currentSlide.subtitleHi : currentSlide.subtitle}
-            </p>
+                <h2 className="text-xl sm:text-2xl font-extrabold text-vistaar-text leading-snug">
+                  {language === "hi" ? currentSlide.titleHi : currentSlide.title}
+                </h2>
 
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+                <p className="text-xs sm:text-sm text-vistaar-muted leading-relaxed">
+                  {language === "hi" ? currentSlide.subtitleHi : currentSlide.subtitle}
+                </p>
+              </div>
+
+              {/* Framed Ice-Mountain Thumbnail Card (Not Full Screen) */}
+              <div className="sm:col-span-5">
+                <div className="relative h-44 rounded-2xl overflow-hidden border-2 border-white shadow-md group">
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                    style={{ backgroundImage: `url('${currentSlide.bgImage}')` }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-sky-950/80 via-sky-950/20 to-transparent" />
+                  <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-sky-200 block">
+                      {currentSlide.elevation}
+                    </span>
+                    <span className="text-xs font-bold leading-tight block">
+                      {currentSlide.title}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Primary Landing Actions & Key Metrics */}
+          <div className="relative z-10 pt-5 mt-4 border-t border-sky-200/70 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
               {currentUser ? (
                 <Link href={getRolePortalRoute(currentUser.role)}>
-                  <Button size="md" className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold shadow-lg border border-white/30">
+                  <Button size="sm" className="bg-gradient-to-r from-blue-600 to-cyan-700 text-white font-bold shadow-sm">
                     Open {getRolePortalLabel(currentUser.role)} →
                   </Button>
                 </Link>
-              ) : null}
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={openLoginModal}
+                  className="bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white font-bold shadow-sm cursor-pointer"
+                >
+                  Sign In to Role Portal →
+                </Button>
+              )}
               <Link href={`/weather?station=${currentSlide.stationId}`}>
-                <Button size="md" className="bg-vistaar-primary hover:bg-blue-700 text-white font-semibold shadow-md">
-                  Explore Weather Intelligence
+                <Button size="sm" variant="outline" className="bg-white/85 text-vistaar-text border-sky-200 hover:bg-white font-semibold">
+                  Live Weather Telemetry
                 </Button>
               </Link>
               <Link href="/research">
-                <Button size="md" variant="outline" className="bg-white/90 backdrop-blur-md text-vistaar-text hover:bg-white font-semibold border-white">
+                <Button size="sm" variant="outline" className="bg-white/85 text-vistaar-text border-sky-200 hover:bg-white font-semibold">
                   Published Research
                 </Button>
               </Link>
-              <Link href="/explore">
-                <Button size="md" variant="outline" className="bg-white/15 backdrop-blur-md text-white border-white/35 hover:bg-white/25 font-semibold">
-                  Public Knowledge Search
-                </Button>
-              </Link>
+            </div>
+
+            <div className="flex items-center gap-3 text-[11px] font-mono text-vistaar-scientific font-bold">
+              <span>4 Polar Stations</span>
+              <span>•</span>
+              <span>100% Claim-Verified</span>
             </div>
           </div>
         </div>
 
-        <div role="tablist" aria-label="Polar Region Hero Slides" className="absolute bottom-8 right-6 sm:right-12 z-20 flex space-x-2 ice-glass-strong p-1.5 rounded-full">
-          {HERO_SLIDES.map((slide, idx) => (
-            <button
-              key={slide.regionTag}
-              role="tab"
-              aria-selected={activeSlide === idx}
-              aria-label={`View ${slide.regionTag} highlight`}
-              onClick={() => setActiveSlide(idx)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                activeSlide === idx
-                  ? "bg-gradient-to-r from-vistaar-primary to-vistaar-scientific text-white shadow-sm"
-                  : "text-vistaar-text hover:bg-sky-50/80"
-              }`}
-            >
-              {slide.regionTag}
-            </button>
-          ))}
+        {/* Right Framed Role Portal & Access Gate Card (5 cols) */}
+        <div className="lg:col-span-5 rounded-3xl ice-glass-strong p-6 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider font-bold text-vistaar-primary flex items-center gap-1.5">
+                {currentUser ? (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>AUTHENTICATED SESSION ACTIVE</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5 text-vistaar-primary" />
+                    <span>DIRECT ROLE PORTAL LAUNCHPAD</span>
+                  </>
+                )}
+              </span>
+              <Badge variant="scientific">
+                {currentUser ? currentUser.role : "RBAC Protected"}
+              </Badge>
+            </div>
+
+            <h2 className="text-lg font-extrabold text-vistaar-text">
+              {currentUser
+                ? `Welcome, ${currentUser.full_name || currentUser.email}`
+                : "Sign In Opens Your Role Portal Directly"}
+            </h2>
+            <p className="text-xs text-vistaar-muted leading-relaxed">
+              {currentUser
+                ? "Your institutional credentials are active. Launch your assigned role workspace below or browse public modules."
+                : "Without login, internal workspaces are locked and only public outreach modules are visible. Select or sign in to open your role portal directly:"}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs">
+              <Link
+                href="/admin"
+                className="p-3 rounded-xl border border-sky-200/80 bg-white/80 hover:bg-white transition-all flex flex-col justify-between shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-vistaar-text flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-red-600" />
+                    Super Admin
+                  </span>
+                  <span className="text-[10px] font-mono text-vistaar-scientific">/admin</span>
+                </div>
+                <span className="text-[11px] text-vistaar-muted mt-1">
+                  RBAC, Audit Logs & Governance
+                </span>
+              </Link>
+
+              <Link
+                href="/workspace"
+                className="p-3 rounded-xl border border-sky-200/80 bg-white/80 hover:bg-white transition-all flex flex-col justify-between shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-vistaar-text flex items-center gap-1.5">
+                    <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                    Outreach Editor
+                  </span>
+                  <span className="text-[10px] font-mono text-vistaar-scientific">/workspace</span>
+                </div>
+                <span className="text-[11px] text-vistaar-muted mt-1">
+                  Claim Verification & PIB Studio
+                </span>
+              </Link>
+
+              <Link
+                href="/documents"
+                className="p-3 rounded-xl border border-sky-200/80 bg-white/80 hover:bg-white transition-all flex flex-col justify-between shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-vistaar-text flex items-center gap-1.5">
+                    <FlaskConical className="w-3.5 h-3.5 text-emerald-600" />
+                    Field Scientist
+                  </span>
+                  <span className="text-[10px] font-mono text-vistaar-scientific">/documents</span>
+                </div>
+                <span className="text-[11px] text-vistaar-muted mt-1">
+                  Document AI & NPDC Ingestion
+                </span>
+              </Link>
+
+              <Link
+                href="/education"
+                className="p-3 rounded-xl border border-sky-200/80 bg-white/80 hover:bg-white transition-all flex flex-col justify-between shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-vistaar-text flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
+                    Student / Public
+                  </span>
+                  <span className="text-[10px] font-mono text-vistaar-scientific">/education</span>
+                </div>
+                <span className="text-[11px] text-vistaar-muted mt-1">
+                  NCERT Classroom & Quizzes
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="pt-4 mt-3 border-t border-sky-200/70 flex items-center justify-between">
+            <span className="text-[11px] font-mono text-vistaar-muted">
+              {currentUser ? `Signed in as ${currentUser.role}` : "Public Read-Only Mode Active"}
+            </span>
+            {currentUser ? (
+              <Link
+                href={getRolePortalRoute(currentUser.role)}
+                className="text-xs font-bold text-vistaar-primary hover:underline flex items-center gap-1"
+              >
+                <span>Go to My Portal</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : (
+              <button
+                onClick={openLoginModal}
+                className="text-xs font-bold text-vistaar-primary hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>1-Click Institutional Sign In</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
       {/* PERSONA & MULTILINGUAL BAR — ICE-MOUNTAIN GLASSMORPHIC */}
-      <section aria-label="Persona and Language Selection" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
+      <section aria-label="Persona and Language Selection">
         <Card className="ice-glass-strong">
-          <CardContent className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-1.5">
+          <CardContent className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1">
               <div className="flex items-center space-x-2">
                 <Users className="w-4 h-4 text-vistaar-primary" />
                 <span className="text-xs font-mono uppercase tracking-wider font-bold text-vistaar-scientific">
@@ -303,7 +496,7 @@ export default function HomePage() {
                     key={p}
                     aria-pressed={persona === p}
                     onClick={() => setPersona(p)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all cursor-pointer ${
                       persona === p
                         ? "bg-gradient-to-r from-vistaar-primary to-vistaar-scientific text-white shadow-xs"
                         : "text-vistaar-muted hover:text-vistaar-text"
@@ -340,13 +533,13 @@ export default function HomePage() {
       </section>
 
       {/* 2. INDIA'S POLAR SCIENCE & 3. ANTARCTICA, ARCTIC, HIMALAYAS */}
-      <section aria-labelledby="heading-polar-science" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-sky-200/80 pb-4 gap-4">
+      <section aria-labelledby="heading-polar-science" className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-sky-200/80 pb-3 gap-4">
           <div>
             <span className="text-xs font-mono uppercase tracking-widest text-vistaar-scientific font-bold">
               NATIONAL CENTRE FOR POLAR AND OCEAN RESEARCH (NCPOR) • MINISTRY OF EARTH SCIENCES
             </span>
-            <h2 id="heading-polar-science" className="text-2xl sm:text-3xl font-extrabold text-vistaar-text mt-1">
+            <h2 id="heading-polar-science" className="text-2xl font-extrabold text-vistaar-text mt-1">
               {language === "hi"
                 ? "भारत का ध्रुवीय विज्ञान: अंटार्कटिका, आर्कटिक और हिमालय"
                 : "India's Polar Science Across Three Cryospheric Realms"}
@@ -387,8 +580,8 @@ export default function HomePage() {
       </section>
 
       {/* 4. LATEST PUBLISHED RESEARCH (Strictly APPROVED/PUBLISHED only — Never shows internal drafts) */}
-      <section aria-labelledby="heading-latest-research" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="flex items-end justify-between border-b border-sky-200/80 pb-4">
+      <section aria-labelledby="heading-latest-research" className="space-y-6">
+        <div className="flex items-end justify-between border-b border-sky-200/80 pb-3">
           <div>
             <span className="text-xs font-mono uppercase tracking-widest text-emerald-700 font-bold">
               PUBLIC DISSEMINATION • VERIFIED & HUMAN-APPROVED ONLY
@@ -450,7 +643,7 @@ export default function HomePage() {
       </section>
 
       {/* 5. WEATHER INTELLIGENCE (Public) & 8. NPDC INTERNAL PORTAL GATE */}
-      <section aria-labelledby="heading-weather-datasets" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <section aria-labelledby="heading-weather-datasets" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Card className="lg:col-span-5 ice-glass flex flex-col justify-between">
           <CardHeader className="p-5 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60">
             <div className="flex items-center justify-between">
@@ -585,7 +778,7 @@ export default function HomePage() {
       </section>
 
       {/* 6. EDUCATION (POLAR CLASSROOM) & 7. MEDIA & PRESS KIT (Public) */}
-      <section aria-labelledby="heading-edu-media" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section aria-labelledby="heading-edu-media" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="ice-glass">
           <CardHeader className="p-5 border-b border-sky-100/80 bg-gradient-to-r from-sky-50/70 to-white/60 flex flex-row items-center justify-between">
             <div>

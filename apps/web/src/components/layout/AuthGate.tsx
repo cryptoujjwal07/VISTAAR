@@ -17,6 +17,7 @@ import {
   Home,
 } from "lucide-react";
 import { fetchApi, clearClientApiCache } from "@/lib/api";
+import { MountainLogo } from "@/components/ui/MountainLogo";
 
 export const ROLE_PORTAL_MAP: Record<
   string,
@@ -155,9 +156,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         <div className="relative z-10 w-full max-w-2xl rounded-3xl ice-glass-strong p-8 sm:p-10 space-y-6">
           <div className="flex items-start justify-between gap-4 border-b border-sky-200/70 pb-5">
             <div className="flex items-center space-x-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-700 text-white flex items-center justify-center shadow-md">
-                <Lock className="w-6 h-6" />
-              </div>
+              <MountainLogo size="lg" />
               <div>
                 <span className="inline-flex items-center space-x-1 text-[11px] font-mono uppercase tracking-widest font-bold text-sky-800 bg-sky-100/80 px-2.5 py-0.5 rounded-full border border-sky-200">
                   <Sparkles className="w-3 h-3 mr-1 text-blue-600" />

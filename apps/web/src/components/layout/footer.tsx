@@ -1,15 +1,14 @@
 import Link from "next/link";
+import { MountainLogo } from "@/components/ui/MountainLogo";
 
 export function Footer() {
   return (
-    <footer className="w-full border-t border-vistaar-border bg-vistaar-surface py-12 text-sm text-vistaar-muted">
+    <footer className="w-full border-t border-sky-200/80 ice-glass py-10 text-sm text-vistaar-muted">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-md bg-vistaar-primary text-white flex items-center justify-center font-bold text-lg">
-              वि
-            </div>
-            <span className="font-bold text-vistaar-text text-base">VISTAAR • विस्तार</span>
+          <div className="flex items-center space-x-2.5">
+            <MountainLogo size="sm" />
+            <span className="font-extrabold text-vistaar-text text-base">VISTAAR • विस्तार</span>
           </div>
           <p className="text-xs leading-relaxed">
             National Polar Science Outreach, Knowledge Repository and Media Dissemination Portal, engineered for NCPOR and the Ministry of Earth Sciences, Government of India.

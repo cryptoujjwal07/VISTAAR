@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { fetchApi, clearClientApiCache } from "@/lib/api";
 import { getRolePortalRoute } from "@/components/layout/AuthGate";
+import { MountainLogo } from "@/components/ui/MountainLogo";
 
 const PUBLIC_NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
@@ -60,14 +61,19 @@ export function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState(null as string | null);
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
     checkCurrentUser();
     const onAuthChange = () => checkCurrentUser();
+    const onOpenModal = () => setAuthModalOpen(true);
     window.addEventListener("vistaar-auth-changed", onAuthChange);
-    return () => window.removeEventListener("vistaar-auth-changed", onAuthChange);
+    window.addEventListener("vistaar-open-login-modal", onOpenModal);
+    return () => {
+      window.removeEventListener("vistaar-auth-changed", onAuthChange);
+      window.removeEventListener("vistaar-open-login-modal", onOpenModal);
+    };
   }, []);
 
   async function checkCurrentUser() {
@@ -245,11 +251,9 @@ export function Navbar() {
         {/* Main Ice-Mountain Frosted Glass Navigation Bar */}
         <div className="ice-glass border-b border-sky-200/70">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            {/* Left: Brand Monogram & Title */}
+            {/* Left: Brand Mountain Logo & Title */}
             <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-700 text-white flex items-center justify-center font-bold text-xl shadow-sm border border-white/50 group-hover:shadow-md transition-all">
-                वि
-              </div>
+              <MountainLogo size="md" className="group-hover:scale-105 transition-transform" />
               <div className="flex flex-col">
                 <div className="flex items-center space-x-2">
                   <span className="text-xl font-extrabold tracking-tight text-vistaar-text leading-none">
