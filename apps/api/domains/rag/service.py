@@ -74,6 +74,8 @@ def normalize_scientific_query(query: str) -> Dict[str, Any]:
         "numerical_tokens": numerical_tokens
     }
 
+from apps.api.core.performance import performance_profiler
+
 def cosine_similarity(v1: List[float], v2: List[float]) -> float:
     """Compute cosine similarity between two float vectors"""
     if not v1 or not v2 or len(v1) != len(v2):
@@ -86,6 +88,39 @@ def cosine_similarity(v1: List[float], v2: List[float]) -> float:
     if norm_a == 0 or norm_b == 0:
         return 0.0
     return float(dot / (norm_a * norm_b))
+
+def batch_cosine_similarity(query_vec: List[float], candidates: List[Dict[str, Any]]) -> List[float]:
+    """
+    Vectorized BLAS/NumPy batch cosine similarity across candidate chunk embeddings (Prompt 27).
+    Avoids per-chunk Python array instantiation and norm calculation.
+    """
+    if not query_vec or not candidates:
+        return [0.0] * len(candidates)
+    q = np.asarray(query_vec, dtype=np.float32)
+    q_norm = float(np.linalg.norm(q))
+    if q_norm == 0.0:
+        return [0.0] * len(candidates)
+    q_unit = q / q_norm
+    dim = len(query_vec)
+
+    scores: List[float] = [0.0] * len(candidates)
+    valid_indices: List[int] = []
+    valid_rows: List[List[float]] = []
+    for idx, ch in enumerate(candidates):
+        emb = ch.get("embedding")
+        if emb and len(emb) == dim:
+            valid_indices.append(idx)
+            valid_rows.append(emb)
+
+    if valid_rows:
+        mat = np.asarray(valid_rows, dtype=np.float32)
+        norms = np.linalg.norm(mat, axis=1)
+        safe_norms = np.where(norms == 0.0, 1.0, norms)
+        dots = np.dot(mat, q_unit) / safe_norms
+        dots = np.where(norms == 0.0, 0.0, dots)
+        for idx, val in zip(valid_indices, dots.tolist()):
+            scores[idx] = float(val)
+    return scores
 
 def compute_lexical_score(text: str, heading: str, query_tokens: List[str]) -> float:
     """
@@ -113,9 +148,10 @@ async def retrieve_document_chunks(
     limit: int = 30
 ) -> List[Dict[str, Any]]:
     """
-    Hybrid retrieval across document_chunks (PDF intelligence layer from Prompt 09)
-    combining lexical token matching and 768-dim semantic vector search.
+    Hybrid retrieval across document_chunks (PDF intelligence layer from Prompt 09 & Prompt 27)
+    combining lexical token matching and vectorized 768-dim semantic vector search.
     """
+    t0 = time.perf_counter()
     db = get_database()
     query_filter: Dict[str, Any] = {}
 
@@ -123,17 +159,14 @@ async def retrieve_document_chunks(
     if req.document_id:
         query_filter["document_id"] = req.document_id
     elif target_station:
-        # Resolve documents for target station
         matching_docs = await db.documents.find({"station_id": target_station.lower()}, {"document_id": 1, "title": 1}).to_list(length=20)
         doc_ids = [d["document_id"] for d in matching_docs]
         if doc_ids:
             query_filter["document_id"] = {"$in": doc_ids}
 
-    # Fetch candidate chunks
     cursor = db.document_chunks.find(query_filter, {"_id": 0}).limit(100)
     candidates = await cursor.to_list(length=100)
 
-    # Cache doc titles
     doc_titles: Dict[str, str] = {}
     doc_ids_needed = list(set(c["document_id"] for c in candidates))
     if doc_ids_needed:
@@ -142,27 +175,20 @@ async def retrieve_document_chunks(
         for d in docs_info:
             doc_titles[d["document_id"]] = d.get("title", "Polar Scientific Document")
 
+    sem_scores = batch_cosine_similarity(query_vector, candidates)
+
     results = []
-    for chunk in candidates:
+    for chunk, sem_score in zip(candidates, sem_scores):
         text = chunk.get("text", "")
         heading = chunk.get("heading_context", "")
-        chunk_emb = chunk.get("embedding", [])
 
-        # Lexical score
         lex_score = compute_lexical_score(text, heading, norm_info["tokens"])
-
-        # Semantic score: only consider positive semantic correlation
-        sem_score = cosine_similarity(query_vector, chunk_emb)
         sem_norm = max(0.0, float(sem_score))
 
-        # Only qualify if there is some lexical overlap or meaningful semantic alignment
         if lex_score == 0.0 and sem_norm < 0.25:
             hybrid_score = 0.0
         else:
-            # Hybrid fusion (0.60 semantic, 0.40 lexical)
             hybrid_score = 0.60 * sem_norm + 0.40 * lex_score
-
-            # Exact boost: station match and numerical match only when content matches
             if target_station and target_station in text.lower():
                 hybrid_score += 0.10
             if any(num in text for num in norm_info.get("numerical_tokens", [])):
@@ -183,8 +209,8 @@ async def retrieve_document_chunks(
             "relevance_score": round(min(hybrid_score, 1.0), 4)
         })
 
-    # Sort descending by relevance
     results.sort(key=lambda x: x["relevance_score"], reverse=True)
+    performance_profiler.record_operation("vector_retrieval", round((time.perf_counter() - t0) * 1000, 2))
     return results[:limit]
 
 async def retrieve_dataset_records(
@@ -367,12 +393,17 @@ async def execute_rag_pipeline(req: RAGQueryRequest, current_user_email: Optiona
     norm_info = normalize_scientific_query(req.question)
     query_vector = generate_deterministic_embedding(norm_info["normalized_query"])
 
-    # 2. Hybrid Retrieval across PDF Document Chunks and Dataset Records
+    # 2. Parallel Hybrid Retrieval across PDF Document Chunks and Dataset Records
+    import asyncio
     doc_candidates, ds_candidates = [], []
-    if req.content_type in ["ALL", "PDF_CHUNK", "TABLE"]:
+    if req.content_type == "ALL":
+        doc_candidates, ds_candidates = await asyncio.gather(
+            retrieve_document_chunks(norm_info, query_vector, req, limit=30),
+            retrieve_dataset_records(norm_info, req, limit=15),
+        )
+    elif req.content_type in ["PDF_CHUNK", "TABLE"]:
         doc_candidates = await retrieve_document_chunks(norm_info, query_vector, req, limit=30)
-    
-    if req.content_type in ["ALL", "DATASET_RECORD"]:
+    elif req.content_type == "DATASET_RECORD":
         ds_candidates = await retrieve_dataset_records(norm_info, req, limit=15)
 
     # 3. Hybrid Ranking & Fusion

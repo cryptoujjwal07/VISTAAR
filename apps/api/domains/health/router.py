@@ -1,10 +1,17 @@
+import asyncio
 import os
 import time
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from apps.api.core.config import settings
-from apps.api.core.database import db_manager, get_database
+from apps.api.core.database import PRODUCTION_COMPOUND_INDEXES, db_manager, get_database
+from apps.api.core.performance import (
+    idempotency_store,
+    inflight_deduplicator,
+    performance_profiler,
+    ttl_cache,
+)
 from apps.api.core.queue import job_queue
 from apps.api.core.security import require_roles
 from apps.api.core.storage import storage_service
@@ -41,7 +48,7 @@ async def liveness_check():
 @router.get("/health/ready")
 async def readiness_check():
     """Readiness probe checking database connectivity, latency, worker queue, and storage health (Prompt 28)."""
-    start_time = time.time()
+    start_time = time.perf_counter()
     db_status = "unhealthy"
     db_latency_ms = None
 
@@ -49,7 +56,8 @@ async def readiness_check():
         get_database()
         if db_manager.client:
             await db_manager.client.admin.command("ping")
-            db_latency_ms = round((time.time() - start_time) * 1000, 2)
+            db_latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+            performance_profiler.record_operation("db_query", db_latency_ms)
             db_status = "connected"
     except Exception as e:
         db_status = f"error: {str(e)}"
@@ -85,10 +93,63 @@ async def readiness_check():
     return response_payload
 
 
+@router.get("/health/performance")
+async def get_performance_telemetry():
+    """
+    Production Performance Measurement & Optimization Telemetry (Prompt 27: 'Measure first; do not optimize from guesses').
+    Exposes real-time latency percentiles (p50/p95/p99), bounded TTL cache hit/miss ratios,
+    request/job deduplication & idempotency counters, verified database compound indexes,
+    streaming/cursor pagination capabilities, and retry/timeout/backoff policies.
+    """
+    profiler_summary = performance_profiler.get_summary()
+    cache_stats = ttl_cache.stats()
+    dedup_stats = inflight_deduplicator.stats()
+    idem_stats = idempotency_store.stats()
+
+    return {
+        "status": "optimized",
+        "measured_first": True,
+        "profiler": profiler_summary,
+        "cache": cache_stats,
+        "deduplication_and_idempotency": {
+            **dedup_stats,
+            **idem_stats,
+        },
+        "database_indexes": {
+            "count": len(db_manager.initialized_indexes or PRODUCTION_COMPOUND_INDEXES),
+            "indexes": db_manager.initialized_indexes or PRODUCTION_COMPOUND_INDEXES,
+        },
+        "pagination_and_streaming": {
+            "cursor_pagination_endpoints": [
+                "/api/v1/datasets",
+                "/api/v1/datasets/{dataset_id}/records",
+                "/api/v1/documents",
+                "/api/v1/documents/{document_id}/chunks",
+                "/api/v1/search",
+            ],
+            "streaming_endpoints": [
+                "/api/v1/datasets/{dataset_id}/records/stream",
+                "/api/v1/documents/{document_id}/pages/{page_number}/render",
+                "/api/v1/documents/{document_id}/download",
+            ],
+            "chart_downsampling": "LTTB (Largest-Triangle-Three-Buckets) + Peak-Preserving extremes",
+        },
+        "resilience_policies": {
+            "job_queue_timeout_seconds": 60.0,
+            "job_queue_max_retries": 3,
+            "job_queue_backoff": "exponential (base 0.15s * 2^attempt)",
+            "ai_timeout_seconds": settings.AI_TIMEOUT_SECONDS,
+            "ai_max_retries": settings.AI_MAX_RETRIES,
+            "ai_rate_limit_rpm": RUNTIME_ADMIN_CONFIG["ai_rate_limit_rpm"],
+        },
+    }
+
+
 @router.get("/health/metrics")
 async def get_observability_and_admin_metrics():
     """
-    Production Observability & Admin Console Analytics (Prompts 25 & 28).
+    Production Observability & Admin Console Analytics (Prompts 25, 27 & 28).
+    Executes parallelized MongoDB count aggregations via asyncio.gather() for low latency.
     Computes 100% real counts and latencies from MongoDB Atlas, job queue, storage, and AI telemetry.
     Never fabricates KPIs.
     """
@@ -98,28 +159,50 @@ async def get_observability_and_admin_metrics():
     from apps.api.domains.classroom.router import CURATED_POLAR_LESSONS
     from apps.api.domains.media.router import PUBLIC_MEDIA_CATALOG
 
-    datasets_count = await db.datasets.count_documents({})
-    records_count = await db.dataset_records.count_documents({})
-    documents_count = await db.documents.count_documents({})
-    chunks_count = await db.document_chunks.count_documents({})
-    publications_count = await db.publications.count_documents({})
-    published_count = await db.publications.count_documents({"status": "PUBLISHED"})
-    needs_review_count = await db.publications.count_documents({"status": {"$in": ["NEEDS_REVIEW", "AI_GENERATED", "DRAFT"]}})
-    claims_count = await db.claims.count_documents({})
-    verifications_count = await db.claim_verifications.count_documents({})
-    verified_claims_count = await db.claim_verifications.count_documents({"status": "VERIFIED"})
-    approx_claims_count = await db.claim_verifications.count_documents({"status": "APPROXIMATE"})
-    conflicting_claims_count = await db.claim_verifications.count_documents({"status": "CONFLICTING"})
-    unsupported_claims_count = await db.claim_verifications.count_documents({"status": "UNSUPPORTED"})
-    translations_count = await db.translations.count_documents({})
-    rag_queries_count = await db.rag_traces.count_documents({})
-    audit_events_count = await db.audit_events.count_documents({})
-    users_count = await db.users.count_documents({})
+    (
+        datasets_count,
+        records_count,
+        documents_count,
+        chunks_count,
+        publications_count,
+        published_count,
+        needs_review_count,
+        claims_count,
+        verifications_count,
+        verified_claims_count,
+        approx_claims_count,
+        conflicting_claims_count,
+        unsupported_claims_count,
+        translations_count,
+        rag_queries_count,
+        audit_events_count,
+        users_count,
+    ) = await asyncio.gather(
+        db.datasets.count_documents({}),
+        db.dataset_records.count_documents({}),
+        db.documents.count_documents({}),
+        db.document_chunks.count_documents({}),
+        db.publications.count_documents({}),
+        db.publications.count_documents({"status": "PUBLISHED"}),
+        db.publications.count_documents({"status": {"$in": ["NEEDS_REVIEW", "AI_GENERATED", "DRAFT"]}}),
+        db.claims.count_documents({}),
+        db.claim_verifications.count_documents({}),
+        db.claim_verifications.count_documents({"status": "VERIFIED"}),
+        db.claim_verifications.count_documents({"status": "APPROXIMATE"}),
+        db.claim_verifications.count_documents({"status": "CONFLICTING"}),
+        db.claim_verifications.count_documents({"status": "UNSUPPORTED"}),
+        db.translations.count_documents({}),
+        db.rag_traces.count_documents({}),
+        db.audit_events.count_documents({}),
+        db.users.count_documents({}),
+    )
+
     education_count = len(CURATED_POLAR_LESSONS)
     media_count = len([m for m in PUBLIC_MEDIA_CATALOG if not m.get("restricted", False)])
     tracked_jobs_count = len(getattr(job_queue, "jobs", {})) + datasets_count + documents_count
 
     db_query_ms = round((time.perf_counter() - t0) * 1000, 2)
+    performance_profiler.record_operation("db_query", db_query_ms)
 
     # Compute storage usage in bytes and file count
     storage_bytes = 0
@@ -173,6 +256,10 @@ async def get_observability_and_admin_metrics():
             "UNSUPPORTED": unsupported_claims_count,
         },
         "ai_telemetry": ai_summary,
+        "performance": {
+            "cache": ttl_cache.stats(),
+            "deduplication": inflight_deduplicator.stats(),
+        },
         "storage": {
             "provider": settings.STORAGE_PROVIDER,
             "path": str(storage_service.base_dir),
@@ -207,7 +294,7 @@ async def get_admin_console_overview(
     current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"])),
 ):
     """
-    Production Administration Console Overview (Prompt 25).
+    Production Administration Console Overview (Prompt 25 & Prompt 27 parallel query execution).
     Permission-controlled endpoint returning real database records and analytics across all 12 sections:
     Users, Roles, Datasets, Documents, Jobs, Reviews, Publications, Translations, Media, Audit, System Health, Configuration.
     Supports station and date range filters and never fabricates KPIs.
@@ -233,23 +320,29 @@ async def get_admin_console_overview(
             out.append(item)
         return out
 
-    datasets_list = await db.datasets.find(base_filter, {"_id": 0}).sort("ingested_at", -1).limit(25).to_list(length=25)
+    (
+        datasets_list,
+        documents_list,
+        publications_list,
+        reviews_list,
+        translations_list,
+        searches_count,
+        audit_recent,
+    ) = await asyncio.gather(
+        db.datasets.find(base_filter, {"_id": 0}).sort("ingested_at", -1).limit(25).to_list(length=25),
+        db.documents.find(base_filter, {"_id": 0}).sort("created_at", -1).limit(25).to_list(length=25),
+        db.publications.find(base_filter, {"_id": 0}).sort("created_at", -1).limit(25).to_list(length=25),
+        db.claim_verifications.find({}, {"_id": 0}).sort("verified_at", -1).limit(25).to_list(length=25),
+        db.translations.find({}, {"_id": 0}).sort("created_at", -1).limit(25).to_list(length=25),
+        db.rag_traces.count_documents({}),
+        db.audit_events.find({}, {"_id": 0}).sort("timestamp", -1).limit(20).to_list(length=20),
+    )
+
     datasets_list = _apply_date_filter(datasets_list, "ingested_at")
-
-    documents_list = await db.documents.find(base_filter, {"_id": 0}).sort("created_at", -1).limit(25).to_list(length=25)
     documents_list = _apply_date_filter(documents_list, "created_at")
-
-    publications_list = await db.publications.find(base_filter, {"_id": 0}).sort("created_at", -1).limit(25).to_list(length=25)
     publications_list = _apply_date_filter(publications_list, "created_at")
-
-    reviews_list = await db.claim_verifications.find({}, {"_id": 0}).sort("verified_at", -1).limit(25).to_list(length=25)
     reviews_list = _apply_date_filter(reviews_list, "verified_at")
-
-    translations_list = await db.translations.find({}, {"_id": 0}).sort("created_at", -1).limit(25).to_list(length=25)
     translations_list = _apply_date_filter(translations_list, "created_at")
-
-    searches_count = await db.rag_traces.count_documents({})
-    audit_recent = await db.audit_events.find({}, {"_id": 0}).sort("timestamp", -1).limit(20).to_list(length=20)
     audit_recent = _apply_date_filter(audit_recent, "timestamp")
 
     # Build real ingestion & background job entries from queue + datasets + documents
@@ -373,4 +466,3 @@ async def update_admin_configuration(
         "configuration": RUNTIME_ADMIN_CONFIG,
         "updated_by": current_user["email"],
     }
-

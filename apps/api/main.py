@@ -60,33 +60,80 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Request ID & Structured Logging Middleware
+from apps.api.core.performance import idempotency_store, performance_profiler
+
+# Request ID, Idempotency, Performance Profiling & Security Headers Middleware
 @app.middleware("http")
 async def request_logging_middleware(request: Request, call_next):
     req_id = request.headers.get("X-Request-ID", f"req_{uuid.uuid4().hex[:12]}")
+    idem_key = request.headers.get("Idempotency-Key")
     request.state.request_id = req_id
-    start_time = time.time()
-    
+    request.state.idempotency_key = idem_key
+    start_time = time.perf_counter()
+
+    def _apply_security_headers(resp: Response, duration_ms: float) -> Response:
+        resp.headers["X-Request-ID"] = req_id
+        resp.headers["X-Response-Time-MS"] = str(duration_ms)
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        resp.headers["X-Frame-Options"] = "DENY"
+        resp.headers["X-XSS-Protection"] = "1; mode=block"
+        resp.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+        resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        resp.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        resp.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        return resp
+
+    if idem_key and request.method in ("POST", "PATCH", "PUT"):
+        scoped_key = f"{request.method}:{request.url.path}:{idem_key}"
+        cached_idem = idempotency_store.get(scoped_key)
+        if cached_idem is not None:
+            duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+            performance_profiler.record_route(request.method, request.url.path, cached_idem["status_code"], duration_ms)
+            replay_resp = JSONResponse(
+                status_code=cached_idem["status_code"],
+                content=cached_idem["body"],
+                headers={"X-Idempotent-Replay": "true", "X-Cache": "HIT"},
+            )
+            return _apply_security_headers(replay_resp, duration_ms)
+
     try:
         response: Response = await call_next(request)
-        duration_ms = round((time.time() - start_time) * 1000, 2)
-        response.headers["X-Request-ID"] = req_id
-        response.headers["X-Response-Time-MS"] = str(duration_ms)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        performance_profiler.record_route(request.method, request.url.path, response.status_code, duration_ms)
+
+        if (
+            idem_key
+            and request.method in ("POST", "PATCH", "PUT")
+            and response.status_code in (200, 201, 202)
+            and "application/json" in response.headers.get("content-type", "")
+        ):
+            import json as _json
+            body_chunks = [chunk async for chunk in response.body_iterator]
+            raw_bytes = b"".join(body_chunks)
+            try:
+                parsed_json = _json.loads(raw_bytes.decode("utf-8"))
+                scoped_key = f"{request.method}:{request.url.path}:{idem_key}"
+                idempotency_store.set(scoped_key, response.status_code, parsed_json)
+            except Exception:
+                pass
+            response = Response(
+                content=raw_bytes,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type=response.media_type,
+            )
+            response.headers["X-Idempotent-Replay"] = "false"
+
+        _apply_security_headers(response, duration_ms)
+
         # Suppress routine health check log spam
         if request.url.path not in ["/health", "/health/ready"]:
             logger.info(f"{request.method} {request.url.path} -> {response.status_code} ({duration_ms}ms)")
         return response
     except Exception as e:
-        duration_ms = round((time.time() - start_time) * 1000, 2)
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        performance_profiler.record_route(request.method, request.url.path, 500, duration_ms)
         logger.error(f"Unhandled error on {request.method} {request.url.path}: {str(e)}")
         return JSONResponse(
             status_code=500,

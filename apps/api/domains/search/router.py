@@ -103,12 +103,17 @@ async def unified_search(
     content_type: Optional[str] = None,  # 'datasets' | 'publications' | 'research' | 'documents' | 'stations' | 'expeditions' | 'media' | 'education' | 'all'
     limit: int = Query(20, ge=1, le=50),
     offset: int = Query(0, ge=0),
+    cursor: Optional[str] = Query(None, description="Opaque cursor token for cursor-based pagination (Prompt 27)"),
 ):
     """
-    Production VISTAAR Unified Search (Prompt 23) across:
+    Production VISTAAR Unified Search (Prompt 23 & Prompt 27) across:
     documents, datasets, stations, expeditions, research (published), media, and education.
-    Supports keyword + semantic hybrid ranking, provenance metadata, facets, filters, and pagination.
+    Supports keyword + semantic hybrid ranking, provenance metadata, facets, filters, and offset/cursor pagination.
     """
+    import time as _time
+    from apps.api.core.performance import decode_cursor, encode_cursor, performance_profiler
+    t0 = _time.perf_counter()
+    offset, _ = decode_cursor(cursor, default_offset=offset)
     db = get_database()
     expanded_terms = _expand_query_terms(q)
     pattern_str = "|".join(re.escape(t) for t in expanded_terms[:8]) if expanded_terms else re.escape(q.strip())
@@ -407,12 +412,17 @@ async def unified_search(
     }
     results["total_count"] = sum(results["facets"].values())
     results["total_matches"] = results["total_count"]
+    has_more = any(count >= limit for count in results["facets"].values())
+    next_cursor = encode_cursor(offset + limit, q[:16]) if has_more else None
+    results["next_cursor"] = next_cursor
     results["pagination"] = {
         "limit": limit,
         "offset": offset,
         "returned_count": results["total_count"],
-        "has_more": any(count >= limit for count in results["facets"].values()),
+        "has_more": has_more,
+        "next_cursor": next_cursor,
     }
+    performance_profiler.record_operation("search", round((_time.perf_counter() - t0) * 1000, 2))
     return results
 
 

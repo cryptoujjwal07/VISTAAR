@@ -36,19 +36,29 @@ def extract_pdf_metadata(doc: fitz.Document) -> Dict[str, Any]:
         "page_count": len(doc)
     }
 
+from apps.api.core.performance import inflight_deduplicator, performance_profiler, ttl_cache
+
 def generate_deterministic_embedding(text: str, dim: int = 768) -> List[float]:
     """
     Generate normalized 768-dimensional deterministic embedding vector
-    for local vector indexing and downstream RAG queries (Prompt 09 & 10).
+    for local vector indexing and downstream RAG queries (Prompt 09, 10 & 27).
+    Cached in bounded TTL cache to eliminate redundant RNG/norm computation.
     """
     h = hashlib.sha256(text.encode("utf-8")).digest()
+    cache_key = f"emb:{dim}:{h[:8].hex()}"
+    cached = ttl_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     seed = int.from_bytes(h[:4], "big")
     rng = np.random.RandomState(seed)
     vec = rng.randn(dim).astype(np.float32)
     norm = np.linalg.norm(vec)
     if norm > 0:
         vec = vec / norm
-    return [round(float(x), 6) for x in vec]
+    result = [round(float(x), 6) for x in vec]
+    ttl_cache.set(cache_key, result, ttl_seconds=600.0)
+    return result
 
 def table_to_markdown(table_data: List[List[Optional[str]]]) -> str:
     """Format extracted 2D table grid into clean GitHub Flavored Markdown"""
@@ -359,10 +369,13 @@ async def process_document_pipeline(document_id: str, retry_count: int = 0) -> D
         }
 
     except Exception as e:
+        import asyncio
         logger.error(f"Error processing PDF document {document_id}: {str(e)}", exc_info=True)
-        # Automatic retry logic (up to 2 retries)
+        # Automatic retry logic with exponential backoff (up to 2 retries)
         if retry_count < 2:
-            logger.info(f"Retrying document {document_id} processing (attempt {retry_count + 1})...")
+            backoff_sec = 0.2 * (2 ** retry_count)
+            logger.info(f"Retrying document {document_id} processing (attempt {retry_count + 1}) after {backoff_sec}s...")
+            await asyncio.sleep(backoff_sec)
             return await process_document_pipeline(document_id, retry_count=retry_count + 1)
 
         await db.documents.update_one(
@@ -380,24 +393,37 @@ async def process_document_pipeline(document_id: str, retry_count: int = 0) -> D
 async def render_page_image(document_id: str, page_number: int, dpi: int = 150) -> bytes:
     """
     Render a specific PDF page to high-definition PNG bytes using PyMuPDF pixmap.
-    Used by frontend PDF intelligence viewer for overlaying bounding box highlights.
+    Uses bounded TTL cache and in-flight request deduplication (Prompt 27) so concurrent
+    or repeated page renders never re-rasterize the PDF.
     """
-    db = get_database()
-    doc_record = await db.documents.find_one({"document_id": document_id})
-    if not doc_record:
-        raise ValueError("Document not found")
+    import time as _time
+    cache_key = f"pdf_render:{document_id}:{page_number}:{dpi}"
+    cached_png = ttl_cache.get(cache_key)
+    if cached_png is not None:
+        return cached_png
 
-    storage_path = doc_record.get("storage_path")
-    if not storage_path or not Path(storage_path).exists():
-        raise FileNotFoundError("Document PDF file missing")
+    async def _do_render() -> bytes:
+        t0 = _time.perf_counter()
+        db = get_database()
+        doc_record = await db.documents.find_one({"document_id": document_id})
+        if not doc_record:
+            raise ValueError("Document not found")
 
-    doc = fitz.open(storage_path)
-    if page_number < 1 or page_number > len(doc):
+        storage_path = doc_record.get("storage_path")
+        if not storage_path or not Path(storage_path).exists():
+            raise FileNotFoundError("Document PDF file missing")
+
+        doc = fitz.open(storage_path)
+        if page_number < 1 or page_number > len(doc):
+            doc.close()
+            raise IndexError(f"Page number {page_number} out of bounds (1-{len(doc)})")
+
+        page = doc[page_number - 1]
+        pix = page.get_pixmap(dpi=dpi)
+        png_bytes = pix.tobytes("png")
         doc.close()
-        raise IndexError(f"Page number {page_number} out of bounds (1-{len(doc)})")
+        ttl_cache.set(cache_key, png_bytes, ttl_seconds=600.0)
+        performance_profiler.record_operation("pdf_render", round((_time.perf_counter() - t0) * 1000, 2))
+        return png_bytes
 
-    page = doc[page_number - 1]
-    pix = page.get_pixmap(dpi=dpi)
-    png_bytes = pix.tobytes("png")
-    doc.close()
-    return png_bytes
+    return await inflight_deduplicator.coalesce(cache_key, _do_render)

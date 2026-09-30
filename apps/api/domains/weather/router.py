@@ -77,15 +77,23 @@ async def get_weather_timeseries(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     limit: int = Query(500, ge=1, le=2000),
+    downsample: Optional[int] = Query(None, ge=3, le=1000, description="LTTB peak-preserving downsampling target point count (Prompt 27)"),
 ):
     """
-    Production VISTAAR Weather Intelligence endpoint (Prompt 16).
+    Production VISTAAR Weather Intelligence endpoint (Prompt 16 & Prompt 27).
     Uses ONLY real ingested NPDC data. Dynamically detects available parameters,
-    tracks missing data without replacing with zero, and links every chart point
-    to its original dataset record and SHA-256 provenance.
+    tracks missing data without replacing with zero, supports LTTB chart downsampling,
+    and links every chart point to its original dataset record and SHA-256 provenance.
     """
-    db = get_database()
+    from apps.api.core.performance import lttb_downsample, ttl_cache
+
     sid = station_id.lower().strip()
+    cache_key = f"weather:ts:{sid}:{dataset_id}:{provider}:{parameter}:{start_date}:{end_date}:{limit}:{downsample}"
+    cached = ttl_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    db = get_database()
 
     ds_query: Dict[str, Any] = {"station_id": sid}
     if dataset_id:
@@ -95,7 +103,6 @@ async def get_weather_timeseries(
 
     candidate_datasets = await db.datasets.find(ds_query, {"_id": 0}).to_list(length=20)
     if not candidate_datasets and provider:
-        # Fallback if provider filter didn't match station's subset
         candidate_datasets = await db.datasets.find({"station_id": sid}, {"_id": 0}).to_list(length=20)
     if not candidate_datasets:
         raise HTTPException(
@@ -103,7 +110,6 @@ async def get_weather_timeseries(
             detail=f"No dataset found for station '{station_id}'",
         )
 
-    # Select dataset that has ingested records
     ds = candidate_datasets[0]
     for cand in candidate_datasets:
         cnt = await db.dataset_records.count_documents({"dataset_id": cand["dataset_id"]})
@@ -117,7 +123,6 @@ async def get_weather_timeseries(
 
     available_params = ds.get("parameters", [])
     if not available_params:
-        # Dynamically inspect first record metrics
         sample_rec = await db.dataset_records.find_one({"dataset_id": ds["dataset_id"]}, {"_id": 0})
         available_params = list((sample_rec or {}).get("metrics", {}).keys()) or ["tempr"]
 
@@ -147,7 +152,6 @@ async def get_weather_timeseries(
         quality_counts[q_flag] = quality_counts.get(q_flag, 0) + 1
 
         if val is None:
-            # Never replace missing values with zero (Prompt 16 strict rule)
             missing_count += 1
             missing_points.append({
                 "index": idx,
@@ -183,13 +187,17 @@ async def get_weather_timeseries(
         "unit": unit,
     }
 
+    raw_point_count = len(points)
+    if downsample and len(points) > downsample:
+        points = lttb_downsample(points, downsample)
+
     provider_name = ds.get("provider", "National Centre for Polar and Ocean Research (NCPOR) / NPDC")
     source_citation = (
         f"National Polar Data Centre (NPDC), MoES. Dataset '{ds.get('title', ds.get('dataset_id'))}' "
         f"(File: {ds.get('original_filename')}, SHA-256: {(ds.get('sha256') or '')[:16]}...)."
     )
 
-    return {
+    payload = {
         "station_id": sid,
         "station_name": ds.get("station_name", sid.capitalize()),
         "dataset_id": ds.get("dataset_id"),
@@ -206,10 +214,15 @@ async def get_weather_timeseries(
         "source_citation": source_citation,
         "quality_breakdown": quality_counts,
         "statistics": stats,
+        "downsampled": bool(downsample and raw_point_count > len(points)),
+        "raw_point_count": raw_point_count,
+        "returned_point_count": len(points),
         "points": points,
         "missing_points": missing_points,
         "series": points,
     }
+    ttl_cache.set(cache_key, payload, ttl_seconds=45.0)
+    return payload
 
 
 @router.get("/records/{record_id}")
