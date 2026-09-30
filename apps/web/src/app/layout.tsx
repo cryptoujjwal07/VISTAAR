@@ -49,10 +49,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col bg-vistaar-bg text-vistaar-text">
+      <body className="min-h-screen flex flex-col bg-vistaar-bg text-vistaar-text antialiased selection:bg-blue-100 selection:text-vistaar-text">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-vistaar-primary focus:font-semibold focus:border-2 focus:border-vistaar-primary focus:rounded-md focus:shadow-md"
+        >
+          Skip to main scientific content
+        </a>
         <ToastProvider>
           <Navbar />
-          <main className="flex-1">{children}</main>
+          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+            {children}
+          </main>
           <Footer />
         </ToastProvider>
       </body>

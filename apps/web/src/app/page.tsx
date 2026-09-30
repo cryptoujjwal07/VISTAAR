@@ -178,10 +178,10 @@ export default function HomePage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-white">
           <div className="max-w-2xl space-y-5">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-xs uppercase font-mono tracking-[0.25em] font-bold text-cyan-300 bg-black/30 px-3 py-1 rounded-full border border-white/15">
+              <span className="text-xs uppercase font-mono tracking-[0.22em] font-bold text-[#0E7490] bg-[#FAF7F0]/95 px-3 py-1 rounded-full border border-[#E7E0D5] shadow-xs">
                 {currentSlide.regionTag}
               </span>
-              <span className="text-xs font-mono text-white/90">{currentSlide.coordinates}</span>
+              <span className="text-xs font-mono text-white/95">{currentSlide.coordinates}</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif tracking-tight font-bold text-white leading-tight">
@@ -212,10 +212,13 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="absolute bottom-6 right-6 sm:right-12 z-20 flex space-x-2 bg-white/90 backdrop-blur-md p-1.5 rounded-full border border-vistaar-border shadow-md">
+        <div role="tablist" aria-label="Polar Region Hero Slides" className="absolute bottom-6 right-6 sm:right-12 z-20 flex space-x-2 bg-white/95 backdrop-blur-md p-1.5 rounded-full border border-vistaar-border shadow-md">
           {HERO_SLIDES.map((slide, idx) => (
             <button
               key={slide.regionTag}
+              role="tab"
+              aria-selected={activeSlide === idx}
+              aria-label={`View ${slide.regionTag} highlight`}
               onClick={() => setActiveSlide(idx)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 activeSlide === idx
@@ -245,10 +248,11 @@ export default function HomePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center bg-[#FAF7F0] p-1 rounded-md border border-vistaar-border">
+              <div role="group" aria-label="Select User Persona" className="flex items-center bg-[#FAF7F0] p-1 rounded-md border border-vistaar-border">
                 {(["student", "teacher", "journalist", "scientist"] as const).map((p) => (
                   <button
                     key={p}
+                    aria-pressed={persona === p}
                     onClick={() => setPersona(p)}
                     className={`px-3 py-1.5 rounded text-xs font-bold capitalize transition-all ${
                       persona === p

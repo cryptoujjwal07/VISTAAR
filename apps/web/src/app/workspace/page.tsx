@@ -1255,7 +1255,7 @@ export default function ReviewWorkspacePage() {
 
       {/* Revision History & Rollback Modal */}
       {showRevisionsModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-[#17202A]/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-2xl border border-vistaar-border w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
             <div className="p-4 border-b border-vistaar-border flex items-center justify-between bg-[#FAF7F0]">
               <div className="flex items-center space-x-2">

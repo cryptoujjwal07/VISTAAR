@@ -424,8 +424,8 @@ export default function DocumentIntelligencePage() {
               )}
 
               {showRagTrace && (
-                <div className="p-3 bg-slate-900 text-slate-100 rounded font-mono text-[10px] overflow-x-auto">
-                  <div className="text-emerald-400 font-bold mb-1">
+                <div className="p-3 bg-[#FAF7F0] text-[#17202A] border border-[#E7E0D5] rounded font-mono text-[10px] overflow-x-auto">
+                  <div className="text-[#15803D] font-bold mb-1">
                     // Deterministic Retrieval Trace & Prompt Injection XML Data Encapsulation Proof
                   </div>
                   <pre>{JSON.stringify(ragResult.retrieval_trace, null, 2)}</pre>
@@ -809,7 +809,7 @@ export default function DocumentIntelligencePage() {
                           </span>
                         </div>
 
-                        <div className="bg-slate-900 text-slate-100 p-3 rounded font-mono text-[10px] overflow-x-auto whitespace-pre leading-relaxed">
+                        <div className="bg-[#FAF7F0] text-[#17202A] border border-[#E7E0D5] p-3 rounded font-mono text-[10px] overflow-x-auto whitespace-pre leading-relaxed">
                           {t.markdown}
                         </div>
 
@@ -915,7 +915,7 @@ export default function DocumentIntelligencePage() {
 
       {/* Upload Scientific PDF Modal */}
       {uploadModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-[#17202A]/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-2xl border border-vistaar-border w-full max-w-lg overflow-hidden">
             <div className="p-4 border-b border-vistaar-border bg-vistaar-bg/50 flex items-center justify-between">
               <div className="flex items-center space-x-2">

@@ -15,26 +15,26 @@ function readFile(relPath) {
   return fs.readFileSync(fullPath, 'utf-8');
 }
 
-describe('VISTAAR Frontend Component, Critical Workflow & Accessibility Suite (Prompt 30)', () => {
-  test('1. All 13 App Router pages and layout components exist and export valid React views', () => {
-    const requiredPages = [
-      'app/layout.tsx',
-      'app/page.tsx',
-      'app/about/page.tsx',
-      'app/admin/page.tsx',
-      'app/datasets/page.tsx',
-      'app/documents/page.tsx',
-      'app/education/page.tsx',
-      'app/expeditions/page.tsx',
-      'app/explore/page.tsx',
-      'app/media/page.tsx',
-      'app/research/page.tsx',
-      'app/stations/page.tsx',
-      'app/weather/page.tsx',
-      'app/workspace/page.tsx',
-    ];
+const REQUIRED_PAGES = [
+  'app/layout.tsx',
+  'app/page.tsx',
+  'app/about/page.tsx',
+  'app/admin/page.tsx',
+  'app/datasets/page.tsx',
+  'app/documents/page.tsx',
+  'app/education/page.tsx',
+  'app/expeditions/page.tsx',
+  'app/explore/page.tsx',
+  'app/media/page.tsx',
+  'app/research/page.tsx',
+  'app/stations/page.tsx',
+  'app/weather/page.tsx',
+  'app/workspace/page.tsx',
+];
 
-    for (const pagePath of requiredPages) {
+describe('VISTAAR Frontend Component, Critical Workflow, Accessibility & UI/UX Audit Suite (Prompts 30 & 33)', () => {
+  test('1. All 13 App Router pages and layout components exist and export valid React views', () => {
+    for (const pagePath of REQUIRED_PAGES) {
       const content = readFile(pagePath);
       assert.match(content, /export\s+default\s+function/, `Page ${pagePath} must export a default React component`);
     }
@@ -62,14 +62,28 @@ describe('VISTAAR Frontend Component, Critical Workflow & Accessibility Suite (P
     assert.match(educationPage, /classroom|lesson|quiz/i, 'Education page must integrate NCERT classroom lessons and quizzes');
   });
 
-  test('4. Accessibility (WCAG 2.1 AA / GIGW): semantic landmarks, keyboard navigation, and bilingual UI support', () => {
+  test('4. Accessibility (WCAG 2.1 AA / GIGW): semantic landmarks, skip-to-main link, keyboard focus, and reduced-motion', () => {
     const layoutContent = readFile('app/layout.tsx');
     assert.match(layoutContent, /<html\s+lang=/, 'Root layout must declare document language attribute');
+    assert.match(layoutContent, /href="#main-content"/, 'Root layout must provide keyboard skip-to-main-content link');
+    assert.match(layoutContent, /<main\s+id="main-content"/, 'Root layout must define #main-content semantic landmark');
 
-    const shellPath = fs.existsSync(path.join(SRC_DIR, 'components/layout/AppShell.tsx'))
-      ? 'components/layout/AppShell.tsx'
-      : 'app/layout.tsx';
-    const shellContent = readFile(shellPath);
-    assert.match(shellContent, /<(main|nav|header|aside)/, 'Application shell must use semantic HTML5 landmarks');
+    const globalsCss = readFile('app/globals.css');
+    assert.match(globalsCss, /:focus-visible/, 'globals.css must define keyboard :focus-visible outline');
+    assert.match(globalsCss, /prefers-reduced-motion/, 'globals.css must support prefers-reduced-motion');
+    assert.match(globalsCss, /tabular-nums/, 'globals.css must enforce tabular numerals on scientific tables/code');
+  });
+
+  test('5. Prompt 33 UI/UX Audit: Warm Ivory Design Tokens (#FAF7F0, #FFFFFF, #2563EB, #0E7490, #17202A, #E7E0D5) & Zero Dark Cards / Placeholders', () => {
+    const globalsCss = readFile('app/globals.css');
+    for (const token of ['#FAF7F0', '#FFFFFF', '#17202A', '#E7E0D5', '#2563EB', '#0E7490']) {
+      assert.ok(globalsCss.includes(token), `globals.css must define mandatory design token ${token}`);
+    }
+
+    for (const pagePath of REQUIRED_PAGES) {
+      const content = readFile(pagePath);
+      assert.doesNotMatch(content, /bg-black|bg-slate-900|bg-gray-900|bg-zinc-900/, `Page ${pagePath} must not use dark-mode/black cards`);
+      assert.doesNotMatch(content, /Lorem ipsum|TODO:|FIXME:/i, `Page ${pagePath} must not contain placeholder text`);
+    }
   });
 });

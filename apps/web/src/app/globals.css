@@ -22,6 +22,33 @@ body {
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Tabular numerals for scientific telemetry alignment (Prompt 02 & Prompt 33) */
+.font-mono,
+code,
+pre,
+table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessible keyboard focus states (WCAG 2.1 AA / GIGW 3.0) */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Reduced motion support for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Custom Scrollbar for Scientific Panels */
