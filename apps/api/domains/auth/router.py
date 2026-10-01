@@ -35,8 +35,8 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     name: str = Field(..., min_length=2)
-    role: Optional[str] = 'PUBLIC_USER'
-    persona: Optional[Literal['STUDENT', 'TEACHER', 'JOURNALIST', 'RESEARCHER', 'SCIENTIST']] = 'STUDENT'
+    role: Optional[Literal['SCIENTIST', 'RESEARCHER', 'TEACHER', 'STUDENT', 'PUBLIC_USER', 'FIELD_SCIENTIST']] = 'STUDENT'
+    persona: Optional[Literal['STUDENT', 'TEACHER', 'RESEARCHER', 'SCIENTIST', 'JOURNALIST']] = 'STUDENT'
     organization: Optional[str] = None
     country: Optional[str] = "India"
     state: Optional[str] = None
@@ -60,8 +60,8 @@ class ChangePasswordRequest(BaseModel):
 
 class RoleUpdateRequest(BaseModel):
     role: Literal[
-        'SUPER_ADMIN', 'ADMIN', 'OUTREACH_EDITOR', 'FIELD_SCIENTIST',
-        'SCIENTIST', 'RESEARCHER', 'JOURNALIST', 'TEACHER', 'STUDENT', 'PUBLIC_USER'
+        'ADMIN', 'SUPER_ADMIN', 'SCIENTIST', 'RESEARCHER', 'TEACHER', 'STUDENT',
+        'OUTREACH_EDITOR', 'FIELD_SCIENTIST', 'JOURNALIST', 'PUBLIC_USER'
     ]
     reason: Optional[str] = None
 

@@ -24,6 +24,10 @@ import {
   Radio,
   Sparkles,
   ExternalLink,
+  Play,
+  X,
+  Volume2,
+  HelpCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -42,6 +46,10 @@ const STATIONS_DATA = [
     image: "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=800&q=80",
     highlight: "Continuous meteorology, geological mapping, solid-earth studies, and geomagnetism.",
     temp: "-17.0 °C",
+    coldest: -17.0,
+    warmest: 0.0,
+    coldestMonth: "July / August",
+    warmestMonth: "December – January",
   },
   {
     id: "bharati",
@@ -54,6 +62,10 @@ const STATIONS_DATA = [
     image: "https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=800&q=80",
     highlight: "State-of-the-art green research facility with automated satellite ground stations and marine labs.",
     temp: "-14.5 °C",
+    coldest: -18.0,
+    warmest: 1.0,
+    coldestMonth: "June / July",
+    warmestMonth: "December – February",
   },
   {
     id: "himadri",
@@ -66,6 +78,10 @@ const STATIONS_DATA = [
     image: "https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=800&q=80",
     highlight: "India's Arctic research base studying fjord oceanography, atmospheric chemistry, and marine biology.",
     temp: "-4.2 °C",
+    coldest: -12.7,
+    warmest: 4.4,
+    coldestMonth: "February / March",
+    warmestMonth: "July / August",
   },
   {
     id: "himansh",
@@ -78,31 +94,50 @@ const STATIONS_DATA = [
     image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
     highlight: "High-altitude base monitoring Himalayan glacier mass balance, snow chemistry, and hydrology.",
     temp: "-8.5 °C",
+    coldest: -21.8,
+    warmest: -1.2,
+    coldestMonth: "January / February",
+    warmestMonth: "July / August",
   },
 ];
 
-const EXPEDITIONS_HIGHLIGHTS = [
+const EXPEDITION_VIDEOS = [
   {
-    tag: "Antarctic Mission",
-    title: "43rd Indian Scientific Expedition to Antarctica (43-ISEA)",
-    leader: "NCPOR / Ministry of Earth Sciences",
-    summary: "25 national research projects conducted across Maitri and Bharati, including deep ice-core paleoclimate synthesis and Prydz Bay ocean dynamics.",
-    link: "/expeditions",
+    id: "-KjMHRfUWC4",
+    title: "Arriving at Maitri Station",
+    location: "Schirmacher Oasis, Antarctica",
+    duration: "Field Footage",
+    thumb: "https://img.youtube.com/vi/-KjMHRfUWC4/hqdefault.jpg",
   },
   {
-    tag: "Arctic Marine Physics",
-    title: "IndARC Mooring & Kongsfjorden Climate Monitoring",
-    leader: "Indo-Norwegian Joint Observation",
-    summary: "Underwater sensor array recording continuous physical, geochemical, and oceanographic processes below Arctic sea ice in Kongsfjorden.",
-    link: "/expeditions",
+    id: "lNhK69S_LLM",
+    title: "Tour of Bharati Research Station",
+    location: "Larsemann Hills, Antarctica",
+    duration: "Facility Walkthrough",
+    thumb: "https://img.youtube.com/vi/lNhK69S_LLM/hqdefault.jpg",
   },
   {
-    tag: "Himalayan Cryosphere",
-    title: "Chandra Basin Glacier Dynamics & Retreat Forecasting",
-    leader: "Himansh Glaciology Team",
-    summary: "Long-term monitoring of Sutlej and Chandra basin glaciers using ground-penetrating radar, ice melt stakes, and automated AWS stations.",
-    link: "/expeditions",
+    id: "3h9Ltuxsxug",
+    title: "Arriving at Himadri Arctic Base",
+    location: "Ny-Ålesund, Svalbard (79° N)",
+    duration: "Arctic Field Season",
+    thumb: "https://img.youtube.com/vi/3h9Ltuxsxug/hqdefault.jpg",
   },
+  {
+    id: "O-ja_5QP7j8",
+    title: "Arriving at Himansh High-Altitude Station",
+    location: "Chandra Basin, Spiti Valley (4,080m)",
+    duration: "Himalayan Expedition",
+    thumb: "https://img.youtube.com/vi/O-ja_5QP7j8/hqdefault.jpg",
+  },
+];
+
+const FUN_POLAR_FACTS = [
+  "Did you know? Antarctic ice is over 4,000 meters (4 km) thick in some interior regions!",
+  "Antarctica holds roughly 70% of the world's fresh water and 90% of its freshwater ice.",
+  "Because Himadri is at 79° N, it experiences 24 hours of daylight in summer and continuous polar night in winter.",
+  "Himansh sits at 4,080m above sea level—higher than most European peaks—to study third-pole glacier melt.",
+  "Katabatic winds in Antarctica can reach hurricane gusts exceeding 200 km/h as cold dense air cascades off the ice plateau.",
 ];
 
 export default function HomePage() {
@@ -112,6 +147,16 @@ export default function HomePage() {
   const [timelineMode, setTimelineMode] = useState<"LIVE" | "WEEK" | "YEAR">("LIVE");
   const [weatherData, setWeatherData] = useState<any>(null);
   const [loadingWeather, setLoadingWeather] = useState(false);
+
+  // Interactive Temperature Slider State (-25 to +10 C)
+  const [tempProbe, setTempProbe] = useState<number>(-10);
+
+  // Video Modal State
+  const [activeVideo, setActiveVideo] = useState<{ id: string; title: string } | null>(null);
+
+  // Interactive Mascot Fact State
+  const [factIndex, setFactIndex] = useState(0);
+  const [mascotOpen, setMascotOpen] = useState(false);
 
   useEffect(() => {
     async function loadTelemetry() {
@@ -162,7 +207,7 @@ export default function HomePage() {
     : "";
 
   return (
-    <div className="w-full space-y-24 pb-20">
+    <div className="w-full space-y-24 pb-20 relative">
       {/* =========================================================================
           1. HERO BANNER: Ice Mountain Display, Big Typography & Search
           ========================================================================= */}
@@ -348,7 +393,171 @@ export default function HomePage() {
       </section>
 
       {/* =========================================================================
-          3. SECTION: Live Environmental Telemetry (Clean, Simple, Intuitive)
+          3. SECTION: Interactive Polar Climate & Temperature Comparator
+          (How Cold Does It Get Across India's Stations? Interactive Slider)
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+        <div className="ice-glass-strong rounded-3xl p-8 sm:p-12 border border-white/95 shadow-xl space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-sky-200/80 pb-6">
+            <div className="space-y-2">
+              <Badge variant="scientific" className="text-xs font-bold uppercase tracking-wider">
+                Cryosphere Temperature Comparator
+              </Badge>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-950">
+                How Cold Does It Get Across India&apos;s Stations?
+              </h2>
+              <p className="text-sm sm:text-base text-slate-600 max-w-2xl leading-relaxed">
+                Drag the temperature probe to see which observatories experience that climate. The 0 °C mark shows where water freezes into solid ice.
+              </p>
+            </div>
+
+            {/* Current Probe Display */}
+            <div className="bg-sky-50/90 border-2 border-sky-200 rounded-2xl px-6 py-3 text-right">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+                Selected Temperature
+              </span>
+              <div className="text-4xl font-black text-sky-900 font-mono">
+                {tempProbe > 0 ? `+${tempProbe}` : tempProbe} °C
+              </div>
+            </div>
+          </div>
+
+          {/* Slider Control Bar */}
+          <div className="space-y-3 max-w-3xl mx-auto">
+            <input
+              type="range"
+              min="-25"
+              max="10"
+              step="0.5"
+              value={tempProbe}
+              onChange={(e) => setTempProbe(parseFloat(e.target.value))}
+              className="w-full h-3 bg-sky-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
+            />
+            <div className="flex justify-between text-xs font-mono font-bold text-slate-500">
+              <span>-25 °C (Deep Polar Freeze)</span>
+              <span className="text-sky-800 font-extrabold">-10 °C</span>
+              <span className="text-blue-700 font-extrabold">0 °C (Freezing Point)</span>
+              <span>+10 °C (Summer Thaw)</span>
+            </div>
+          </div>
+
+          {/* Interactive Horizontal Range Bars for the 4 Stations */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+            {STATIONS_DATA.map((st) => {
+              const inRange = tempProbe >= st.coldest && tempProbe <= st.warmest;
+              const isFreezing = tempProbe <= 0;
+              return (
+                <div
+                  key={st.id}
+                  className={`p-5 rounded-2xl border transition-all ${
+                    inRange
+                      ? "bg-white/95 border-sky-400 shadow-md ring-2 ring-sky-300/40"
+                      : "bg-white/60 border-sky-100 opacity-80"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-lg font-black text-slate-900">{st.name}</h4>
+                      <p className="text-xs text-slate-500 font-semibold">{st.region} • Elev: {st.elevation}</p>
+                    </div>
+                    {inRange && (
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                        ✓ Station Active at {tempProbe} °C
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Range Bar */}
+                  <div className="mt-4 space-y-1.5">
+                    <div className="flex justify-between text-xs font-mono text-slate-600">
+                      <span>Coldest: <strong>{st.coldest} °C</strong> ({st.coldestMonth})</span>
+                      <span>Warmest: <strong>{st.warmest > 0 ? `+${st.warmest}` : st.warmest} °C</strong> ({st.warmestMonth})</span>
+                    </div>
+                    <div className="relative h-3 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="absolute h-full rounded-full bg-gradient-to-r from-sky-600 via-cyan-500 to-amber-500"
+                        style={{
+                          left: `${((st.coldest + 25) / 35) * 100}%`,
+                          width: `${((st.warmest - st.coldest) / 35) * 100}%`,
+                        }}
+                      />
+                      {/* 0 C Freeze Mark */}
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-blue-900 z-10"
+                        style={{ left: `${(25 / 35) * 100}%` }}
+                        title="0 °C Freezing Mark"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="p-4 rounded-2xl bg-sky-50/70 border border-sky-200/80 text-xs text-slate-600 leading-relaxed font-medium">
+            💡 <strong>Science Observation:</strong> Notice how Himadri (Arctic) experiences its warmest summer in July/August (+4.4 °C) while Maitri and Bharati (Antarctica) are simultaneously in pitch-black Antarctic mid-winter (-17 °C). This hemispheric seasonal inversion is due to Earth&apos;s 23.5° axial tilt!
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          4. SECTION: "Watch from the Field" Video Gallery
+          (Official Real NCPOR Expeditions on YouTube)
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 space-y-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-2">
+            <Badge variant="scientific" className="text-xs font-bold uppercase tracking-wider">
+              Field Video Archive
+            </Badge>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-950">
+              Watch from the Polar Field
+            </h2>
+            <p className="text-base sm:text-lg text-slate-600 max-w-2xl font-normal">
+              Direct video footage from Indian scientific expeditions in Antarctica, the Arctic, and the Himalayas.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {EXPEDITION_VIDEOS.map((vid) => (
+            <div
+              key={vid.id}
+              onClick={() => setActiveVideo(vid)}
+              className="cursor-pointer group ice-glass rounded-3xl overflow-hidden border border-white/85 hover:border-sky-300 hover:shadow-xl transition-all flex flex-col justify-between"
+            >
+              <div className="relative aspect-video w-full overflow-hidden bg-[#0B192C]">
+                <img
+                  src={vid.thumb}
+                  alt={vid.title}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-white/90 text-sky-800 flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-sky-600 group-hover:text-white transition-all">
+                    <Play className="w-5 h-5 ml-0.5 fill-current" />
+                  </div>
+                </div>
+                <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-sky-300 block">
+                    {vid.duration}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 space-y-1">
+                <h4 className="text-sm font-black text-slate-900 group-hover:text-sky-700 transition-colors leading-snug">
+                  {vid.title}
+                </h4>
+                <p className="text-xs text-slate-500 font-medium">{vid.location}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================================
+          5. SECTION: Live Climate & Weather Telemetry
           ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
         <div className="ice-glass-strong rounded-3xl p-6 sm:p-10 border border-white/95 shadow-xl space-y-8">
@@ -362,7 +571,7 @@ export default function HomePage() {
                 Live Polar Climate Telemetry
               </h2>
               <p className="text-sm sm:text-base text-slate-600">
-                Direct sensor observations from India's polar meteorological stations without zero-filling or synthetic data.
+                Direct sensor observations from India&apos;s polar meteorological stations without zero-filling or synthetic data.
               </p>
             </div>
 
@@ -470,12 +679,10 @@ export default function HomePage() {
                       viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                       className="w-full h-44 overflow-visible"
                     >
-                      {/* Grid lines */}
                       <line x1={padding} y1={padding} x2={svgWidth - padding} y2={padding} stroke="#E2E8F0" strokeDasharray="3 3" />
                       <line x1={padding} y1={svgHeight / 2} x2={svgWidth - padding} y2={svgHeight / 2} stroke="#E2E8F0" strokeDasharray="3 3" />
                       <line x1={padding} y1={svgHeight - padding} x2={svgWidth - padding} y2={svgHeight - padding} stroke="#E2E8F0" strokeDasharray="3 3" />
 
-                      {/* Line */}
                       <polyline
                         fill="none"
                         stroke="#0284C7"
@@ -485,7 +692,6 @@ export default function HomePage() {
                         points={polylineCoords}
                       />
 
-                      {/* Area gradient under line */}
                       <polygon
                         fill="url(#blueGrad)"
                         opacity="0.25"
@@ -517,113 +723,111 @@ export default function HomePage() {
       </section>
 
       {/* =========================================================================
-          4. SECTION: Polar Expeditions & Science Highlights
+          6. SECTION: Interactive Polar Education (Class 5 to 12 Level Picker)
           ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 space-y-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-2">
             <Badge variant="scientific" className="text-xs font-bold uppercase tracking-wider">
-              Scientific Expeditions
+              NCERT Curriculum Alignment
             </Badge>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-950">
-              Flagship Polar Missions & Discoveries
+              Interactive Polar Education (Class 5–12)
             </h2>
             <p className="text-base sm:text-lg text-slate-600 max-w-2xl font-normal">
-              Decades of pioneering expeditions in extreme polar climates, from deep ice-core drilling to oceanic mooring observations.
+              Select your class grade to open curated lessons covering glacier mechanics, polar atmospheric dynamics, and interactive scientific quizzes.
             </p>
           </div>
           <Link
-            href="/expeditions"
+            href="/education"
             className="inline-flex items-center space-x-2 text-sm sm:text-base font-extrabold text-sky-700 hover:text-sky-900 group"
           >
-            <span>View All Historical Expeditions</span>
+            <span>Enter Full Classroom Hub</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {EXPEDITIONS_HIGHLIGHTS.map((exp, idx) => (
-            <div
-              key={idx}
-              className="ice-glass rounded-3xl p-7 border border-white/80 hover:shadow-xl transition-all space-y-4 flex flex-col justify-between"
+        {/* Class Level Selector Buttons */}
+        <div className="flex flex-wrap gap-2.5">
+          {[5, 6, 7, 8, 9, 10, 11, 12].map((cls) => (
+            <Link
+              key={cls}
+              href={`/education?grade=${cls}`}
+              className="px-5 py-2.5 rounded-2xl ice-glass hover:bg-white text-slate-800 font-extrabold text-sm sm:text-base border border-sky-200 hover:border-sky-400 hover:shadow-md transition-all flex items-center space-x-2"
             >
-              <div className="space-y-3">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-sky-700 bg-sky-50 px-3 py-1 rounded-full border border-sky-200">
-                  {exp.tag}
-                </span>
-                <h3 className="text-xl font-black text-slate-900 leading-snug">
-                  {exp.title}
-                </h3>
-                <p className="text-xs font-semibold text-slate-500">
-                  Lead: {exp.leader}
-                </p>
-                <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                  {exp.summary}
-                </p>
-              </div>
-
-              <Link
-                href={exp.link}
-                className="inline-flex items-center space-x-1.5 text-xs font-extrabold text-sky-700 hover:text-sky-900 group"
-              >
-                <span>Read Expedition Dossier</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
+              <span>Class {cls}</span>
+              <ArrowRight className="w-3.5 h-3.5 text-sky-600" />
+            </Link>
           ))}
         </div>
       </section>
 
-      {/* =========================================================================
-          5. SECTION: Polar Education & Public Outreach Spotlight
-          ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Card 1: NCERT Polar Classroom */}
-          <div className="ice-glass rounded-3xl p-8 sm:p-10 border border-white/85 space-y-5 flex flex-col justify-between shadow-md hover:shadow-xl transition-all">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700">
-                <GraduationCap className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-950">
-                NCERT Polar Classroom (Class 8–12)
-              </h3>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-                Curriculum-aligned educational modules covering Antarctic katabatic winds, Arctic sea ice extent, Himalayan glacier retreat, and hands-on scientific quizzes.
-              </p>
+      {/* Video Modal Player */}
+      {activeVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-3xl rounded-3xl ice-glass-strong p-4 sm:p-6 shadow-2xl border border-white relative space-y-3">
+            <div className="flex items-center justify-between border-b border-sky-200/80 pb-3">
+              <h3 className="text-base sm:text-lg font-black text-slate-900">{activeVideo.title}</h3>
+              <button
+                onClick={() => setActiveVideo(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-sky-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <Link
-              href="/education"
-              className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 text-white font-black text-sm shadow-md hover:scale-102 transition-all w-fit"
-            >
-              <span>Explore Interactive Lessons</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Card 2: Research & Media Repository */}
-          <div className="ice-glass rounded-3xl p-8 sm:p-10 border border-white/85 space-y-5 flex flex-col justify-between shadow-md hover:shadow-xl transition-all">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-sky-100 border border-sky-300 flex items-center justify-center text-sky-700">
-                <ImageIcon className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-950">
-                Verified Media & Research Bulletins
-              </h3>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-                Access official NCPOR press kits, fact-checked PIB scientific stories, high-resolution expedition photo archives, and National Polar Data Centre datasets.
-              </p>
+            <div className="aspect-video w-full rounded-2xl overflow-hidden bg-[#0B192C]">
+              <iframe
+                src={`https://www.youtube.com/embed/${activeVideo.id}?autoplay=1`}
+                title={activeVideo.title}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
             </div>
-            <Link
-              href="/research"
-              className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl bg-white hover:bg-sky-50 border border-sky-200 text-sky-800 font-black text-sm shadow-xs hover:scale-102 transition-all w-fit"
-            >
-              <span>Browse Research Bulletins</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
         </div>
-      </section>
+      )}
+
+      {/* =========================================================================
+          7. FLOATING POLAR MASCOT & FAST FACTS GUIDE ("Barfii the Penguin")
+          ========================================================================= */}
+      <div className="fixed bottom-6 right-6 z-40 select-none">
+        {mascotOpen && (
+          <div className="mb-3 max-w-xs ice-glass-strong rounded-3xl p-4 shadow-xl border border-white space-y-2 animate-fade-in">
+            <div className="flex items-center justify-between text-xs font-bold text-sky-800 border-b border-sky-100 pb-1.5">
+              <span>🐧 Barfii&apos;s Polar Science Fact</span>
+              <button
+                onClick={() => setMascotOpen(false)}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed font-medium">
+              {FUN_POLAR_FACTS[factIndex]}
+            </p>
+            <button
+              onClick={() => setFactIndex((factIndex + 1) % FUN_POLAR_FACTS.length)}
+              className="text-[11px] font-bold text-sky-600 hover:underline block text-right pt-1"
+            >
+              Next Fact →
+            </button>
+          </div>
+        )}
+
+        <button
+          onClick={() => {
+            setMascotOpen(!mascotOpen);
+            if (!mascotOpen) {
+              setFactIndex((factIndex + 1) % FUN_POLAR_FACTS.length);
+            }
+          }}
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-700 text-white shadow-xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center border-2 border-white cursor-pointer"
+          title="Ask Barfii the Penguin Guide"
+        >
+          <span className="text-2xl">🐧</span>
+        </button>
+      </div>
     </div>
   );
 }

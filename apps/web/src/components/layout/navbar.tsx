@@ -224,25 +224,43 @@ export function Navbar() {
                       className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-all"
                     >
                       <Shield className="w-3.5 h-3.5" />
-                      <span>Admin Portal</span>
+                      <span>Admin</span>
                     </Link>
                   )}
-                  {["FIELD_SCIENTIST", "SCIENTIST"].includes(currentUser.role) && (
+                  {["SCIENTIST", "FIELD_SCIENTIST"].includes(currentUser.role) && (
                     <Link
-                      href="/documents"
+                      href="/scientist"
                       className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-all"
                     >
                       <FlaskConical className="w-3.5 h-3.5" />
-                      <span>Scientist Workspace</span>
+                      <span>Scientist</span>
                     </Link>
                   )}
-                  {currentUser.role === "OUTREACH_EDITOR" && (
+                  {["RESEARCHER", "JOURNALIST"].includes(currentUser.role) && (
                     <Link
-                      href="/workspace"
-                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all"
+                      href="/researcher"
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-all"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>Review Studio</span>
+                      <Compass className="w-3.5 h-3.5" />
+                      <span>Researcher</span>
+                    </Link>
+                  )}
+                  {currentUser.role === "TEACHER" && (
+                    <Link
+                      href="/teacher"
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-all"
+                    >
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      <span>Teacher Studio</span>
+                    </Link>
+                  )}
+                  {["STUDENT", "PUBLIC_USER"].includes(currentUser.role) && (
+                    <Link
+                      href="/student"
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-all"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Student Hub</span>
                     </Link>
                   )}
                 </>

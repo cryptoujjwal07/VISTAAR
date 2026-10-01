@@ -35,19 +35,95 @@ export interface RolePortalSpec {
 }
 
 export const ROLE_PORTAL_MAP: Record<string, RolePortalSpec> = {
-  SUPER_ADMIN: {
-    route: "/admin",
-    title: "Super Admin Governance & Security Portal",
-    subtitle: "Full RBAC Governance, Role Verification Queue & Immutable Audit Logs",
-    badgeColor: "bg-red-50 text-red-800 border-red-200",
-    allowedRoutes: ["/", "/admin", "/workspace", "/documents", "/datasets", "/research", "/weather", "/stations", "/education", "/media", "/explore", "/expeditions"],
+  SCIENTIST: {
+    route: "/scientist",
+    title: "Polar Scientist Portal",
+    subtitle: "Field Research, Data Ingestion & Cryosphere Provenance",
+    badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    allowedRoutes: ["/", "/scientist", "/documents", "/datasets", "/weather", "/stations", "/explore", "/expeditions", "/media", "/research", "/education"],
     navLinks: [
-      { href: "/admin", label: "Admin Governance" },
-      { href: "/workspace", label: "Review Studio" },
-      { href: "/documents", label: "Document AI" },
+      { href: "/scientist", label: "Scientist Studio" },
+      { href: "/documents", label: "Research Uploads" },
       { href: "/datasets", label: "NPDC Datasets" },
-      { href: "/weather", label: "Weather" },
+      { href: "/weather", label: "Weather Telemetry" },
+      { href: "/stations", label: "Observatories" },
+    ],
+  },
+  FIELD_SCIENTIST: {
+    route: "/scientist",
+    title: "Polar Scientist Portal",
+    subtitle: "Field Research, Data Ingestion & Cryosphere Provenance",
+    badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    allowedRoutes: ["/", "/scientist", "/documents", "/datasets", "/weather", "/stations", "/explore", "/expeditions", "/media", "/research", "/education"],
+    navLinks: [
+      { href: "/scientist", label: "Scientist Studio" },
+      { href: "/documents", label: "Research Uploads" },
+      { href: "/datasets", label: "NPDC Datasets" },
+      { href: "/weather", label: "Weather Telemetry" },
+    ],
+  },
+  RESEARCHER: {
+    route: "/researcher",
+    title: "Polar Researcher Knowledge Portal",
+    subtitle: "Grounded RAG Intelligence, Finding Synthesis & Dataset Analysis",
+    badgeColor: "bg-indigo-50 text-indigo-800 border-indigo-200",
+    allowedRoutes: ["/", "/researcher", "/explore", "/datasets", "/documents", "/research", "/weather", "/stations", "/expeditions", "/education", "/media"],
+    navLinks: [
+      { href: "/researcher", label: "Researcher Studio" },
+      { href: "/explore", label: "Semantic Search" },
+      { href: "/datasets", label: "NPDC Datasets" },
+      { href: "/weather", label: "Station Data" },
+    ],
+  },
+  JOURNALIST: {
+    route: "/researcher",
+    title: "Researcher Portal",
+    subtitle: "Verified Science Findings & Media Kits",
+    badgeColor: "bg-indigo-50 text-indigo-800 border-indigo-200",
+    allowedRoutes: ["/", "/researcher", "/explore", "/media", "/research", "/stations", "/weather"],
+    navLinks: [
+      { href: "/researcher", label: "Researcher Studio" },
+      { href: "/media", label: "Media Assets" },
+      { href: "/research", label: "Verified Stories" },
+    ],
+  },
+  TEACHER: {
+    route: "/teacher",
+    title: "Educator Classroom Studio",
+    subtitle: "NCERT Polar Curriculum, AI Lesson Generation & Quizzes",
+    badgeColor: "bg-amber-50 text-amber-900 border-amber-200",
+    allowedRoutes: ["/", "/teacher", "/education", "/weather", "/stations", "/research", "/media", "/explore", "/expeditions"],
+    navLinks: [
+      { href: "/teacher", label: "Teacher Studio" },
+      { href: "/education", label: "Classroom" },
       { href: "/stations", label: "Stations" },
+      { href: "/weather", label: "Live Weather" },
+    ],
+  },
+  STUDENT: {
+    route: "/student",
+    title: "Student Polar Explorer",
+    subtitle: "Interactive Lessons, Badges, Quizzes & Climate Telemetry",
+    badgeColor: "bg-sky-50 text-sky-900 border-sky-200",
+    allowedRoutes: ["/", "/student", "/education", "/weather", "/stations", "/research", "/media", "/explore", "/expeditions"],
+    navLinks: [
+      { href: "/student", label: "Student Hub" },
+      { href: "/education", label: "Lessons & Quizzes" },
+      { href: "/stations", label: "Stations" },
+      { href: "/weather", label: "Weather" },
+    ],
+  },
+  PUBLIC_USER: {
+    route: "/student",
+    title: "Citizen Polar Explorer",
+    subtitle: "Live Polar Weather, Observatories & Published Research",
+    badgeColor: "bg-sky-50 text-sky-900 border-sky-200",
+    allowedRoutes: ["/", "/student", "/education", "/weather", "/stations", "/research", "/media", "/explore", "/expeditions"],
+    navLinks: [
+      { href: "/", label: "Overview" },
+      { href: "/student", label: "Student Hub" },
+      { href: "/stations", label: "Stations" },
+      { href: "/weather", label: "Weather" },
     ],
   },
   ADMIN: {
@@ -55,112 +131,41 @@ export const ROLE_PORTAL_MAP: Record<string, RolePortalSpec> = {
     title: "Admin Governance Portal",
     subtitle: "Role Verification Queue, Datasets & Security Audit",
     badgeColor: "bg-red-50 text-red-800 border-red-200",
-    allowedRoutes: ["/", "/admin", "/workspace", "/documents", "/datasets", "/research", "/weather", "/stations", "/education", "/media", "/explore", "/expeditions"],
+    allowedRoutes: ["/", "/admin", "/scientist", "/researcher", "/teacher", "/student", "/workspace", "/documents", "/datasets", "/research", "/weather", "/stations", "/education", "/media", "/explore", "/expeditions"],
     navLinks: [
       { href: "/admin", label: "Admin Governance" },
-      { href: "/workspace", label: "Review Studio" },
+      { href: "/scientist", label: "Scientist Portal" },
+      { href: "/researcher", label: "Researcher Portal" },
+      { href: "/teacher", label: "Teacher Studio" },
+      { href: "/datasets", label: "NPDC Datasets" },
+      { href: "/weather", label: "Weather" },
+    ],
+  },
+  SUPER_ADMIN: {
+    route: "/admin",
+    title: "Super Admin Governance & Security Portal",
+    subtitle: "Full RBAC Governance, Role Verification Queue & Immutable Audit Logs",
+    badgeColor: "bg-red-50 text-red-800 border-red-200",
+    allowedRoutes: ["/", "/admin", "/scientist", "/researcher", "/teacher", "/student", "/workspace", "/documents", "/datasets", "/research", "/weather", "/stations", "/education", "/media", "/explore", "/expeditions"],
+    navLinks: [
+      { href: "/admin", label: "Admin Governance" },
+      { href: "/scientist", label: "Scientist Portal" },
+      { href: "/researcher", label: "Researcher Portal" },
+      { href: "/teacher", label: "Teacher Studio" },
       { href: "/datasets", label: "NPDC Datasets" },
       { href: "/weather", label: "Weather" },
     ],
   },
   OUTREACH_EDITOR: {
-    route: "/workspace",
-    title: "Outreach Editor Studio",
-    subtitle: "AI Outreach Generation, Fact Verification & PIB Dissemination",
+    route: "/admin",
+    title: "Admin Governance",
+    subtitle: "Governance and Editorial Oversight",
     badgeColor: "bg-blue-50 text-blue-800 border-blue-200",
-    allowedRoutes: ["/", "/workspace", "/documents", "/research", "/media", "/explore", "/stations", "/weather", "/expeditions", "/education"],
+    allowedRoutes: ["/", "/admin", "/scientist", "/researcher", "/teacher", "/student", "/workspace", "/documents", "/research", "/media", "/explore", "/stations", "/weather", "/expeditions", "/education"],
     navLinks: [
-      { href: "/workspace", label: "Editorial Studio" },
+      { href: "/admin", label: "Governance" },
       { href: "/documents", label: "Evidence Docs" },
       { href: "/research", label: "Publications" },
-      { href: "/media", label: "Media Assets" },
-    ],
-  },
-  FIELD_SCIENTIST: {
-    route: "/documents",
-    title: "Field Scientist Workspace",
-    subtitle: "Document AI Parsing, Field Submissions & NPDC Ingestion",
-    badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
-    allowedRoutes: ["/", "/documents", "/datasets", "/weather", "/stations", "/explore", "/expeditions", "/research", "/education", "/media"],
-    navLinks: [
-      { href: "/documents", label: "Document AI" },
-      { href: "/datasets", label: "Datasets" },
-      { href: "/weather", label: "Telemetry" },
-      { href: "/stations", label: "Observatories" },
-    ],
-  },
-  SCIENTIST: {
-    route: "/documents",
-    title: "Polar Scientist Workspace",
-    subtitle: "Field Research, Datasets & Telemetry",
-    badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
-    allowedRoutes: ["/", "/documents", "/datasets", "/weather", "/stations", "/explore", "/expeditions", "/media", "/research", "/education"],
-    navLinks: [
-      { href: "/documents", label: "Research Uploads" },
-      { href: "/datasets", label: "NPDC Datasets" },
-      { href: "/weather", label: "Weather" },
-      { href: "/expeditions", label: "Expeditions" },
-    ],
-  },
-  RESEARCHER: {
-    route: "/explore",
-    title: "Polar Researcher Knowledge Portal",
-    subtitle: "Semantic RAG, NPDC Datasets & Scientific Reports",
-    badgeColor: "bg-indigo-50 text-indigo-800 border-indigo-200",
-    allowedRoutes: ["/", "/explore", "/datasets", "/documents", "/research", "/weather", "/stations", "/expeditions", "/education", "/media"],
-    navLinks: [
-      { href: "/explore", label: "Knowledge Search" },
-      { href: "/datasets", label: "NPDC Datasets" },
-      { href: "/weather", label: "Station Data" },
-    ],
-  },
-  JOURNALIST: {
-    route: "/media",
-    title: "Journalist Press Portal",
-    subtitle: "Verified PIB Bulletins, Media Kits & Station Facts",
-    badgeColor: "bg-purple-50 text-purple-800 border-purple-200",
-    allowedRoutes: ["/", "/media", "/research", "/stations", "/expeditions", "/weather", "/explore", "/education"],
-    navLinks: [
-      { href: "/media", label: "Media Assets" },
-      { href: "/research", label: "Verified Stories" },
-      { href: "/stations", label: "Stations" },
-    ],
-  },
-  TEACHER: {
-    route: "/education",
-    title: "Educator Classroom Portal",
-    subtitle: "NCERT Polar Curriculum, Lesson Planning & Quizzes",
-    badgeColor: "bg-amber-50 text-amber-900 border-amber-200",
-    allowedRoutes: ["/", "/education", "/weather", "/stations", "/research", "/media", "/explore", "/expeditions"],
-    navLinks: [
-      { href: "/education", label: "Teacher Classroom" },
-      { href: "/stations", label: "Stations" },
-      { href: "/weather", label: "Live Weather" },
-    ],
-  },
-  STUDENT: {
-    route: "/education",
-    title: "Student Polar Explorer",
-    subtitle: "Interactive Lessons, Badges, Quizzes & Polar Weather",
-    badgeColor: "bg-sky-50 text-sky-900 border-sky-200",
-    allowedRoutes: ["/", "/education", "/weather", "/stations", "/research", "/media", "/explore", "/expeditions"],
-    navLinks: [
-      { href: "/education", label: "Classroom" },
-      { href: "/stations", label: "Stations" },
-      { href: "/weather", label: "Weather" },
-    ],
-  },
-  PUBLIC_USER: {
-    route: "/education",
-    title: "Citizen Polar Science Portal",
-    subtitle: "Live Polar Weather, Observatories & Published Research",
-    badgeColor: "bg-sky-50 text-sky-900 border-sky-200",
-    allowedRoutes: ["/", "/education", "/weather", "/stations", "/research", "/media", "/explore", "/expeditions"],
-    navLinks: [
-      { href: "/", label: "Overview" },
-      { href: "/stations", label: "Stations" },
-      { href: "/weather", label: "Weather" },
-      { href: "/education", label: "Classroom" },
     ],
   },
 };
@@ -535,36 +540,43 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
                 <div className="pt-3 border-t border-sky-200/80 space-y-2">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    Or Instant 1-Click Role Login:
+                    Instant 1-Click Role Access (5 Roles):
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                     <button
                       type="button"
                       onClick={() => handleLogin("scientist@vistaar.ncpor.res.in", "Scientist@Vistaar2026!")}
-                      className="p-2.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 text-left font-bold text-slate-800 hover:text-emerald-700 transition-all shadow-2xs"
+                      className="p-2.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 text-left font-bold text-slate-800 hover:text-emerald-700 transition-all shadow-2xs cursor-pointer"
                     >
-                      🔬 Field Scientist
+                      🔬 Scientist
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleLogin("editor@vistaar.ncpor.res.in", "Editor@Vistaar2026!")}
-                      className="p-2.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 text-left font-bold text-slate-800 hover:text-blue-700 transition-all shadow-2xs"
+                      onClick={() => handleLogin("researcher@vistaar.ncpor.res.in", "Researcher@Vistaar2026!")}
+                      className="p-2.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 text-left font-bold text-slate-800 hover:text-indigo-700 transition-all shadow-2xs cursor-pointer"
                     >
-                      ✍️ Outreach Editor
+                      🧭 Researcher
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLogin("teacher@vistaar.ncpor.res.in", "Teacher@Vistaar2026!")}
+                      className="p-2.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 text-left font-bold text-slate-800 hover:text-amber-700 transition-all shadow-2xs cursor-pointer"
+                    >
+                      📚 Teacher
                     </button>
                     <button
                       type="button"
                       onClick={() => handleLogin("student@vistaar.ncpor.res.in", "Student@Vistaar2026!")}
-                      className="p-2.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 text-left font-bold text-slate-800 hover:text-amber-700 transition-all shadow-2xs"
+                      className="p-2.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 text-left font-bold text-slate-800 hover:text-sky-700 transition-all shadow-2xs cursor-pointer"
                     >
-                      🎓 Student / Teacher
+                      🐧 Student
                     </button>
                     <button
                       type="button"
                       onClick={() => handleLogin("admin@vistaar.ncpor.res.in", "VistaarAdmin@2026!")}
-                      className="p-2.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 text-left font-bold text-slate-800 hover:text-red-700 transition-all shadow-2xs"
+                      className="p-2.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 text-left font-bold text-slate-800 hover:text-red-700 transition-all shadow-2xs cursor-pointer col-span-2 sm:col-span-1"
                     >
-                      🛡️ Super Admin
+                      🛡️ Admin
                     </button>
                   </div>
                 </div>
@@ -606,14 +618,16 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-800 block mb-1">Account Role</label>
+                  <label className="font-bold text-slate-800 block mb-1">Account Role (5 Primary Roles)</label>
                   <select
                     value={signupRole}
                     onChange={(e) => setSignupRole(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-sky-200 bg-white/90 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-sky-200 bg-white/90 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
                   >
-                    <option value="PUBLIC_USER">Citizen / Student Explorer</option>
-                    <option value="FIELD_SCIENTIST">Field Scientist (Uploads)</option>
+                    <option value="STUDENT">Student / Citizen Learner</option>
+                    <option value="TEACHER">School / University Educator</option>
+                    <option value="RESEARCHER">Scientific Researcher (Analysis & Findings)</option>
+                    <option value="SCIENTIST">Polar Scientist (Data Ingestion & Field Uploads)</option>
                   </select>
                 </div>
                 <button
