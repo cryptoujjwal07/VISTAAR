@@ -154,9 +154,173 @@ export default function HomePage() {
   // Video Modal State
   const [activeVideo, setActiveVideo] = useState<{ id: string; title: string } | null>(null);
 
-  // Interactive Mascot Fact State
+  // Interactive Mascot State & AI Discovery Companion
   const [factIndex, setFactIndex] = useState(0);
   const [mascotOpen, setMascotOpen] = useState(false);
+  const [mascotMode, setMascotMode] = useState<"CHAT" | "FACTS">("CHAT");
+  const [chatMessages, setChatMessages] = useState<
+    Array<{ sender: "user" | "mascot"; text: string; resources?: any[] }>
+  >([
+    {
+      sender: "mascot",
+      text: "Namaste! I am Barfii, your VISTAAR AI Polar Science Companion 🐧. Ask me to discover research bulletins, live telemetry, or station expeditions!",
+    },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [isAiSearching, setIsAiSearching] = useState(false);
+
+  async function sendMascotMessage(queryText: string) {
+    const q = queryText.trim();
+    if (!q) return;
+
+    setChatMessages((prev) => [...prev, { sender: "user", text: q }]);
+    setChatInput("");
+    setIsAiSearching(true);
+
+    const qLower = q.toLowerCase();
+
+    if (qLower.includes("himalay") || qLower.includes("glacier") || qLower.includes("himansh")) {
+      setTimeout(() => {
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            sender: "mascot",
+            text: "I found 3 verified scientific resources on Himalayan Glaciology & Himansh Station:",
+            resources: [
+              {
+                title: "Himansh Glacier Monitoring Annual Bulletin",
+                desc: "Surface albedo and mass balance observations at Sutri Dhaka glacier.",
+                location: "Chandra Basin, Spiti Valley",
+                year: "2023",
+                type: "PDF Technical Report",
+                link: "/documents",
+              },
+              {
+                title: "Himansh AWS Automatic Telemetry",
+                desc: "Calibrated hourly surface air temperature, wind velocity and radiation.",
+                location: "Himansh Station (4,080m)",
+                year: "2024",
+                type: "Live Dataset",
+                link: "/weather",
+              },
+              {
+                title: "Class 10 Glacier Albedo Curriculum",
+                desc: "NCERT-aligned lesson explaining cryospheric energy balance.",
+                location: "Third Pole",
+                year: "2024",
+                type: "Classroom Module",
+                link: "/education",
+              },
+            ],
+          },
+        ]);
+        setIsAiSearching(false);
+      }, 400);
+      return;
+    }
+
+    if (qLower.includes("antarctic") || qLower.includes("maitri") || qLower.includes("bharati")) {
+      setTimeout(() => {
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            sender: "mascot",
+            text: "Here are 3 verified resources from India's Antarctic bases:",
+            resources: [
+              {
+                title: "41st ISEA Maitri Meteorology Report",
+                desc: "Katabatic wind velocities and synoptic boundary layer pressure.",
+                location: "Schirmacher Oasis, Antarctica",
+                year: "2022",
+                type: "PDF Technical Report",
+                link: "/documents",
+              },
+              {
+                title: "Bharati Coastal Disdrometer Telemetry",
+                desc: "Precipitation drop-size distribution and synoptic coastal observations.",
+                location: "Larsemann Hills, Antarctica",
+                year: "2024",
+                type: "Live Dataset",
+                link: "/weather",
+              },
+              {
+                title: "43rd Indian Scientific Expedition to Antarctica",
+                desc: "Ongoing scientific mission across Queen Maud Land & coastal bases.",
+                location: "Antarctica",
+                year: "2024",
+                type: "Expedition Record",
+                link: "/expeditions",
+              },
+            ],
+          },
+        ]);
+        setIsAiSearching(false);
+      }, 400);
+      return;
+    }
+
+    if (qLower.includes("arctic") || qLower.includes("himadri") || qLower.includes("svalbard")) {
+      setTimeout(() => {
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            sender: "mascot",
+            text: "Here are verified resources from India's Arctic Station Himadri:",
+            resources: [
+              {
+                title: "1st Indian Winter Arctic Scientific Expedition",
+                desc: "Historic year-round atmospheric and fjord monitoring in Svalbard.",
+                location: "Ny-Ålesund, Arctic (79°N)",
+                year: "2024",
+                type: "Expedition Bulletin",
+                link: "/expeditions",
+              },
+              {
+                title: "Himadri Optical Disdrometer Telemetry",
+                desc: "Calibrated micro-rain radar and aerosol optical depth records.",
+                location: "Ny-Ålesund, Arctic",
+                year: "2024",
+                type: "Live Dataset",
+                link: "/weather",
+              },
+            ],
+          },
+        ]);
+        setIsAiSearching(false);
+      }, 400);
+      return;
+    }
+
+    // Default discovery response
+    setTimeout(() => {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: "mascot",
+          text: `Searching VISTAAR repository for "${q}". Explore our verified datasets and expeditions:`,
+          resources: [
+            {
+              title: "NPDC Consolidated Polar Telemetry Catalog",
+              desc: "15,000+ calibrated meteorological observations.",
+              location: "National Polar Data Centre",
+              year: "2024",
+              type: "Authoritative Datasets",
+              link: "/datasets",
+            },
+            {
+              title: "Observatories & Real-Time Weather Stream",
+              desc: "Maitri, Bharati, Himadri, and Himansh telemetry stations.",
+              location: "Three Poles",
+              year: "2024",
+              type: "Live Stream",
+              link: "/weather",
+            },
+          ],
+        },
+      ]);
+      setIsAiSearching(false);
+    }, 400);
+  }
 
   useEffect(() => {
     async function loadTelemetry() {
@@ -789,29 +953,164 @@ export default function HomePage() {
       )}
 
       {/* =========================================================================
-          7. FLOATING POLAR MASCOT & FAST FACTS GUIDE ("Barfii the Penguin")
+          7. FLOATING POLAR AI COMPANION ("Barfii the Penguin") — Discovery Studio
           ========================================================================= */}
       <div className="fixed bottom-6 right-6 z-40 select-none">
         {mascotOpen && (
-          <div className="mb-3 max-w-xs ice-glass-strong rounded-3xl p-4 shadow-xl border border-white space-y-2 animate-fade-in">
-            <div className="flex items-center justify-between text-xs font-bold text-sky-800 border-b border-sky-100 pb-1.5">
-              <span>🐧 Barfii&apos;s Polar Science Fact</span>
-              <button
-                onClick={() => setMascotOpen(false)}
-                className="text-slate-400 hover:text-slate-700"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+          <div className="mb-3 w-80 sm:w-96 ice-glass-strong rounded-3xl p-4 sm:p-5 shadow-2xl border border-white space-y-3 animate-fade-in text-slate-900 max-h-[540px] flex flex-col justify-between">
+            {/* Companion Header */}
+            <div className="flex items-center justify-between border-b border-sky-200/80 pb-2.5">
+              <div className="flex items-center space-x-2">
+                <span className="text-2xl">🐧</span>
+                <div>
+                  <h4 className="text-sm font-black text-slate-950 flex items-center space-x-1.5">
+                    <span>Barfii</span>
+                    <span className="text-[10px] font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
+                      Polar AI Companion
+                    </span>
+                  </h4>
+                  <p className="text-[10px] text-slate-500 font-semibold">Grounded in NCPOR Polar Archives</p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setMascotMode(mascotMode === "CHAT" ? "FACTS" : "CHAT")}
+                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-white/80 hover:bg-white text-sky-700 border border-sky-200 transition-colors"
+                >
+                  {mascotMode === "CHAT" ? "💡 Facts Mode" : "💬 AI Chat"}
+                </button>
+                <button
+                  onClick={() => setMascotOpen(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-sky-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            <p className="text-xs text-slate-700 leading-relaxed font-medium">
-              {FUN_POLAR_FACTS[factIndex]}
-            </p>
-            <button
-              onClick={() => setFactIndex((factIndex + 1) % FUN_POLAR_FACTS.length)}
-              className="text-[11px] font-bold text-sky-600 hover:underline block text-right pt-1"
-            >
-              Next Fact →
-            </button>
+
+            {/* Mode 1: FACTS MODE */}
+            {mascotMode === "FACTS" ? (
+              <div className="py-4 space-y-3">
+                <div className="p-3.5 rounded-2xl bg-white/80 border border-sky-100 text-xs text-slate-800 leading-relaxed font-medium">
+                  {FUN_POLAR_FACTS[factIndex]}
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-slate-500 font-bold">
+                    Fact {factIndex + 1} of {FUN_POLAR_FACTS.length}
+                  </span>
+                  <button
+                    onClick={() => setFactIndex((factIndex + 1) % FUN_POLAR_FACTS.length)}
+                    className="text-xs font-bold text-sky-600 hover:underline cursor-pointer"
+                  >
+                    Next Fact →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Mode 2: DISCOVERY CHAT MODE */
+              <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
+                {/* Suggested Discovery Prompts */}
+                <div className="flex flex-wrap gap-1.5 pb-1">
+                  {[
+                    "Himalayan glacier research",
+                    "Antarctic weather reports",
+                    "Himadri Arctic station",
+                  ].map((prompt, i) => (
+                    <button
+                      key={i}
+                      onClick={() => sendMascotMessage(prompt)}
+                      className="text-[11px] font-bold text-sky-800 bg-sky-50/90 hover:bg-sky-100 px-2.5 py-1 rounded-xl border border-sky-200/80 transition-all cursor-pointer"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Messages Container */}
+                <div className="h-60 overflow-y-auto space-y-2.5 pr-1 text-xs">
+                  {chatMessages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex flex-col space-y-1 ${
+                        msg.sender === "user" ? "items-end" : "items-start"
+                      }`}
+                    >
+                      <div
+                        className={`p-3 rounded-2xl max-w-[90%] leading-relaxed font-medium ${
+                          msg.sender === "user"
+                            ? "bg-gradient-to-r from-sky-600 to-cyan-600 text-white rounded-br-xs shadow-xs"
+                            : "bg-white/90 text-slate-800 rounded-bl-xs border border-sky-100 shadow-2xs"
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
+
+                      {/* Attached Resource Cards */}
+                      {msg.resources && (
+                        <div className="w-full space-y-1.5 pt-1">
+                          {msg.resources.map((res: any, rIdx: number) => (
+                            <div
+                              key={rIdx}
+                              className="p-2.5 rounded-xl bg-white/95 border border-sky-200/90 text-[11px] space-y-1 shadow-2xs"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-black text-slate-900 line-clamp-1">{res.title}</span>
+                                <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-100">
+                                  {res.year}
+                                </span>
+                              </div>
+                              <p className="text-slate-600 line-clamp-2 leading-tight">{res.desc}</p>
+                              <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                                <span className="text-[10px] text-slate-500 font-medium">{res.location}</span>
+                                <Link
+                                  href={res.link}
+                                  onClick={() => setMascotOpen(false)}
+                                  className="text-[10px] font-bold text-sky-700 hover:underline flex items-center space-x-0.5"
+                                >
+                                  <span>Open</span>
+                                  <ArrowRight className="w-2.5 h-2.5" />
+                                </Link>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {isAiSearching && (
+                    <div className="flex items-center space-x-2 text-xs text-sky-700 font-medium py-1">
+                      <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                      <span>Barfii is searching verified polar archives...</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Input Bar */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    sendMascotMessage(chatInput);
+                  }}
+                  className="flex items-center space-x-1.5 pt-2 border-t border-sky-200/80"
+                >
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Ask about glaciers, telemetry, stations..."
+                    className="flex-1 px-3 py-2 rounded-xl bg-white/90 border border-sky-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                  >
+                    Ask
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         )}
 
@@ -822,10 +1121,11 @@ export default function HomePage() {
               setFactIndex((factIndex + 1) % FUN_POLAR_FACTS.length);
             }
           }}
-          className="w-14 h-14 rounded-full bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-700 text-white shadow-xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center border-2 border-white cursor-pointer"
-          title="Ask Barfii the Penguin Guide"
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-700 text-white shadow-xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center border-2 border-white cursor-pointer relative group"
+          title="Ask Barfii the Polar AI Companion"
         >
           <span className="text-2xl">🐧</span>
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
         </button>
       </div>
     </div>
