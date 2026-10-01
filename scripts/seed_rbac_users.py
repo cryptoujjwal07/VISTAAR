@@ -16,56 +16,111 @@ def seed_users():
     client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=15000)
     db = client[DB_NAME]
     db.command("ping")
-    print("Connected.")
+    print("Connected successfully.")
 
+    # 1. Clean up automated test accounts (e.g. scientist_a_*, scientist_b_*, student_*@school.edu)
+    delete_result = db.users.delete_many({
+        "$or": [
+            {"email": {"$regex": r"^scientist_[ab]_"}},
+            {"email": {"$regex": r"^student_[a-f0-9]{6}@school\.edu$"}},
+            {"email": "intruder@domain.com"}
+        ]
+    })
+    print(f"Cleaned up {delete_result.deleted_count} ephemeral test accounts.")
+
+    # 2. Canonical 5 Core Authenticated Roles + Platform Administrators
+    now = datetime.now(timezone.utc).isoformat()
     canonical_users = [
         {
-            "id": "usr_superadmin01",
+            "id": "usr_admin001",
             "email": "admin@vistaar.ncpor.res.in",
             "password_hash": hash_pw("VistaarAdmin@2026!"),
-            "name": "Dr. Thamban Meloth (Director / Super Admin)",
-            "role": "SUPER_ADMIN",
-            "persona": None,
-            "organization": "National Centre for Polar and Ocean Research (NCPOR)",
+            "name": "Dr. Thamban Meloth",
+            "designation": "Director, NCPOR / Super Administrator",
+            "role": "ADMIN",
+            "persona": "ADMIN",
+            "organization": "National Centre for Polar and Ocean Research (NCPOR), Ministry of Earth Sciences",
             "is_active": True,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now,
+            "updated_at": now
+        },
+        {
+            "id": "usr_scientist001",
+            "email": "scientist@vistaar.ncpor.res.in",
+            "password_hash": hash_pw("Scientist@Vistaar2026!"),
+            "name": "Dr. Ayushman Gupta",
+            "designation": "Lead Cryosphere Scientist & Expedition Deputy",
+            "role": "SCIENTIST",
+            "persona": "SCIENTIST",
+            "organization": "NCPOR Cryosphere Science & Glaciology Wing",
+            "is_active": True,
+            "created_at": now,
+            "updated_at": now
+        },
+        {
+            "id": "usr_researcher001",
+            "email": "researcher@vistaar.ncpor.res.in",
+            "password_hash": hash_pw("Researcher@Vistaar2026!"),
+            "name": "Dr. Priya Sen",
+            "designation": "Senior Polar Researcher & Climate Analyst",
+            "role": "RESEARCHER",
+            "persona": "RESEARCHER",
+            "organization": "MoES Polar Climate Research Division",
+            "is_active": True,
+            "created_at": now,
+            "updated_at": now
+        },
+        {
+            "id": "usr_teacher001",
+            "email": "teacher@vistaar.ncpor.res.in",
+            "password_hash": hash_pw("Teacher@Vistaar2026!"),
+            "name": "Sunita Sharma",
+            "designation": "Senior Science Educator & Polar Curriculum Specialist",
+            "role": "TEACHER",
+            "persona": "TEACHER",
+            "organization": "Kendriya Vidyalaya Sangathan / NCERT Polar Outreach",
+            "is_active": True,
+            "created_at": now,
+            "updated_at": now
+        },
+        {
+            "id": "usr_student001",
+            "email": "student@vistaar.ncpor.res.in",
+            "password_hash": hash_pw("Student@Vistaar2026!"),
+            "name": "Aarav Sharma",
+            "designation": "High School Science Student (Grade 11)",
+            "role": "STUDENT",
+            "persona": "STUDENT",
+            "organization": "Kendriya Vidyalaya Vasco, Goa",
+            "is_active": True,
+            "created_at": now,
+            "updated_at": now
         },
         {
             "id": "usr_editor001",
             "email": "editor@vistaar.ncpor.res.in",
             "password_hash": hash_pw("Editor@Vistaar2026!"),
-            "name": "Payal Agrawal (Lead Outreach Editor)",
-            "role": "OUTREACH_EDITOR",
-            "persona": None,
-            "organization": "MoES Outreach & Science Communication Division",
+            "name": "Payal Agrawal",
+            "designation": "Lead Outreach & Media Communications Editor",
+            "role": "ADMIN",
+            "persona": "ADMIN",
+            "organization": "MoES Science Dissemination & Press Information Bureau",
             "is_active": True,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now,
+            "updated_at": now
         },
         {
-            "id": "usr_scientist01",
-            "email": "scientist@vistaar.ncpor.res.in",
-            "password_hash": hash_pw("Scientist@Vistaar2026!"),
-            "name": "Dr. Ayushman Gupta (Field Scientist - Himansh & Maitri)",
-            "role": "FIELD_SCIENTIST",
-            "persona": None,
-            "organization": "NCPOR Cryosphere Science Wing",
+            "id": "usr_root001",
+            "email": "ayushmang06@gmail.com",
+            "password_hash": hash_pw("VistaarAdmin@2026!"),
+            "name": "Ayushman Gupta",
+            "designation": "System Administrator",
+            "role": "ADMIN",
+            "persona": "ADMIN",
+            "organization": "National Centre for Polar and Ocean Research (NCPOR)",
             "is_active": True,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        },
-        {
-            "id": "usr_public001",
-            "email": "student@vistaar.ncpor.res.in",
-            "password_hash": hash_pw("Student@Vistaar2026!"),
-            "name": "Aarav Sharma (High School Student)",
-            "role": "PUBLIC_USER",
-            "persona": "STUDENT",
-            "organization": "Kendriya Vidyalaya Vasco, Goa",
-            "is_active": True,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now,
+            "updated_at": now
         }
     ]
 
@@ -75,9 +130,10 @@ def seed_users():
             {"$set": u},
             upsert=True
         )
-        print(f"Seeded user: {u['email']} [{u['role']}]")
+        print(f"[OK] Seeded user: {u['email']} [{u['role']}] - {u['name']}")
 
-    print("\nCanonical RBAC users seeded successfully into MongoDB Atlas!")
+    total_users = db.users.count_documents({})
+    print(f"\nAll 5 core authenticated roles seeded! Total users in database: {total_users}")
 
 if __name__ == "__main__":
     seed_users()

@@ -341,21 +341,21 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   // If visiting a strictly protected workspace and unauthenticated:
   if (!publicRoute && !user && !checking) {
     return (
-      <div className="min-h-[85vh] w-full flex items-center justify-center px-4 sm:px-6 py-16">
-        <div className="max-w-lg w-full ice-glass-strong rounded-3xl p-8 sm:p-10 text-center space-y-6 shadow-2xl border border-white/90">
-          <div className="w-16 h-16 rounded-2xl bg-sky-100/80 border border-sky-300 text-sky-800 mx-auto flex items-center justify-center">
-            <Lock className="w-8 h-8 text-sky-700" />
+      <div className="min-h-[calc(100dvh-5rem)] w-full flex items-center justify-center px-3 sm:px-6 py-4">
+        <div className="max-w-lg w-full ice-glass-strong rounded-3xl p-6 sm:p-7 text-center space-y-4 shadow-2xl border border-white/90">
+          <div className="w-12 h-12 rounded-2xl bg-sky-100/80 border border-sky-300 text-sky-800 mx-auto flex items-center justify-center">
+            <Lock className="w-6 h-6 text-sky-700" />
           </div>
 
-          <div className="space-y-2">
-            <Badge variant="scientific" className="text-xs px-3 py-1">
+          <div className="space-y-1.5">
+            <Badge variant="scientific" className="text-xs px-2.5 py-0.5">
               Role-Protected Workspace
             </Badge>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Sign In to Enter Workspace
             </h1>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              Route <code className="font-mono bg-sky-100/60 px-2 py-0.5 rounded text-sky-900">{pathname}</code> requires an authenticated institutional role. Choose a 1-click role below or sign in.
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Route <code className="font-mono bg-sky-100/60 px-1.5 py-0.5 rounded text-sky-900">{pathname}</code> requires an authenticated role. Choose a 1-click role below or sign in.
             </p>
           </div>
 
