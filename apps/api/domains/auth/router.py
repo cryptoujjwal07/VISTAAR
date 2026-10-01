@@ -35,8 +35,8 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     name: str = Field(..., min_length=2)
-    role: Optional[Literal['SCIENTIST', 'RESEARCHER', 'TEACHER', 'STUDENT', 'PUBLIC_USER', 'FIELD_SCIENTIST']] = 'STUDENT'
-    persona: Optional[Literal['STUDENT', 'TEACHER', 'RESEARCHER', 'SCIENTIST', 'JOURNALIST']] = 'STUDENT'
+    role: Optional[str] = 'STUDENT'
+    persona: Optional[str] = 'STUDENT'
     organization: Optional[str] = None
     country: Optional[str] = "India"
     state: Optional[str] = None
@@ -245,7 +245,7 @@ async def register(req: RegisterRequest):
     Registers a new public user or field scientist.
     Guarantees vertical privilege escalation prevention: non-admins cannot register as SUPER_ADMIN or OUTREACH_EDITOR.
     """
-    if req.role in ['SUPER_ADMIN', 'OUTREACH_EDITOR']:
+    if req.role in ['ADMIN', 'SUPER_ADMIN', 'OUTREACH_EDITOR']:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Privilege Escalation Protection: Direct registration for administrative roles is prohibited."

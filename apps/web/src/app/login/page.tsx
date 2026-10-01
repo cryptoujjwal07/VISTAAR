@@ -10,6 +10,7 @@ import {
   LogIn,
   ArrowRight,
   Sparkles,
+  Compass,
   Edit3,
   FlaskConical,
   GraduationCap,
@@ -41,13 +42,13 @@ function LoginSignupContent() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Sign-Up State (Strictly Non-Admin: PUBLIC_USER or FIELD_SCIENTIST)
+  // Sign-Up State (Strictly Non-Admin: STUDENT, TEACHER, RESEARCHER, SCIENTIST)
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupOrg, setSignupOrg] = useState("");
-  const [signupRole, setSignupRole] = useState<"PUBLIC_USER" | "FIELD_SCIENTIST">("PUBLIC_USER");
-  const [signupPersona, setSignupPersona] = useState<"STUDENT" | "TEACHER" | "JOURNALIST" | "SCIENTIST">("STUDENT");
+  const [signupRole, setSignupRole] = useState<"STUDENT" | "TEACHER" | "RESEARCHER" | "SCIENTIST">("STUDENT");
+  const [signupPersona, setSignupPersona] = useState<"STUDENT" | "TEACHER" | "RESEARCHER" | "SCIENTIST">("STUDENT");
 
   useEffect(() => {
     const m = searchParams.get("mode");
@@ -163,25 +164,29 @@ function LoginSignupContent() {
             </h2>
 
             <p className="text-xs sm:text-sm text-sky-100/95 leading-relaxed">
-              Sign in with your institutional credentials or register a new **User Account** (Student, Educator, Journalist, or Field Scientist). Immediately upon authentication, your designated Role Portal opens directly.
+              Sign in with your verified institutional credentials or register your account (Student, Teacher, Researcher, or Scientist). Upon authentication, your designated Role Portal opens directly.
             </p>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 text-xs">
               <div className="p-2.5 rounded-xl bg-white/15 backdrop-blur-md border border-white/25">
-                <span className="font-mono text-[10px] text-sky-200 block">SUPER_ADMIN</span>
-                <span className="font-bold text-white block truncate">Opens /admin</span>
+                <span className="font-mono text-[10px] text-emerald-300 block font-bold">SCIENTIST</span>
+                <span className="font-bold text-white block truncate">/scientist</span>
               </div>
               <div className="p-2.5 rounded-xl bg-white/15 backdrop-blur-md border border-white/25">
-                <span className="font-mono text-[10px] text-sky-200 block">OUTREACH_EDITOR</span>
-                <span className="font-bold text-white block truncate">Opens /workspace</span>
+                <span className="font-mono text-[10px] text-indigo-300 block font-bold">RESEARCHER</span>
+                <span className="font-bold text-white block truncate">/researcher</span>
               </div>
               <div className="p-2.5 rounded-xl bg-white/15 backdrop-blur-md border border-white/25">
-                <span className="font-mono text-[10px] text-sky-200 block">FIELD_SCIENTIST</span>
-                <span className="font-bold text-white block truncate">Opens /documents</span>
+                <span className="font-mono text-[10px] text-amber-300 block font-bold">TEACHER</span>
+                <span className="font-bold text-white block truncate">/teacher</span>
               </div>
               <div className="p-2.5 rounded-xl bg-white/15 backdrop-blur-md border border-white/25">
-                <span className="font-mono text-[10px] text-sky-200 block">PUBLIC_USER</span>
-                <span className="font-bold text-white block truncate">Opens /education</span>
+                <span className="font-mono text-[10px] text-sky-300 block font-bold">STUDENT</span>
+                <span className="font-bold text-white block truncate">/student</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 col-span-2 sm:col-span-1">
+                <span className="font-mono text-[10px] text-red-300 block font-bold">ADMIN</span>
+                <span className="font-bold text-white block truncate">/admin</span>
               </div>
             </div>
           </div>
@@ -308,57 +313,71 @@ function LoginSignupContent() {
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <button
                       type="button"
-                      onClick={() => handleLogin("student@vistaar.ncpor.res.in", "Student@Vistaar2026!")}
-                      className="p-2.5 rounded-xl border border-sky-200 bg-white/85 hover:bg-white text-left transition-all cursor-pointer"
-                    >
-                      <span className="font-bold text-vistaar-text flex items-center gap-1.5">
-                        <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Student User</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-vistaar-muted block mt-0.5">
-                        Opens /education
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
                       onClick={() => handleLogin("scientist@vistaar.ncpor.res.in", "Scientist@Vistaar2026!")}
                       className="p-2.5 rounded-xl border border-sky-200 bg-white/85 hover:bg-white text-left transition-all cursor-pointer"
                     >
-                      <span className="font-bold text-vistaar-text flex items-center gap-1.5">
+                      <span className="font-bold text-slate-900 flex items-center gap-1.5">
                         <FlaskConical className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Field Scientist</span>
+                        <span>Scientist</span>
                       </span>
-                      <span className="text-[10px] font-mono text-vistaar-muted block mt-0.5">
-                        Opens /documents
+                      <span className="text-[10px] font-mono text-slate-500 block mt-0.5">
+                        Opens /scientist
                       </span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => handleLogin("editor@vistaar.ncpor.res.in", "Editor@Vistaar2026!")}
+                      onClick={() => handleLogin("researcher@vistaar.ncpor.res.in", "Researcher@Vistaar2026!")}
                       className="p-2.5 rounded-xl border border-sky-200 bg-white/85 hover:bg-white text-left transition-all cursor-pointer"
                     >
-                      <span className="font-bold text-vistaar-text flex items-center gap-1.5">
-                        <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Outreach Editor</span>
+                      <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <Compass className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Researcher</span>
                       </span>
-                      <span className="text-[10px] font-mono text-vistaar-muted block mt-0.5">
-                        Opens /workspace
+                      <span className="text-[10px] font-mono text-slate-500 block mt-0.5">
+                        Opens /researcher
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleLogin("teacher@vistaar.ncpor.res.in", "Teacher@Vistaar2026!")}
+                      className="p-2.5 rounded-xl border border-sky-200 bg-white/85 hover:bg-white text-left transition-all cursor-pointer"
+                    >
+                      <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Teacher</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-500 block mt-0.5">
+                        Opens /teacher
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleLogin("student@vistaar.ncpor.res.in", "Student@Vistaar2026!")}
+                      className="p-2.5 rounded-xl border border-sky-200 bg-white/85 hover:bg-white text-left transition-all cursor-pointer"
+                    >
+                      <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+                        <span>Student</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-500 block mt-0.5">
+                        Opens /student
                       </span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleLogin("admin@vistaar.ncpor.res.in", "VistaarAdmin@2026!")}
-                      className="p-2.5 rounded-xl border border-sky-200 bg-white/85 hover:bg-white text-left transition-all cursor-pointer"
+                      className="p-2.5 rounded-xl border border-sky-200 bg-white/85 hover:bg-white text-left transition-all cursor-pointer col-span-2"
                     >
-                      <span className="font-bold text-vistaar-text flex items-center gap-1.5">
+                      <span className="font-bold text-slate-900 flex items-center gap-1.5">
                         <Shield className="w-3.5 h-3.5 text-red-600" />
                         <span>Super Admin</span>
                       </span>
-                      <span className="text-[10px] font-mono text-vistaar-muted block mt-0.5">
-                        Opens /admin
+                      <span className="text-[10px] font-mono text-slate-500 block mt-0.5">
+                        Opens /admin • Verification & Audit
                       </span>
                     </button>
                   </div>
@@ -449,19 +468,21 @@ function LoginSignupContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="font-bold text-vistaar-text block mb-1">
-                        User Role (Non-Admin Only)
+                        Select Platform Role
                       </label>
                       <select
                         value={signupRole}
                         onChange={(e) => {
-                          const r = e.target.value as "PUBLIC_USER" | "FIELD_SCIENTIST";
+                          const r = e.target.value as "STUDENT" | "TEACHER" | "RESEARCHER" | "SCIENTIST";
                           setSignupRole(r);
-                          if (r === "FIELD_SCIENTIST") setSignupPersona("SCIENTIST");
+                          setSignupPersona(r);
                         }}
                         className="w-full px-3 py-2 rounded-xl border border-sky-200 bg-white/90 text-vistaar-text font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600"
                       >
-                        <option value="PUBLIC_USER">Public User (Opens /education)</option>
-                        <option value="FIELD_SCIENTIST">Field Scientist (Opens /documents)</option>
+                        <option value="STUDENT">Student (Opens /student)</option>
+                        <option value="TEACHER">Teacher / Educator (Opens /teacher)</option>
+                        <option value="RESEARCHER">Researcher (Opens /researcher)</option>
+                        <option value="SCIENTIST">Polar Scientist (Opens /scientist)</option>
                       </select>
                     </div>
 
@@ -473,15 +494,15 @@ function LoginSignupContent() {
                         value={signupPersona}
                         onChange={(e) =>
                           setSignupPersona(
-                            e.target.value as "STUDENT" | "TEACHER" | "JOURNALIST" | "SCIENTIST"
+                            e.target.value as "STUDENT" | "TEACHER" | "RESEARCHER" | "SCIENTIST"
                           )
                         }
                         className="w-full px-3 py-2 rounded-xl border border-sky-200 bg-white/90 text-vistaar-text font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600"
                       >
-                        <option value="STUDENT">Student (NCERT 8–12)</option>
-                        <option value="TEACHER">Teacher / Educator</option>
-                        <option value="JOURNALIST">Accredited Journalist</option>
-                        <option value="SCIENTIST">Polar Researcher</option>
+                        <option value="STUDENT">NCERT & University Student</option>
+                        <option value="TEACHER">Educator / School Instructor</option>
+                        <option value="RESEARCHER">Polar Science Researcher</option>
+                        <option value="SCIENTIST">Field / Expedition Scientist</option>
                       </select>
                     </div>
                   </div>
@@ -489,7 +510,7 @@ function LoginSignupContent() {
                   <div className="p-2.5 rounded-xl bg-sky-50/90 border border-sky-200/80 text-[11px] text-vistaar-muted flex items-center space-x-2">
                     <Lock className="w-4 h-4 text-vistaar-scientific shrink-0" />
                     <span>
-                      Privilege Escalation Guard: Self-registration for <code>SUPER_ADMIN</code> is strictly blocked.
+                      Privilege Escalation Guard: Administrative accounts (<code>ADMIN</code>) require direct system provision.
                     </span>
                   </div>
 

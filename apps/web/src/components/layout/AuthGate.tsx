@@ -18,6 +18,8 @@ import {
   KeyRound,
   Building2,
   User,
+  Compass,
+  GraduationCap,
   LogOut,
   X,
 } from "lucide-react";
@@ -357,47 +359,75 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             </p>
           </div>
 
-          <div className="space-y-2.5 pt-2">
-            <button
-              onClick={() => handleLogin("admin@vistaar.ncpor.res.in", "VistaarAdmin@2026!")}
-              className="w-full p-3.5 rounded-2xl bg-white/90 hover:bg-white border border-sky-200 text-left transition-all flex items-center justify-between shadow-xs hover:shadow-md cursor-pointer group"
-            >
-              <div className="flex items-center space-x-3">
-                <Shield className="w-5 h-5 text-red-600 group-hover:scale-110 transition-transform" />
-                <div>
-                  <div className="font-bold text-slate-900 text-sm">Super Admin Portal</div>
-                  <div className="text-xs text-slate-500">Security Governance & Audit Queue</div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 group-hover:translate-x-1 transition-all" />
-            </button>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-left">
             <button
               onClick={() => handleLogin("scientist@vistaar.ncpor.res.in", "Scientist@Vistaar2026!")}
-              className="w-full p-3.5 rounded-2xl bg-white/90 hover:bg-white border border-sky-200 text-left transition-all flex items-center justify-between shadow-xs hover:shadow-md cursor-pointer group"
+              className="p-3.5 rounded-2xl bg-white/90 hover:bg-white border border-sky-200 text-left transition-all flex items-center justify-between shadow-xs hover:shadow-md cursor-pointer group"
             >
               <div className="flex items-center space-x-3">
                 <FlaskConical className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform" />
                 <div>
-                  <div className="font-bold text-slate-900 text-sm">Field Scientist Workspace</div>
-                  <div className="text-xs text-slate-500">Document AI & NPDC Data Uploads</div>
+                  <div className="font-bold text-slate-900 text-xs sm:text-sm">Scientist Role</div>
+                  <div className="text-[11px] text-slate-500">Opens /scientist</div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-all" />
             </button>
 
             <button
-              onClick={() => handleLogin("editor@vistaar.ncpor.res.in", "Editor@Vistaar2026!")}
-              className="w-full p-3.5 rounded-2xl bg-white/90 hover:bg-white border border-sky-200 text-left transition-all flex items-center justify-between shadow-xs hover:shadow-md cursor-pointer group"
+              onClick={() => handleLogin("researcher@vistaar.ncpor.res.in", "Researcher@Vistaar2026!")}
+              className="p-3.5 rounded-2xl bg-white/90 hover:bg-white border border-sky-200 text-left transition-all flex items-center justify-between shadow-xs hover:shadow-md cursor-pointer group"
             >
               <div className="flex items-center space-x-3">
-                <Edit3 className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" />
+                <Compass className="w-5 h-5 text-indigo-600 group-hover:scale-110 transition-transform" />
                 <div>
-                  <div className="font-bold text-slate-900 text-sm">Outreach Editor Studio</div>
-                  <div className="text-xs text-slate-500">Claim Verification & PIB Publications</div>
+                  <div className="font-bold text-slate-900 text-xs sm:text-sm">Researcher Role</div>
+                  <div className="text-[11px] text-slate-500">Opens /researcher</div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition-all" />
+            </button>
+
+            <button
+              onClick={() => handleLogin("teacher@vistaar.ncpor.res.in", "Teacher@Vistaar2026!")}
+              className="p-3.5 rounded-2xl bg-white/90 hover:bg-white border border-sky-200 text-left transition-all flex items-center justify-between shadow-xs hover:shadow-md cursor-pointer group"
+            >
+              <div className="flex items-center space-x-3">
+                <GraduationCap className="w-5 h-5 text-amber-600 group-hover:scale-110 transition-transform" />
+                <div>
+                  <div className="font-bold text-slate-900 text-xs sm:text-sm">Teacher Role</div>
+                  <div className="text-[11px] text-slate-500">Opens /teacher</div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 transition-all" />
+            </button>
+
+            <button
+              onClick={() => handleLogin("student@vistaar.ncpor.res.in", "Student@Vistaar2026!")}
+              className="p-3.5 rounded-2xl bg-white/90 hover:bg-white border border-sky-200 text-left transition-all flex items-center justify-between shadow-xs hover:shadow-md cursor-pointer group"
+            >
+              <div className="flex items-center space-x-3">
+                <Sparkles className="w-5 h-5 text-sky-600 group-hover:scale-110 transition-transform" />
+                <div>
+                  <div className="font-bold text-slate-900 text-xs sm:text-sm">Student Role</div>
+                  <div className="text-[11px] text-slate-500">Opens /student</div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-sky-600 transition-all" />
+            </button>
+
+            <button
+              onClick={() => handleLogin("admin@vistaar.ncpor.res.in", "VistaarAdmin@2026!")}
+              className="p-3.5 rounded-2xl bg-white/90 hover:bg-white border border-sky-200 text-left transition-all flex items-center justify-between shadow-xs hover:shadow-md cursor-pointer group sm:col-span-2"
+            >
+              <div className="flex items-center space-x-3">
+                <Shield className="w-5 h-5 text-red-600 group-hover:scale-110 transition-transform" />
+                <div>
+                  <div className="font-bold text-slate-900 text-xs sm:text-sm">Admin Governance</div>
+                  <div className="text-[11px] text-slate-500">Opens /admin</div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-red-600 transition-all" />
             </button>
           </div>
 
