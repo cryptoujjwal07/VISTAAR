@@ -1,88 +1,95 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MountainLogo } from "@/components/ui/MountainLogo";
-import { ROLE_PORTAL_MAP } from "@/components/layout/AuthGate";
+import { ShieldCheck, Database, Globe2, Compass } from "lucide-react";
 
 export function Footer() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  useEffect(() => {
-    const syncUser = () => {
-      if (typeof window === "undefined") return;
-      const savedToken = localStorage.getItem("vistaar_token");
-      const savedUser = localStorage.getItem("vistaar_user");
-      if (savedToken && savedUser) {
-        try {
-          setCurrentUser(JSON.parse(savedUser));
-          return;
-        } catch {
-          setCurrentUser(null);
-        }
-      }
-      setCurrentUser(null);
-    };
-
-    syncUser();
-    window.addEventListener("vistaar-auth-changed", syncUser);
-    window.addEventListener("storage", syncUser);
-    return () => {
-      window.removeEventListener("vistaar-auth-changed", syncUser);
-      window.removeEventListener("storage", syncUser);
-    };
-  }, []);
-
-  if (!currentUser) {
-    return null;
-  }
-
-  const roleSpec = ROLE_PORTAL_MAP[currentUser.role] || ROLE_PORTAL_MAP.PUBLIC_USER;
-
   return (
-    <footer className="w-full border-t border-sky-200/80 ice-glass py-8 text-sm text-vistaar-muted">
-      <div className="w-full px-4 sm:px-6 lg:px-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="space-y-2.5">
-          <div className="flex items-center space-x-2.5">
-            <MountainLogo size="sm" />
-            <span className="font-extrabold text-vistaar-text text-base">VISTAAR • विस्तार</span>
+    <footer className="w-full border-t border-sky-200/90 ice-glass mt-20 pt-16 pb-12 text-slate-600">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 grid grid-cols-1 md:grid-cols-4 gap-10">
+        {/* Brand & Attribution */}
+        <div className="md:col-span-2 space-y-4">
+          <div className="flex items-center space-x-3">
+            <MountainLogo size="lg" />
+            <div>
+              <span className="font-black text-slate-900 text-2xl tracking-tight">VISTAAR • विस्तार</span>
+              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                Integrated Polar Science Intelligence & Outreach Portal
+              </p>
+            </div>
           </div>
-          <p className="text-xs leading-relaxed">
-            National Polar Science Outreach, Knowledge Repository and Media Dissemination Portal for NCPOR and the Ministry of Earth Sciences, Government of India.
+          <p className="text-sm text-slate-600 leading-relaxed max-w-md">
+            National platform for the National Centre for Polar and Ocean Research (NCPOR), Ministry of Earth Sciences, Government of India. Dedicated to advancing research across Antarctica, the Arctic, and the Himalayas.
           </p>
-          <p className="text-xs text-vistaar-muted font-mono">
-            Signed in as: {currentUser.name || currentUser.email} ({currentUser.role})
-          </p>
+          <div className="flex items-center space-x-2 text-xs font-mono text-sky-800 bg-sky-50/80 border border-sky-200/80 px-3 py-1.5 rounded-xl w-fit">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>100% Calibrated Telemetry • Deterministic NPDC Provenance</span>
+          </div>
         </div>
 
-        <div>
-          <h4 className="font-semibold text-vistaar-text mb-2.5 text-xs uppercase tracking-wider">
-            Your Authorized Role Workspaces ({currentUser.role})
+        {/* Quick Explorations */}
+        <div className="space-y-3">
+          <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider">
+            Explore Cryosphere
           </h4>
-          <ul className="grid grid-cols-2 gap-2 text-xs">
-            {roleSpec.navLinks.map((lnk) => (
-              <li key={lnk.href}>
-                <Link href={lnk.href} className="hover:text-vistaar-primary font-semibold">
-                  {lnk.label} ({lnk.href})
-                </Link>
-              </li>
-            ))}
+          <ul className="space-y-2 text-sm font-semibold">
+            <li>
+              <Link href="/stations" className="hover:text-sky-700 transition-colors">
+                Four Polar Observatories
+              </Link>
+            </li>
+            <li>
+              <Link href="/weather" className="hover:text-sky-700 transition-colors">
+                Live Station Weather Telemetry
+              </Link>
+            </li>
+            <li>
+              <Link href="/expeditions" className="hover:text-sky-700 transition-colors">
+                Scientific Expeditions Catalog
+              </Link>
+            </li>
+            <li>
+              <Link href="/datasets" className="hover:text-sky-700 transition-colors">
+                NPDC Data Repositories
+              </Link>
+            </li>
           </ul>
         </div>
 
-        <div>
-          <h4 className="font-semibold text-vistaar-text mb-2.5 text-xs uppercase tracking-wider">
-            Data Provenance & Governance
+        {/* Outreach & Education */}
+        <div className="space-y-3">
+          <h4 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider">
+            Education & Media
           </h4>
-          <p className="text-xs leading-relaxed">
-            Role-Based Access Control (RBAC) enforced. Every scientific claim retains deterministic provenance to NPDC observation records and SHA-256 dataset registries.
-          </p>
+          <ul className="space-y-2 text-sm font-semibold">
+            <li>
+              <Link href="/education" className="hover:text-sky-700 transition-colors">
+                NCERT Polar Classroom (Class 8–12)
+              </Link>
+            </li>
+            <li>
+              <Link href="/research" className="hover:text-sky-700 transition-colors">
+                Verified Scientific Bulletins
+              </Link>
+            </li>
+            <li>
+              <Link href="/media" className="hover:text-sky-700 transition-colors">
+                Official Press Kits & Media
+              </Link>
+            </li>
+            <li>
+              <Link href="/explore" className="hover:text-sky-700 transition-colors">
+                Polar Semantic Knowledge Search
+              </Link>
+            </li>
+          </ul>
         </div>
       </div>
 
-      <div className="w-full px-4 sm:px-6 lg:px-10 mt-6 pt-4 border-t border-sky-200/60 flex flex-col sm:flex-row justify-between items-center text-xs">
-        <p>© 2026 National Centre for Polar and Ocean Research (NCPOR), Ministry of Earth Sciences. All rights reserved.</p>
-        <p className="mt-2 sm:mt-0 font-medium text-vistaar-scientific">Active Role Workspace: {roleSpec.title}</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 mt-12 pt-6 border-t border-sky-200/80 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 font-medium gap-3">
+        <p>© 2026 National Centre for Polar and Ocean Research (NCPOR), Ministry of Earth Sciences, Govt. of India.</p>
+        <p className="font-bold text-sky-800">Smart India Hackathon • Problem Statement 26063</p>
       </div>
     </footer>
   );

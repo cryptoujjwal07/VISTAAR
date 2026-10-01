@@ -63,32 +63,32 @@ export default function StationsPage() {
   const weatherSummary = explorerData?.weather_summary;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 bg-[#FAF7F0] min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-12 space-y-12 min-h-screen">
       {/* Header */}
-      <div className="bg-white p-6 rounded-xl border border-vistaar-border shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-1.5 text-xs font-semibold text-vistaar-primary uppercase tracking-wide mb-1">
-            <Compass className="w-4 h-4" />
-            <span>India&apos;s Polar &amp; High-Altitude Research Infrastructure</span>
+      <div className="ice-glass-strong p-8 sm:p-10 rounded-3xl border border-white/90 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="inline-flex items-center space-x-2 text-xs font-bold text-sky-700 uppercase tracking-wider">
+            <Compass className="w-4 h-4 text-sky-600" />
+            <span>National Centre for Polar and Ocean Research (NCPOR)</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-vistaar-text">
-            Permanent Research Observatories &amp; Relational Explorer
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-950">
+            India&apos;s Four Polar Observatories
           </h1>
-          <p className="text-sm text-vistaar-muted mt-1">
-            Database-linked exploration of Maitri, Bharati, Himadri, and Himansh connecting station metadata, expeditions, scientific documents, NPDC datasets, weather telemetry, media, education, and research topics.
+          <p className="text-base sm:text-lg text-slate-600 max-w-3xl leading-relaxed">
+            Permanent scientific bases across Antarctica, the Arctic, and the Himalayan glaciological zones connecting weather telemetry, research expeditions, and NPDC datasets.
           </p>
         </div>
         <Link href="/expeditions">
-          <Button variant="outline" size="sm" className="text-xs font-semibold">
-            Open Expedition Explorer <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+          <Button variant="outline" className="text-sm font-bold px-5 py-2.5 rounded-2xl bg-white hover:bg-sky-50 border-sky-200">
+            Expeditions Catalog <ArrowRight className="w-4 h-4 ml-1.5" />
           </Button>
         </Link>
       </div>
 
       {/* Station Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {loading ? (
-          <div className="col-span-4 py-12 text-center text-sm text-vistaar-muted bg-white rounded-xl border border-vistaar-border">
+          <div className="col-span-4 py-16 text-center text-base font-semibold text-slate-500 ice-glass rounded-3xl">
             Loading station profiles from MongoDB Atlas...
           </div>
         ) : (
@@ -98,40 +98,42 @@ export default function StationsPage() {
               <Card
                 key={st.id}
                 onClick={() => setSelectedStationId(st.id)}
-                className={`cursor-pointer transition-all bg-white ${
+                className={`cursor-pointer transition-all rounded-3xl overflow-hidden ice-glass flex flex-col justify-between ${
                   isSel
-                    ? "border-2 border-vistaar-primary shadow-md"
-                    : "border-vistaar-border hover:border-vistaar-primary/50"
+                    ? "border-2 border-sky-500 shadow-xl ring-2 ring-sky-300/50"
+                    : "border-white/80 hover:border-sky-300 hover:shadow-lg"
                 }`}
               >
-                <CardHeader className="p-4 border-b border-vistaar-border bg-[#FAF7F0]/50">
-                  <div className="flex items-center justify-between mb-1">
-                    <Badge variant="success">{st.status}</Badge>
-                    <span className="text-xs font-mono font-bold text-vistaar-scientific">{st.region}</span>
+                <CardHeader className="p-5 border-b border-sky-100 bg-white/40">
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="success" className="text-xs font-bold">{st.status}</Badge>
+                    <span className="text-xs font-mono font-extrabold text-sky-800">{st.region}</span>
                   </div>
-                  <CardTitle className="text-base font-bold">{st.name}</CardTitle>
-                  <CardDescription className="text-xs text-vistaar-muted flex items-center space-x-1">
-                    <MapPin className="w-3 h-3" />
+                  <CardTitle className="text-xl font-black text-slate-950">{st.name}</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 flex items-center space-x-1.5 mt-1 font-medium">
+                    <MapPin className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                     <span>{st.location}</span>
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 space-y-3 text-xs font-mono">
-                  <div className="bg-[#FAF7F0] p-2.5 rounded border border-vistaar-border space-y-1">
-                    <div>
-                      Coords: <strong>{st.coordinates?.lat}°, {st.coordinates?.lng}°</strong>
+                <CardContent className="p-5 space-y-4 text-xs font-mono">
+                  <div className="bg-sky-50/70 p-3.5 rounded-2xl border border-sky-200/80 space-y-1.5 text-slate-700">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Coordinates:</span>
+                      <strong className="text-slate-900">{st.coordinates?.lat}°, {st.coordinates?.lng}°</strong>
                     </div>
-                    <div>
-                      Elevation: <strong>{st.coordinates?.elevation} m a.s.l.</strong>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Elevation:</span>
+                      <strong className="text-slate-900">{st.coordinates?.elevation} m a.s.l.</strong>
                     </div>
                   </div>
-                  <div className="flex gap-2 font-sans">
-                    <Link href={`/weather?station=${st.id}`} className="flex-1">
-                      <Button variant="primary" size="sm" className="w-full text-[11px]">
-                        Weather
+                  <div className="flex gap-2 font-sans pt-1">
+                    <Link href={`/weather?station_id=${st.id}`} className="flex-1">
+                      <Button variant="primary" size="sm" className="w-full text-xs font-bold py-2 rounded-xl">
+                        Live Weather
                       </Button>
                     </Link>
                     <Link href={`/datasets?station=${st.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full text-[11px]">
+                      <Button variant="outline" size="sm" className="w-full text-xs font-bold py-2 rounded-xl bg-white border-sky-200">
                         Datasets
                       </Button>
                     </Link>

@@ -24,25 +24,22 @@ import {
   BookOpen,
   Edit3,
   Sparkles,
+  LogIn,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchApi, clearClientApiCache } from "@/lib/api";
-import { ROLE_PORTAL_MAP, getRolePortalRoute } from "@/components/layout/AuthGate";
 import { MountainLogo } from "@/components/ui/MountainLogo";
+import { ROLE_PORTAL_MAP, getRolePortalRoute } from "@/components/layout/AuthGate";
 
-const ICON_BY_HREF: Record<string, any> = {
-  "/": Home,
-  "/admin": Shield,
-  "/workspace": Edit3,
-  "/documents": FileSearch,
-  "/datasets": Database,
-  "/weather": CloudSun,
-  "/stations": Building2,
-  "/research": BookOpen,
-  "/education": GraduationCap,
-  "/media": ImageIcon,
-  "/explore": Compass,
-};
+const PRIMARY_NAV_ITEMS = [
+  { href: "/", label: "Overview", icon: Home },
+  { href: "/stations", label: "Stations", icon: Building2 },
+  { href: "/weather", label: "Live Weather", icon: CloudSun },
+  { href: "/expeditions", label: "Expeditions", icon: Compass },
+  { href: "/research", label: "Research", icon: BookOpen },
+  { href: "/education", label: "Classroom", icon: GraduationCap },
+  { href: "/media", label: "Media & Press", icon: ImageIcon },
+];
 
 export function Navbar() {
   const pathname = usePathname();
@@ -52,7 +49,7 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState<"en" | "hi">("en");
 
-  // Auth & RBAC State
+  // Auth State
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -103,32 +100,11 @@ export function Navbar() {
     }
   };
 
-  async function handleRoleSwitch(email: string, password: string) {
-    try {
-      const res = await fetchApi("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-      if (res?.access_token) {
-        if (typeof window !== "undefined") {
-          localStorage.setItem("vistaar_token", res.access_token);
-          if (res.refresh_token) {
-            localStorage.setItem("vistaar_refresh_token", res.refresh_token);
-          }
-          if (res.user) {
-            localStorage.setItem("vistaar_user", JSON.stringify(res.user));
-          }
-        }
-        clearClientApiCache();
-        setCurrentUser(res.user);
-        setUserMenuOpen(false);
-        window.dispatchEvent(new Event("vistaar-auth-changed"));
-        router.push(getRolePortalRoute(res.user?.role));
-      }
-    } catch {
-      // ignore
+  const openAuthModal = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("vistaar-open-auth-modal"));
     }
-  }
+  };
 
   async function handleLogout() {
     try {
@@ -149,22 +125,11 @@ export function Navbar() {
     }
   }
 
-  // Before Sign-In, the Landing Page in AuthGate is shown without the main site Navbar!
-  if (!currentUser) {
-    return null;
-  }
-
-  const roleSpec = ROLE_PORTAL_MAP[currentUser.role] || ROLE_PORTAL_MAP.PUBLIC_USER;
-  const visibleNavItems = [
-    { href: "/", label: "My Role Hub" },
-    ...roleSpec.navLinks,
-  ];
-
   return (
     <>
-      <header className="sticky top-0 z-50 w-full">
-        {/* Top Ice-Mountain Glassmorphic Institutional Strip */}
-        <div className="bg-white/80 backdrop-blur-xl border-b border-sky-200/70 text-vistaar-text px-4 sm:px-6 lg:px-10 py-1.5 text-[11px] font-medium">
+      <header className="sticky top-0 z-50 w-full transition-all">
+        {/* Top Ice Institutional Ribbon */}
+        <div className="bg-white/85 backdrop-blur-xl border-b border-sky-200/80 text-slate-800 px-4 sm:px-6 lg:px-12 py-1.5 text-xs font-medium">
           <div className="w-full flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
               <span className="flex items-center space-x-0.5 shadow-2xs" title="Government of India">
@@ -172,226 +137,209 @@ export function Navbar() {
                 <span className="w-1.5 h-3 bg-white border-y border-slate-200"></span>
                 <span className="w-1.5 h-3 rounded-r-xs bg-[#138808]"></span>
               </span>
-              <span className="text-vistaar-text font-bold tracking-wide">
+              <span className="font-bold tracking-tight text-slate-900 text-xs sm:text-sm">
                 National Centre for Polar and Ocean Research (NCPOR)
               </span>
-              <span className="text-sky-400 hidden sm:inline">•</span>
-              <span className="text-vistaar-muted hidden sm:inline">
+              <span className="text-sky-400 hidden md:inline">•</span>
+              <span className="text-slate-500 hidden md:inline text-xs">
                 Ministry of Earth Sciences, Govt. of India
               </span>
             </div>
 
             <div className="flex items-center space-x-3">
               {/* Live Telemetry Ping */}
-              <div className="hidden md:flex items-center space-x-1.5 bg-sky-50/90 border border-sky-200/80 px-2.5 py-0.5 rounded-full text-[10px] text-sky-900 font-mono">
-                <span className="relative flex h-1.5 w-1.5">
+              <div className="hidden lg:flex items-center space-x-2 bg-sky-50/90 border border-sky-200/90 px-3 py-0.5 rounded-full text-xs text-sky-950 font-mono">
+                <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-600"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
                 </span>
-                <span>Maitri • Bharati • Himansh • Himadri</span>
+                <span className="font-semibold">Maitri • Bharati • Himadri • Himansh</span>
               </div>
-
-              <Link
-                href={roleSpec.route}
-                className="hidden sm:inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold"
-              >
-                <Sparkles className="w-3 h-3 text-emerald-600" />
-                <span>Active Role: {currentUser.role}</span>
-              </Link>
 
               {/* Bhashini Multilingual Toggle */}
               <button
                 onClick={() => setSelectedLanguage(selectedLanguage === "en" ? "hi" : "en")}
-                className="flex items-center space-x-1 px-2 py-0.5 rounded-md bg-white/80 border border-sky-200/70 hover:bg-sky-50 text-vistaar-text transition-colors cursor-pointer"
+                className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-white/90 border border-sky-200/80 hover:bg-sky-50 text-slate-800 text-xs font-semibold transition-colors cursor-pointer"
                 title="Digital India Bhashini Language Engine"
               >
-                <Globe2 className="w-3.5 h-3.5 text-vistaar-scientific" />
+                <Globe2 className="w-3.5 h-3.5 text-sky-600" />
                 <span>{selectedLanguage === "en" ? "EN / हिंदी" : "हिंदी / EN"}</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Main Ice-Mountain Frosted Glass Navigation Bar (Strictly Role-Filtered) */}
-        <div className="ice-glass border-b border-sky-200/70">
-          <div className="w-full px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between gap-3">
-            {/* Left: Brand Mountain Logo & Title */}
-            <Link href={roleSpec.route} className="flex items-center space-x-2.5 group shrink-0">
-              <MountainLogo size="md" className="group-hover:scale-105 transition-transform" />
-              <div className="flex flex-col whitespace-nowrap">
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-lg font-extrabold tracking-tight text-vistaar-text leading-none">
+        {/* Main Ice-Mountain Frosted Glass Navigation Bar */}
+        <div className="ice-glass border-b border-sky-200/80">
+          <div className="w-full px-4 sm:px-6 lg:px-12 h-20 flex items-center justify-between gap-4">
+            {/* Brand Mountain Logo & Title (Big, bold font) */}
+            <Link href="/" className="flex items-center space-x-3 group shrink-0">
+              <MountainLogo size="lg" className="group-hover:scale-105 transition-transform drop-shadow-sm" />
+              <div className="flex flex-col">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 leading-none">
                     VISTAAR
                   </span>
-                  <span className="bg-sky-50/90 text-sky-800 border border-sky-200 text-[10px] font-semibold px-1.5 py-0.5 rounded tracking-wide font-mono">
+                  <span className="bg-sky-100 text-sky-900 border border-sky-300 text-xs font-black px-2 py-0.5 rounded-md font-mono">
                     विस्तार
                   </span>
                 </div>
-                <span className="text-[10px] text-vistaar-muted font-medium tracking-tight mt-0.5 hidden sm:block">
-                  {roleSpec.title}
+                <span className="text-xs text-slate-500 font-semibold tracking-wide uppercase mt-1 hidden sm:block">
+                  Polar Science & Knowledge Portal
                 </span>
               </div>
             </Link>
 
-            {/* Desktop Navigation Links — ONLY shows pages allowed for currentUser.role */}
+            {/* Desktop Navigation Links — Big, Clear, Easy to Navigate */}
             <nav
-              className="hidden lg:flex items-center space-x-1 overflow-x-auto no-scrollbar"
-              aria-label="Role-Based Primary Navigation"
+              className="hidden lg:flex items-center space-x-1.5 xl:space-x-2"
+              aria-label="Primary Navigation"
             >
-              {visibleNavItems.map((item) => {
-                const isActive = pathname === item.href;
-                const Icon = ICON_BY_HREF[item.href] || Compass;
+              {PRIMARY_NAV_ITEMS.map((item) => {
+                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-xl transition-all whitespace-nowrap shrink-0",
+                      "flex items-center space-x-2 px-3.5 py-2 rounded-xl text-sm sm:text-base font-bold transition-all whitespace-nowrap",
                       isActive
-                        ? "bg-white/95 text-blue-700 font-bold border border-sky-200 shadow-xs"
-                        : "text-vistaar-text/80 hover:text-vistaar-text hover:bg-white/60 font-medium"
+                        ? "bg-white text-sky-700 shadow-sm border border-sky-200"
+                        : "text-slate-700 hover:text-sky-700 hover:bg-white/60"
                     )}
                   >
-                    <Icon className={cn("w-3.5 h-3.5 shrink-0", isActive ? "text-blue-600" : "text-vistaar-scientific")} />
+                    <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-sky-600" : "text-slate-400")} />
                     <span>{item.label}</span>
                   </Link>
                 );
               })}
+
+              {/* Special Workspace Links for authenticated roles */}
+              {currentUser && (
+                <>
+                  {["SUPER_ADMIN", "ADMIN"].includes(currentUser.role) && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-all"
+                    >
+                      <Shield className="w-3.5 h-3.5" />
+                      <span>Admin Portal</span>
+                    </Link>
+                  )}
+                  {["FIELD_SCIENTIST", "SCIENTIST"].includes(currentUser.role) && (
+                    <Link
+                      href="/documents"
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-all"
+                    >
+                      <FlaskConical className="w-3.5 h-3.5" />
+                      <span>Scientist Workspace</span>
+                    </Link>
+                  )}
+                  {currentUser.role === "OUTREACH_EDITOR" && (
+                    <Link
+                      href="/workspace"
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Review Studio</span>
+                    </Link>
+                  )}
+                </>
+              )}
             </nav>
 
-            {/* Right Action Controls */}
-            <div className="flex items-center space-x-2 shrink-0">
+            {/* Right Action Controls: Search & Sign In / User Profile */}
+            <div className="flex items-center space-x-3 shrink-0">
               {/* Quick Search Shortcut Pill */}
               <button
                 onClick={() => setSearchOpen(true)}
-                className="hidden xl:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl border border-sky-200/80 bg-white/75 hover:bg-white text-xs text-vistaar-muted transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                className="hidden xl:flex items-center space-x-2 px-3.5 py-2 rounded-xl border border-sky-200/80 bg-white/80 hover:bg-white text-xs sm:text-sm text-slate-500 font-medium transition-all cursor-pointer shadow-2xs"
                 title="Search Portal (Ctrl+K)"
               >
-                <Search className="w-3.5 h-3.5 text-vistaar-scientific shrink-0" />
-                <span className="font-medium">Search</span>
-                <kbd className="text-[10px] bg-sky-50 border border-sky-200 px-1 py-0.5 rounded text-sky-800 font-mono font-medium">
+                <Search className="w-4 h-4 text-sky-600 shrink-0" />
+                <span>Search Portal...</span>
+                <kbd className="text-xs bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded text-sky-800 font-mono font-bold">
                   ⌘K
                 </kbd>
               </button>
 
-              {/* Authenticated User Profile & Role Switcher Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl border border-sky-200 bg-white/90 hover:bg-white shadow-xs text-xs font-bold text-vistaar-text transition-all cursor-pointer whitespace-nowrap"
-                >
-                  <span
-                    className={cn(
-                      "w-2 h-2 rounded-full",
-                      currentUser.role === "SUPER_ADMIN"
-                        ? "bg-red-500"
-                        : currentUser.role === "OUTREACH_EDITOR"
-                        ? "bg-blue-600"
-                        : currentUser.role === "FIELD_SCIENTIST"
-                        ? "bg-emerald-600"
-                        : "bg-sky-500"
-                    )}
-                  />
-                  <span className="max-w-[120px] truncate">{currentUser.name || currentUser.email}</span>
-                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
-                    {currentUser.role}
-                  </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-vistaar-muted" />
-                </button>
+              {/* User Profile or Prominent Sign-In Button */}
+              {currentUser ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="inline-flex items-center space-x-2.5 px-4 py-2 rounded-2xl border border-sky-200 bg-white/95 hover:bg-white shadow-xs text-sm font-bold text-slate-900 transition-all cursor-pointer"
+                  >
+                    <span
+                      className={cn(
+                        "w-2.5 h-2.5 rounded-full",
+                        currentUser.role === "SUPER_ADMIN"
+                          ? "bg-red-500"
+                          : currentUser.role === "OUTREACH_EDITOR"
+                          ? "bg-blue-600"
+                          : currentUser.role === "FIELD_SCIENTIST"
+                          ? "bg-emerald-600"
+                          : "bg-sky-500"
+                      )}
+                    />
+                    <span className="max-w-[130px] truncate">{currentUser.name || currentUser.email}</span>
+                    <span className="text-xs uppercase font-mono px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-extrabold">
+                      {currentUser.role}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                  </button>
 
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-72 rounded-2xl ice-glass-strong p-3.5 z-50">
-                    <div className="border-b border-sky-200/70 pb-2.5 mb-2.5">
-                      <p className="text-xs font-bold text-vistaar-text">{currentUser.name}</p>
-                      <p className="text-[11px] text-vistaar-muted font-mono truncate">{currentUser.email}</p>
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-72 rounded-2xl ice-glass-strong p-4 z-50 space-y-3 shadow-xl border border-white">
+                      <div className="border-b border-sky-200/80 pb-2.5">
+                        <p className="text-sm font-bold text-slate-900">{currentUser.name}</p>
+                        <p className="text-xs text-slate-500 font-mono truncate">{currentUser.email}</p>
+                        <span className="inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800">
                           {currentUser.role}
                         </span>
+                      </div>
+
+                      <div className="space-y-1">
                         <Link
-                          href={roleSpec.route}
+                          href={getRolePortalRoute(currentUser.role)}
                           onClick={() => setUserMenuOpen(false)}
-                          className="text-[11px] font-bold text-blue-600 hover:underline"
+                          className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold bg-sky-50 hover:bg-sky-100 text-sky-900 flex items-center justify-between"
                         >
-                          Primary Workspace ({roleSpec.route}) →
+                          <span>Open Assigned Role Portal</span>
+                          <span>→</span>
                         </Link>
                       </div>
-                    </div>
 
-                    {/* Fast Role Switcher for Testing Different Role Portals */}
-                    <div className="space-y-1 mb-3">
-                      <p className="text-[10px] font-bold text-vistaar-muted uppercase tracking-wider">
-                        Switch Active Role Portal
-                      </p>
-                      <button
-                        onClick={() => handleRoleSwitch("student@vistaar.ncpor.res.in", "Student@Vistaar2026!")}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] hover:bg-sky-50 text-vistaar-text flex items-center justify-between cursor-pointer"
-                      >
-                        <span className="flex items-center space-x-1.5 font-semibold">
-                          <BookOpen className="w-3.5 h-3.5 text-sky-700" />
-                          <span>Public / Student (/education)</span>
-                        </span>
-                        {currentUser.role === "PUBLIC_USER" && <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />}
-                      </button>
-                      <button
-                        onClick={() => handleRoleSwitch("scientist@vistaar.ncpor.res.in", "Scientist@Vistaar2026!")}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] hover:bg-sky-50 text-vistaar-text flex items-center justify-between cursor-pointer"
-                      >
-                        <span className="flex items-center space-x-1.5 font-semibold">
-                          <FlaskConical className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Field Scientist (/documents)</span>
-                        </span>
-                        {currentUser.role === "FIELD_SCIENTIST" && <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />}
-                      </button>
-                      <button
-                        onClick={() => handleRoleSwitch("editor@vistaar.ncpor.res.in", "Editor@Vistaar2026!")}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] hover:bg-sky-50 text-vistaar-text flex items-center justify-between cursor-pointer"
-                      >
-                        <span className="flex items-center space-x-1.5 font-semibold">
-                          <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Outreach Editor (/workspace)</span>
-                        </span>
-                        {currentUser.role === "OUTREACH_EDITOR" && <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />}
-                      </button>
-                      <button
-                        onClick={() => handleRoleSwitch("admin@vistaar.ncpor.res.in", "VistaarAdmin@2026!")}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] hover:bg-sky-50 text-vistaar-text flex items-center justify-between cursor-pointer"
-                      >
-                        <span className="flex items-center space-x-1.5 font-semibold">
-                          <Shield className="w-3.5 h-3.5 text-red-600" />
-                          <span>Super Admin (/admin)</span>
-                        </span>
-                        {currentUser.role === "SUPER_ADMIN" && <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />}
-                      </button>
+                      <div className="border-t border-sky-200/80 pt-2 flex items-center justify-between">
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center justify-center space-x-1.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold cursor-pointer transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="border-t border-sky-200/70 pt-2.5 flex items-center justify-between text-xs">
-                      <Link
-                        href="/"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="text-blue-600 font-bold hover:underline"
-                      >
-                        My Role Hub
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center space-x-1 text-red-600 hover:text-red-700 font-bold cursor-pointer"
-                      >
-                        <LogOut className="w-3.5 h-3.5" />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={openAuthModal}
+                  className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-black text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center space-x-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
+                </button>
+              )}
 
               {/* Mobile Hamburger Toggle */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-1.5 rounded-xl border border-sky-200 bg-white/80 text-vistaar-text hover:bg-white transition-colors"
+                className="lg:hidden p-2.5 rounded-2xl border border-sky-200 bg-white/90 text-slate-800 hover:bg-white transition-colors"
                 aria-label="Toggle navigation menu"
               >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
             </div>
           </div>
@@ -399,60 +347,70 @@ export function Navbar() {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden ice-glass-strong border-b border-sky-200 px-4 pt-2 pb-4 space-y-1 shadow-lg">
-            {visibleNavItems.map((item) => {
+          <div className="lg:hidden ice-glass-strong border-b border-sky-200 px-4 pt-3 pb-6 space-y-2 shadow-xl">
+            {PRIMARY_NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href;
-              const Icon = ICON_BY_HREF[item.href] || Compass;
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    "flex items-center space-x-2 px-3 py-2 rounded-xl text-sm transition-all",
+                    "flex items-center space-x-3 px-4 py-3 rounded-2xl text-base font-bold transition-all",
                     isActive
-                      ? "bg-white text-blue-700 font-bold border border-sky-200"
-                      : "text-vistaar-text hover:bg-white/60 font-medium"
+                      ? "bg-white text-sky-700 shadow-sm border border-sky-200"
+                      : "text-slate-800 hover:bg-white/60"
                   )}
                 >
-                  <Icon className={cn("w-4 h-4", isActive ? "text-blue-600" : "text-vistaar-scientific")} />
+                  <Icon className={cn("w-5 h-5", isActive ? "text-sky-600" : "text-slate-500")} />
                   <span>{item.label}</span>
                 </Link>
               );
             })}
+
+            {!currentUser && (
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAuthModal();
+                  }}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 text-white font-black text-center shadow-md"
+                >
+                  Sign In to VISTAAR
+                </button>
+              </div>
+            )}
           </div>
         )}
       </header>
 
       {/* Global Interactive Search Modal (⌘K) */}
       {searchOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 bg-[#17202A]/35 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-2xl ice-glass-strong overflow-hidden">
-            <form onSubmit={handleSearchSubmit} className="flex items-center px-4 py-3.5 border-b border-sky-200/70">
-              <Search className="w-5 h-5 text-vistaar-scientific mr-3 shrink-0" />
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 bg-slate-950/40 backdrop-blur-md">
+          <div className="w-full max-w-2xl rounded-3xl ice-glass-strong overflow-hidden shadow-2xl border border-white">
+            <form onSubmit={handleSearchSubmit} className="flex items-center px-5 py-4 border-b border-sky-200/80">
+              <Search className="w-6 h-6 text-sky-600 mr-3 shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search polar stations, expeditions, published research, classroom modules..."
-                className="w-full text-sm font-medium bg-transparent text-vistaar-text placeholder-vistaar-muted focus:outline-none"
+                placeholder="Search polar stations, expeditions, weather telemetry, NCERT lessons..."
+                className="w-full text-base font-semibold bg-transparent text-slate-900 placeholder-slate-400 focus:outline-none"
                 autoFocus
               />
               <button
                 type="button"
                 onClick={() => setSearchOpen(false)}
-                className="p-1 rounded-md text-vistaar-muted hover:text-vistaar-text"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-800"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </form>
-            <div className="p-3.5 bg-white/60 text-xs text-vistaar-muted flex items-center justify-between">
-              <span>
-                Press <kbd className="px-1.5 py-0.5 bg-white border border-sky-200 rounded font-mono">Enter</kbd> to search
-              </span>
-              <span>
-                <kbd className="px-1.5 py-0.5 bg-white border border-sky-200 rounded font-mono">Esc</kbd> to close
-              </span>
+            <div className="p-4 bg-white/70 text-xs text-slate-500 flex items-center justify-between font-medium">
+              <span>Press <kbd className="px-2 py-0.5 bg-white border border-sky-200 rounded font-mono font-bold">Enter</kbd> to search</span>
+              <span><kbd className="px-2 py-0.5 bg-white border border-sky-200 rounded font-mono font-bold">Esc</kbd> to close</span>
             </div>
           </div>
         </div>

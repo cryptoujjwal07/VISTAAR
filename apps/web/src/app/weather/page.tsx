@@ -110,24 +110,24 @@ export default function WeatherPage() {
   const activeInspect = hoveredPoint || selectedPoint;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 bg-[#FAF7F0] min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-12 space-y-8 min-h-screen">
       {/* Page Header */}
-      <div className="bg-white p-5 rounded-lg border border-vistaar-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-1.5 text-xs font-semibold text-vistaar-scientific uppercase tracking-wide mb-1">
-            <CloudSun className="w-4 h-4" />
+      <div className="ice-glass-strong p-8 sm:p-10 rounded-3xl border border-white/90 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="inline-flex items-center space-x-2 text-xs font-bold text-sky-700 uppercase tracking-wider">
+            <CloudSun className="w-4 h-4 text-sky-600" />
             <span>National Polar Data Centre (NPDC) • Calibrated Instrument Stream</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-vistaar-text">
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-950">
             Polar Weather & Environmental Intelligence
           </h1>
-          <p className="text-xs sm:text-sm text-vistaar-muted mt-1">
+          <p className="text-base sm:text-lg text-slate-600 max-w-3xl leading-relaxed">
             100% real ingested NPDC telemetry. Missing sensor observations are explicitly flagged and never replaced with zero.
           </p>
         </div>
 
         {/* Station Selector Pills */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {stations.map((st) => (
             <button
               key={st.id}
@@ -136,10 +136,10 @@ export default function WeatherPage() {
                 setSelectedDataset("");
                 setSelectedParam("");
               }}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+              className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold border transition-all cursor-pointer ${
                 selectedStation === st.id
-                  ? "bg-vistaar-primary text-white border-vistaar-primary shadow-sm"
-                  : "bg-[#FAF7F0] text-vistaar-text border-vistaar-border hover:bg-white"
+                  ? "bg-gradient-to-r from-sky-600 to-cyan-600 text-white border-transparent shadow-md"
+                  : "bg-white/80 text-slate-700 border-sky-200 hover:bg-white"
               }`}
             >
               {st.name.replace(" Station", "").replace(" Research", "")}
@@ -149,15 +149,15 @@ export default function WeatherPage() {
       </div>
 
       {/* Time-Range Resolution Controls (Sections 16 & 54: LIVE / DAY / WEEK / MONTH / YEAR / CUSTOM) */}
-      <div className="bg-white p-3.5 rounded-lg border border-vistaar-border shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center space-x-2">
-          <Calendar className="w-4 h-4 text-vistaar-scientific" />
-          <span className="font-bold text-vistaar-text">Time-Range Resolution:</span>
-          <span className="font-mono text-[11px] font-bold text-vistaar-primary">
-            [{rangeMode}] {data?.resolution || "ADAPTIVE_RESOLUTION"} • {points.length} Plotted Points ({stats?.count ?? 0} Raw Window Obs)
+      <div className="ice-glass p-5 rounded-3xl border border-white/85 shadow-sm flex flex-wrap items-center justify-between gap-4 text-sm">
+        <div className="flex items-center space-x-2.5">
+          <Calendar className="w-5 h-5 text-sky-600" />
+          <span className="font-extrabold text-slate-900">Time-Range Resolution:</span>
+          <span className="font-mono text-xs font-bold text-sky-800 bg-sky-100/80 px-2.5 py-1 rounded-full border border-sky-200">
+            [{rangeMode}] {data?.resolution || "ADAPTIVE_RESOLUTION"} • {points.length} Plotted Points
           </span>
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {["LIVE", "DAY", "WEEK", "MONTH", "YEAR", "CUSTOM"].map((mode) => (
             <button
               key={mode}
@@ -169,10 +169,10 @@ export default function WeatherPage() {
                   setEndDate("");
                 }
               }}
-              className={`px-3 py-1 rounded font-mono text-xs font-bold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-extrabold border transition-all cursor-pointer ${
                 rangeMode === mode
-                  ? "bg-vistaar-primary text-white border-vistaar-primary shadow-2xs"
-                  : "bg-[#FAF7F0] text-vistaar-text border-vistaar-border hover:bg-white"
+                  ? "bg-gradient-to-r from-sky-600 to-cyan-600 text-white border-transparent shadow-sm"
+                  : "bg-white/80 text-slate-700 border-sky-200 hover:bg-white"
               }`}
             >
               {mode}
