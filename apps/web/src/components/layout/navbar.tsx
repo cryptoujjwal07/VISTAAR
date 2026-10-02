@@ -123,6 +123,8 @@ export function Navbar() {
         localStorage.removeItem("vistaar_token");
         localStorage.removeItem("vistaar_refresh_token");
         localStorage.removeItem("vistaar_user");
+        document.cookie = "vistaar_user_role=; path=/; max-age=0";
+        document.cookie = "vistaar_auth_token=; path=/; max-age=0";
       }
       clearClientApiCache();
       setCurrentUser(null);

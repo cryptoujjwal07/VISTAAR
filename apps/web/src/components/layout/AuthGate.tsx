@@ -231,6 +231,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("vistaar_token") : null;
       if (!token) {
+        if (typeof window !== "undefined") {
+          document.cookie = "vistaar_user_role=; path=/; max-age=0";
+          document.cookie = "vistaar_auth_token=; path=/; max-age=0";
+        }
         setUser(null);
         setChecking(false);
         return;
@@ -239,12 +243,16 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       setUser(me);
       if (typeof window !== "undefined") {
         localStorage.setItem("vistaar_user", JSON.stringify(me));
+        document.cookie = `vistaar_user_role=${me?.role || ""}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `vistaar_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
       }
     } catch {
       if (typeof window !== "undefined") {
         localStorage.removeItem("vistaar_token");
         localStorage.removeItem("vistaar_refresh_token");
         localStorage.removeItem("vistaar_user");
+        document.cookie = "vistaar_user_role=; path=/; max-age=0";
+        document.cookie = "vistaar_auth_token=; path=/; max-age=0";
       }
       setUser(null);
     } finally {
@@ -278,7 +286,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }
       if (res.user) {
         localStorage.setItem("vistaar_user", JSON.stringify(res.user));
+        document.cookie = `vistaar_user_role=${res.user?.role || ""}; path=/; max-age=604800; SameSite=Lax`;
       }
+      document.cookie = `vistaar_auth_token=${res.access_token}; path=/; max-age=604800; SameSite=Lax`;
       clearClientApiCache();
       setUser(res.user);
       setModalOpen(false);

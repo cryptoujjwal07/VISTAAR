@@ -449,7 +449,7 @@ export default function StudentPortalPage() {
               { id: "lNhK69S_LLM", title: "Walkthrough of Green Bharati Station", location: "Larsemann Hills, Antarctica" },
             ].map((v) => (
               <div key={v.id} className="ice-glass rounded-2xl p-4 border border-white space-y-3">
-                <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-900">
+                <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-800">
                   <iframe
                     src={`https://www.youtube.com/embed/${v.id}`}
                     title={v.title}

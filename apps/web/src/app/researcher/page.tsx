@@ -258,6 +258,41 @@ export default function ResearcherPortalPage() {
             </div>
           </div>
 
+          {/* CAN / CANNOT Governance Card */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-2xl p-5 bg-emerald-50/90 border border-emerald-200 text-xs space-y-2">
+              <div className="font-bold text-emerald-900 flex items-center space-x-1.5 text-sm">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Researcher CAN</span>
+              </div>
+              <ul className="space-y-1 text-emerald-800">
+                <li>✅ Read authorized research & papers</li>
+                <li>✅ Analyze datasets & telemetry</li>
+                <li>✅ Compare data across observatories</li>
+                <li>✅ Weather Analysis & station correlations</li>
+                <li>✅ Create research questions & hypothesis</li>
+                <li>✅ Create findings & synthesis reports</li>
+                <li>✅ Create research reports with evidence</li>
+                <li>✅ Use AI on authorized sources only</li>
+                <li>✅ Generate charts & visualizations</li>
+                <li>✅ Add citations & provenance anchors</li>
+              </ul>
+            </div>
+            <div className="rounded-2xl p-5 bg-red-50/90 border border-red-200 text-xs space-y-2">
+              <div className="font-bold text-red-900 flex items-center space-x-1.5 text-sm">
+                <AlertCircle className="w-4 h-4 text-red-600" />
+                <span>Researcher CANNOT</span>
+              </div>
+              <ul className="space-y-1 text-red-800">
+                <li>❌ Modify original Scientist data</li>
+                <li>❌ Modify original scientific documents</li>
+                <li>❌ Change system permissions</li>
+                <li>❌ Manage users & role approvals</li>
+                <li>❌ Alter cryptographic provenance or checksums</li>
+              </ul>
+            </div>
+          </div>
+
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div
