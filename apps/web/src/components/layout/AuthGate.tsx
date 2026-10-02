@@ -477,8 +477,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
       {/* Global Clean Sign-In Modal (Accessible from Navbar Sign-In Button) */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg ice-glass-strong rounded-3xl p-7 sm:p-9 shadow-2xl border-2 border-white/95 relative space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/40 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-lg ice-glass-strong rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl border-2 border-white/95 relative space-y-4 max-h-[92vh] overflow-y-auto my-auto">
             <button
               onClick={() => setModalOpen(false)}
               className="absolute right-5 top-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-sky-100 transition-colors cursor-pointer"

@@ -7,7 +7,7 @@ import { ShieldCheck, Database, Globe2, Compass } from "lucide-react";
 export function Footer() {
   return (
     <footer className="w-full border-t border-sky-200/90 ice-glass mt-20 pt-16 pb-12 text-slate-600">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 grid grid-cols-1 md:grid-cols-4 gap-10">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-10">
         {/* Brand & Attribution */}
         <div className="md:col-span-2 space-y-4">
           <div className="flex items-center space-x-3">
@@ -87,7 +87,7 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 mt-12 pt-6 border-t border-sky-200/80 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 font-medium gap-3">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-6 border-t border-sky-200/80 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 font-medium gap-3">
         <p>© 2026 National Centre for Polar and Ocean Research (NCPOR), Ministry of Earth Sciences, Govt. of India.</p>
         <p className="font-bold text-sky-800">Smart India Hackathon • Problem Statement 26063</p>
       </div>

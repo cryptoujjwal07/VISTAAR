@@ -133,8 +133,8 @@ function LoginSignupContent() {
   }
 
   return (
-    <div className="w-full min-h-[calc(100dvh-4.75rem)] lg:h-[calc(100dvh-4.75rem)] px-3 sm:px-5 lg:px-8 py-2 lg:py-3 flex items-center justify-center overflow-y-auto lg:overflow-hidden">
-      <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch lg:h-[min(640px,calc(100dvh-5.5rem))]">
+    <div className="w-full min-h-[calc(100dvh-4.5rem)] px-3 sm:px-5 lg:px-8 py-3 lg:py-4 flex items-center justify-center overflow-y-auto">
+      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-stretch my-auto">
         {/* LEFT COLUMN (7 cols): Big Polar Bear & Ice-Mountain Showcase */}
         <div className="lg:col-span-7 rounded-2xl lg:rounded-3xl overflow-hidden relative flex flex-col justify-between p-4 sm:p-5 lg:p-6 text-white shadow-xl border border-white/70 min-h-[300px] lg:min-h-0">
           <div

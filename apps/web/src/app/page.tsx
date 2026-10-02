@@ -375,7 +375,7 @@ export default function HomePage() {
       {/* =========================================================================
           1. HERO BANNER: Ice Mountain Display, Big Typography & Search
           ========================================================================= */}
-      <section className="relative pt-12 sm:pt-20 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto">
+      <section className="relative pt-8 sm:pt-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="text-center space-y-6 max-w-4xl mx-auto">
           {/* Top Institutional Badge */}
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full ice-glass text-sky-900 border border-white/80 text-xs sm:text-sm font-extrabold tracking-wide uppercase shadow-2xs">
@@ -480,8 +480,8 @@ export default function HomePage() {
       {/* =========================================================================
           2. SECTION: Four Research Stations Across The Three Poles
           ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 space-y-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 w-full">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 flex-wrap">
           <div className="space-y-2">
             <Badge variant="scientific" className="text-xs font-bold uppercase tracking-wider">
               Permanent Research Bases
@@ -560,7 +560,7 @@ export default function HomePage() {
           3. SECTION: Interactive Polar Climate & Temperature Comparator
           (How Cold Does It Get Across India's Stations? Interactive Slider)
           ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="ice-glass-strong rounded-3xl p-8 sm:p-12 border border-white/95 shadow-xl space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-sky-200/80 pb-6">
             <div className="space-y-2">
@@ -668,7 +668,7 @@ export default function HomePage() {
           4. SECTION: "Watch from the Field" Video Gallery
           (Official Real NCPOR Expeditions on YouTube)
           ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 space-y-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 w-full">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-2">
             <Badge variant="scientific" className="text-xs font-bold uppercase tracking-wider">
@@ -723,7 +723,7 @@ export default function HomePage() {
       {/* =========================================================================
           5. SECTION: Live Climate & Weather Telemetry
           ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="ice-glass-strong rounded-3xl p-6 sm:p-10 border border-white/95 shadow-xl space-y-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-sky-200/80">
             <div className="space-y-2">
@@ -889,7 +889,7 @@ export default function HomePage() {
       {/* =========================================================================
           6. SECTION: Interactive Polar Education (Class 5 to 12 Level Picker)
           ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 space-y-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 w-full">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-2">
             <Badge variant="scientific" className="text-xs font-bold uppercase tracking-wider">
