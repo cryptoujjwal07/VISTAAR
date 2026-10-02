@@ -407,7 +407,7 @@ export default function HomePage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search stations, expeditions, weather telemetry, research..."
+                placeholder="Search polar science, research, stations, expeditions, datasets and stories..."
                 className="w-full text-base sm:text-lg font-semibold bg-transparent text-slate-900 placeholder-slate-400 focus:outline-none px-2"
               />
               <button
@@ -418,33 +418,26 @@ export default function HomePage() {
               </button>
             </form>
 
-            {/* Quick Trending Searches */}
+            {/* Exact Public Search Filters from Specification */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs font-semibold text-slate-600">
-              <span className="text-slate-400 font-bold uppercase tracking-wider">Quick Jump:</span>
-              <button
-                onClick={() => router.push("/weather?station_id=maitri")}
-                className="px-3 py-1 rounded-full bg-white/80 border border-sky-200 hover:bg-white text-slate-700 cursor-pointer transition-all"
-              >
-                ❄️ Maitri Live Weather
-              </button>
-              <button
-                onClick={() => router.push("/stations")}
-                className="px-3 py-1 rounded-full bg-white/80 border border-sky-200 hover:bg-white text-slate-700 cursor-pointer transition-all"
-              >
-                🏛️ Bharati Station
-              </button>
-              <button
-                onClick={() => router.push("/expeditions")}
-                className="px-3 py-1 rounded-full bg-white/80 border border-sky-200 hover:bg-white text-slate-700 cursor-pointer transition-all"
-              >
-                🧭 43-ISEA Expedition
-              </button>
-              <button
-                onClick={() => router.push("/education")}
-                className="px-3 py-1 rounded-full bg-white/80 border border-sky-200 hover:bg-white text-slate-700 cursor-pointer transition-all"
-              >
-                🎓 Polar Classroom
-              </button>
+              <span className="text-slate-400 font-bold uppercase tracking-wider">Filters:</span>
+              {[
+                { label: "❄️ Antarctica", query: "antarctica" },
+                { label: "🐻‍❄️ Arctic", query: "arctic" },
+                { label: "🏔️ Himalayas", query: "himalayas" },
+                { label: "🏛️ Station", query: "station" },
+                { label: "🧭 Expedition", query: "expedition" },
+                { label: "📅 Year", query: "2024" },
+                { label: "📄 Content type", query: "document" },
+              ].map((f) => (
+                <button
+                  key={f.label}
+                  onClick={() => router.push(`/explore?filter=${f.query}`)}
+                  className="px-3 py-1 rounded-full bg-white/85 hover:bg-white border border-sky-200 hover:border-sky-400 text-slate-700 hover:text-sky-800 cursor-pointer shadow-2xs transition-all"
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>

@@ -44,7 +44,7 @@ export default function AdminPage() {
   const [applicationsList, setApplicationsList] = useState<any[]>([]);
   const [appStatusFilter, setAppStatusFilter] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "applications" | "audit" | "submissions" | "operations">("overview");
+  const [activeTab, setActiveTab] = useState<string>("overview");
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("");
   const [auditResourceTypeFilter, setAuditResourceTypeFilter] = useState("");
@@ -365,75 +365,43 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex space-x-2 border-b border-vistaar-border pb-2 text-sm font-semibold">
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={`px-4 py-2 rounded-md transition-colors ${
-            activeTab === "overview"
-              ? "bg-vistaar-primary text-white"
-              : "text-vistaar-muted hover:text-vistaar-text hover:bg-white"
-          }`}
-        >
-          Infrastructure & Health
-        </button>
-        <button
-          onClick={() => setActiveTab("users")}
-          className={`px-4 py-2 rounded-md transition-colors ${
-            activeTab === "users"
-              ? "bg-vistaar-primary text-white"
-              : "text-vistaar-muted hover:text-vistaar-text hover:bg-white"
-          }`}
-        >
-          User Accounts & RBAC
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab("applications");
-            loadApplications();
-          }}
-          className={`px-4 py-2 rounded-md transition-colors ${
-            activeTab === "applications"
-              ? "bg-vistaar-primary text-white"
-              : "text-vistaar-muted hover:text-vistaar-text hover:bg-white"
-          }`}
-        >
-          Role Approval Queue ({applicationsList.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("audit")}
-          className={`px-4 py-2 rounded-md transition-colors ${
-            activeTab === "audit"
-              ? "bg-vistaar-primary text-white"
-              : "text-vistaar-muted hover:text-vistaar-text hover:bg-white"
-          }`}
-        >
-          Append-Only Audit Trail
-        </button>
-        <button
-          onClick={() => setActiveTab("submissions")}
-          className={`px-4 py-2 rounded-md transition-colors ${
-            activeTab === "submissions"
-              ? "bg-vistaar-primary text-white"
-              : "text-vistaar-muted hover:text-vistaar-text hover:bg-white"
-          }`}
-        >
-          Scientist Submissions & IDOR
-        </button>
-        <button
-          onClick={() => setActiveTab("operations")}
-          className={`px-4 py-2 rounded-md transition-colors ${
-            activeTab === "operations"
-              ? "bg-vistaar-primary text-white"
-              : "text-vistaar-muted hover:text-vistaar-text hover:bg-white"
-          }`}
-        >
-          Operations, AI Telemetry & Config
-        </button>
+      {/* 14 Administrative Navigation Tabs */}
+      <div className="flex flex-wrap gap-1.5 border-b border-vistaar-border pb-3 text-xs font-bold">
+        {[
+          { id: "overview", label: "Admin Dashboard" },
+          { id: "users", label: "Users" },
+          { id: "scientist_applications", label: "Scientist Applications" },
+          { id: "researcher_applications", label: "Researcher Applications" },
+          { id: "teacher_student", label: "Teacher / Student" },
+          { id: "roles", label: "Roles & Permissions" },
+          { id: "datasets", label: "Datasets" },
+          { id: "content_governance", label: "Content Governance" },
+          { id: "audit", label: "Audit Logs" },
+          { id: "system_health", label: "System Health" },
+          { id: "storage", label: "Storage" },
+          { id: "ai_config", label: "AI Configuration" },
+          { id: "security", label: "Security" },
+          { id: "settings", label: "Settings" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => {
+              setActiveTab(tab.id);
+              if (tab.id.includes("applications")) loadApplications();
+            }}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              activeTab === tab.id
+                ? "bg-vistaar-primary text-white shadow-xs"
+                : "bg-white text-vistaar-muted hover:text-vistaar-text border border-vistaar-border/60 hover:bg-slate-50"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* TAB: ROLE APPROVAL QUEUE (Sections 10, 11, 36) */}
-      {activeTab === "applications" && (
+      {/* TAB: ROLE APPROVAL QUEUE (Scientist & Researcher Applications) */}
+      {(activeTab === "applications" || activeTab === "scientist_applications" || activeTab === "researcher_applications") && (
         <Card className="bg-white border-vistaar-border">
           <CardHeader className="p-5 border-b border-vistaar-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -538,8 +506,8 @@ export default function AdminPage() {
         </Card>
       )}
 
-      {/* TAB 1: OVERVIEW */}
-      {activeTab === "overview" && (
+      {/* TAB 1: OVERVIEW & SYSTEM HEALTH */}
+      {(activeTab === "overview" || activeTab === "system_health" || activeTab === "storage" || activeTab === "roles") && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
@@ -663,7 +631,7 @@ export default function AdminPage() {
       )}
 
       {/* TAB 2: USERS & RBAC */}
-      {activeTab === "users" && (
+      {(activeTab === "users" || activeTab === "teacher_student") && (
         <Card>
           <CardHeader className="p-5 border-b border-vistaar-border">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -919,8 +887,8 @@ export default function AdminPage() {
         </Card>
       )}
 
-      {/* TAB 4: SUBMISSIONS & IDOR */}
-      {activeTab === "submissions" && (
+      {/* TAB 4: SUBMISSIONS & DATASET GOVERNANCE */}
+      {(activeTab === "submissions" || activeTab === "datasets") && (
         <Card>
           <CardHeader className="p-5 border-b border-vistaar-border flex flex-row items-center justify-between">
             <div>
@@ -975,8 +943,8 @@ export default function AdminPage() {
         </Card>
       )}
 
-      {/* TAB 5: OPERATIONS, CATALOG SECTIONS, AI TELEMETRY & CONFIGURATION (PROMPTS 25 & 28) */}
-      {activeTab === "operations" && (
+      {/* TAB 5: OPERATIONS, CATALOG SECTIONS, AI TELEMETRY & CONFIGURATION */}
+      {(activeTab === "operations" || activeTab === "content_governance" || activeTab === "ai_config" || activeTab === "security" || activeTab === "settings") && (
         <div className="space-y-6">
           {/* Prompt 25: Station & Date Range Filters */}
           <Card className="bg-white border-vistaar-border">

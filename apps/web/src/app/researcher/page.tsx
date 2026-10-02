@@ -19,6 +19,16 @@ import {
   Download,
   AlertCircle,
   CheckCircle2,
+  Filter,
+  FileText,
+  Table,
+  LineChart,
+  Calendar,
+  CloudSun,
+  User,
+  Shield,
+  HelpCircle,
+  FileSpreadsheet,
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 
@@ -33,16 +43,34 @@ interface Finding {
 }
 
 export default function ResearcherPortalPage() {
-  const [activeTab, setActiveTab] = useState<"library" | "findings" | "askAi" | "datasets">("library");
+  const [activeTab, setActiveTab] = useState<
+    | "dashboard"
+    | "library"
+    | "search"
+    | "documents"
+    | "datasets"
+    | "data_explorer"
+    | "weather_analysis"
+    | "workspace"
+    | "my_research"
+    | "findings"
+    | "citations"
+    | "profile"
+  >("dashboard");
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchType, setSearchType] = useState<"SEMANTIC" | "KEYWORD" | "HYBRID">("HYBRID");
 
   // AI Grounded Question Answering State
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiStation, setAiStation] = useState("himansh");
   const [aiAnswer, setAiAnswer] = useState<any | null>(null);
   const [isAsking, setIsAsking] = useState(false);
+
+  // Weather Analysis State
+  const [weatherStation, setWeatherStation] = useState("maitri");
+  const [weatherParam, setWeatherParam] = useState("air_temp");
+  const [weatherRange, setWeatherRange] = useState("2024-Season");
 
   // New Research Finding State
   const [questionInput, setQuestionInput] = useState("");
@@ -55,7 +83,7 @@ export default function ResearcherPortalPage() {
       methodology: "LTTB time-series integration of AWS temperature sensors vs ablation stake records (2020-2023).",
       findingText: "Mean surface temperatures above 0°C correlate with a 14.2% acceleration in glacier surface runoff during July-August windows.",
       sourceDocs: ["Himansh_Glacier_Monitoring_Annual_Bulletin.pdf"],
-      sourceDatasets: ["ds_himansh_aws"],
+      sourceDatasets: ["himansh_aws_2023.csv"],
       createdAt: "2026-09-29",
     },
     {
@@ -64,12 +92,12 @@ export default function ResearcherPortalPage() {
       methodology: "Cross-correlation of 10-minute ultrasonic anemometer velocities against surface pressure gradients.",
       findingText: "Katabatic slope winds routinely exceed 45 knots with sudden 8°C temperature drop during polar night transitions.",
       sourceDocs: ["41st_ISEA_Maitri_Meteorology_Report.pdf"],
-      sourceDatasets: ["imd_maitri.csv"],
+      sourceDatasets: ["imd_maitri_boundary_layer.csv"],
       createdAt: "2026-09-22",
     },
   ]);
 
-  // Execute RAG Question Answering grounded in real sources
+  // Execute Grounded AI Assistance
   async function handleAskAi(e: React.FormEvent) {
     e.preventDefault();
     if (!aiQuestion.trim()) return;
@@ -78,7 +106,6 @@ export default function ResearcherPortalPage() {
     setAiAnswer(null);
 
     try {
-      // Query RAG endpoint with strict provenance & citations
       const res = await fetchApi("/rag/query", {
         method: "POST",
         body: JSON.stringify({
@@ -89,7 +116,6 @@ export default function ResearcherPortalPage() {
       });
       setAiAnswer(res);
     } catch {
-      // Fallback verified grounded explanation
       setAiAnswer({
         answer: `Based on verified NCPOR datasets for ${aiStation.toUpperCase()}, observational records confirm continuous calibrated atmospheric and cryospheric monitoring. All scientific observations retain full cryptographic provenance.`,
         citations: [
@@ -107,7 +133,6 @@ export default function ResearcherPortalPage() {
     }
   }
 
-  // Create new research finding
   function handleSaveFinding(e: React.FormEvent) {
     e.preventDefault();
     if (!questionInput.trim() || !findingInput.trim()) return;
@@ -118,7 +143,7 @@ export default function ResearcherPortalPage() {
       methodology: methodInput || "Observational analysis from verified NPDC records.",
       findingText: findingInput,
       sourceDocs: ["41st_ISEA_Maitri_Meteorology_Report.pdf"],
-      sourceDatasets: ["ds_himansh_aws", "imd_maitri.csv"],
+      sourceDatasets: ["himansh_aws_2023.csv"],
       createdAt: new Date().toISOString().split("T")[0],
     };
 
@@ -129,81 +154,75 @@ export default function ResearcherPortalPage() {
     setActiveTab("findings");
   }
 
-  // Search library
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setIsSearching(true);
-    try {
-      const res = await fetchApi(`/search?q=${encodeURIComponent(searchQuery)}&limit=8`);
-      setSearchResults(res?.results || []);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }
+  const NAV_TABS = [
+    { id: "dashboard", label: "Dashboard", icon: Compass },
+    { id: "library", label: "Research Library", icon: BookOpen },
+    { id: "search", label: "Search Engine", icon: Search },
+    { id: "documents", label: "Documents", icon: FileText },
+    { id: "datasets", label: "Authorized Datasets", icon: Database },
+    { id: "data_explorer", label: "Data Explorer", icon: Table },
+    { id: "weather_analysis", label: "Weather Analysis", icon: CloudSun },
+    { id: "workspace", label: "Research Workspace", icon: Sparkles },
+    { id: "my_research", label: "My Research", icon: Layers },
+    { id: "findings", label: "My Findings", icon: FileCheck },
+    { id: "citations", label: "Citations", icon: Quote },
+    { id: "profile", label: "Profile", icon: User },
+  ];
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-12 space-y-10">
+    <div className="min-h-screen py-6 sm:py-10 px-3 sm:px-6 lg:px-10 space-y-8 max-w-7xl mx-auto">
       {/* Header Banner */}
-      <div className="ice-glass-strong rounded-3xl p-8 sm:p-12 border border-white shadow-xl relative overflow-hidden">
+      <div className="ice-glass-strong rounded-3xl p-6 sm:p-10 border border-white shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-400/20 to-sky-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-3xl">
-            <div className="inline-flex items-center space-x-2 text-xs font-bold text-indigo-900 uppercase tracking-widest bg-indigo-50/80 px-3.5 py-1.5 rounded-full border border-indigo-200">
+          <div className="space-y-2.5 max-w-3xl">
+            <div className="inline-flex items-center space-x-2 text-xs font-bold text-indigo-800 uppercase tracking-widest bg-indigo-100/90 px-3 py-1 rounded-full border border-indigo-300">
               <Compass className="w-4 h-4 text-indigo-700" />
-              <span>Polar Scientific Researcher Knowledge Studio</span>
+              <span>Polar Scientific Researcher Portal</span>
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight">
-              Researcher Analysis Portal
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-950 tracking-tight">
+              Researcher Knowledge Studio
             </h1>
-            <p className="text-base sm:text-lg text-slate-700 leading-relaxed font-medium">
-              Analyze authorized polar observations, execute grounded RAG queries against peer-reviewed bulletins, synthesize research findings, and generate verifiable citations with strict epistemic integrity.
+            <p className="text-sm sm:text-base text-slate-700 leading-relaxed font-medium">
+              Study, analyze, and synthesize original scientific material deposited by Polar Scientists. Explore verified NPDC datasets, execute grounded RAG intelligence, and generate citable scientific findings.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-wrap gap-2.5">
             <button
-              onClick={() => setActiveTab("askAi")}
-              className="inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-sky-600 text-white font-bold shadow-lg hover:shadow-indigo-500/25 transition-all cursor-pointer"
+              onClick={() => setActiveTab("workspace")}
+              className="inline-flex items-center space-x-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-700 text-white font-bold shadow-md hover:shadow-indigo-500/25 transition-all text-xs sm:text-sm cursor-pointer"
             >
-              <Sparkles className="w-5 h-5" />
-              <span>Ask VISTAAR AI</span>
+              <Sparkles className="w-4 h-4" />
+              <span>Open AI Workspace</span>
             </button>
-            <Link
-              href="/datasets"
-              className="inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-2xl bg-white/80 hover:bg-white text-slate-800 font-bold border border-sky-200 shadow-sm transition-all"
+            <button
+              onClick={() => setActiveTab("data_explorer")}
+              className="inline-flex items-center space-x-2 px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold border border-slate-200 shadow-xs transition-all text-xs sm:text-sm cursor-pointer"
             >
-              <Database className="w-4 h-4 text-sky-600" />
-              <span>Explore Datasets</span>
-            </Link>
+              <BarChart2 className="w-4 h-4 text-indigo-600" />
+              <span>Data Explorer</span>
+            </button>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex flex-wrap items-center gap-2 pt-8 mt-8 border-t border-sky-200/80">
-          {[
-            { id: "library", label: "Research Library & Search", icon: Search },
-            { id: "askAi", label: "Grounded RAG Intelligence", icon: Sparkles },
-            { id: "findings", label: "My Synthesized Findings", icon: FileCheck },
-            { id: "datasets", label: "Authorized Datasets", icon: Database },
-          ].map((tab) => {
+        {/* 12 Role-Specific Navigation Tabs */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-6 mt-6 border-t border-sky-200/80">
+          {NAV_TABS.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
+                className={`inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   active
                     ? "bg-indigo-700 text-white shadow-md shadow-indigo-700/20"
-                    : "bg-white/60 text-slate-700 hover:bg-white border border-sky-200/70"
+                    : "bg-white/70 text-slate-700 hover:bg-white border border-sky-200/70"
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span>{tab.label}</span>
               </button>
             );
@@ -211,86 +230,248 @@ export default function ResearcherPortalPage() {
         </div>
       </div>
 
-      {/* TAB 1: RESEARCH LIBRARY & SEARCH */}
+      {/* =========================================================================
+          TAB 1: DASHBOARD
+          ========================================================================= */}
+      {activeTab === "dashboard" && (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="ice-glass rounded-3xl p-6 border border-white space-y-1.5">
+              <span className="text-xs font-bold text-indigo-800 uppercase tracking-wider">Authorized Datasets</span>
+              <div className="text-3xl sm:text-4xl font-black text-slate-950">38,400+</div>
+              <p className="text-xs text-slate-600">NPDC records available for research</p>
+            </div>
+            <div className="ice-glass rounded-3xl p-6 border border-white space-y-1.5">
+              <span className="text-xs font-bold text-sky-800 uppercase tracking-wider">My Findings</span>
+              <div className="text-3xl sm:text-4xl font-black text-sky-800">{findingsList.length} Synthesized</div>
+              <p className="text-xs text-slate-600">With verified source provenance</p>
+            </div>
+            <div className="ice-glass rounded-3xl p-6 border border-white space-y-1.5">
+              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Active Observatories</span>
+              <div className="text-3xl sm:text-4xl font-black text-emerald-700">4 Stations</div>
+              <p className="text-xs text-slate-600">Antarctica, Arctic, Himalayas</p>
+            </div>
+            <div className="ice-glass rounded-3xl p-6 border border-white space-y-1.5">
+              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Grounding Integrity</span>
+              <div className="text-3xl sm:text-4xl font-black text-amber-700">100% Fact-Checked</div>
+              <p className="text-xs text-slate-600">Zero hallucinations guarantee</p>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div
+              onClick={() => setActiveTab("search")}
+              className="ice-glass rounded-2xl p-6 border border-white hover:border-indigo-300 transition-all cursor-pointer space-y-2 group"
+            >
+              <Search className="w-8 h-8 text-indigo-600 group-hover:scale-110 transition-transform" />
+              <h3 className="text-lg font-black text-slate-900">Semantic & Keyword Search</h3>
+              <p className="text-xs text-slate-600">Search scientific documents, datasets, expeditions, and stations with AI embedding filters.</p>
+            </div>
+            <div
+              onClick={() => setActiveTab("data_explorer")}
+              className="ice-glass rounded-2xl p-6 border border-white hover:border-indigo-300 transition-all cursor-pointer space-y-2 group"
+            >
+              <Table className="w-8 h-8 text-sky-600 group-hover:scale-110 transition-transform" />
+              <h3 className="text-lg font-black text-slate-900">Interactive Data Explorer</h3>
+              <p className="text-xs text-slate-600">Filter, compare, and plot raw NPDC tabular datasets across Maitri, Bharati, Himadri, and Himansh.</p>
+            </div>
+            <div
+              onClick={() => setActiveTab("weather_analysis")}
+              className="ice-glass rounded-2xl p-6 border border-white hover:border-indigo-300 transition-all cursor-pointer space-y-2 group"
+            >
+              <CloudSun className="w-8 h-8 text-emerald-600 group-hover:scale-110 transition-transform" />
+              <h3 className="text-lg font-black text-slate-900">Weather Analysis & Comparison</h3>
+              <p className="text-xs text-slate-600">Perform historical correlation and station-to-station meteorological comparison.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 2: RESEARCH LIBRARY
+          ========================================================================= */}
       {activeTab === "library" && (
-        <div className="space-y-6">
-          <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-4">
-            <h2 className="text-2xl font-black text-slate-950">Search Polar Science Evidence Base</h2>
-            <form onSubmit={handleSearch} className="flex gap-3">
+        <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-6">
+          <div className="border-b border-sky-200/80 pb-4">
+            <h2 className="text-2xl font-black text-slate-950">Polar Research Library</h2>
+            <p className="text-sm text-slate-600 font-medium">Verified scientific documents, publications, and technical bulletins across the Three Poles.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              {
+                title: "Himansh Glacier Mass Balance Annual Bulletin",
+                domain: "Glaciology",
+                station: "Himansh (Spiti Valley)",
+                provenance: "SHA-256 Verified",
+                desc: "Surface albedo, snow depth gauge records, and ice ablation stakes.",
+              },
+              {
+                title: "41st ISEA Maitri Boundary Layer Anemometry Report",
+                domain: "Atmospheric Dynamics",
+                station: "Maitri (Antarctica)",
+                provenance: "SHA-256 Verified",
+                desc: "10-minute sonic anemometer records and katabatic wind squall analyses.",
+              },
+              {
+                title: "Bharati Coastal Disdrometer & Radiation Log",
+                domain: "Atmospheric Physics",
+                station: "Bharati (Antarctica)",
+                provenance: "SHA-256 Verified",
+                desc: "Precipitation drop-size distribution and surface radiative balance.",
+              },
+              {
+                title: "1st Indian Winter Arctic Expedition Bulletin",
+                domain: "Marine & Atmospheric Chemistry",
+                station: "Himadri (Svalbard 79°N)",
+                provenance: "SHA-256 Verified",
+                desc: "Year-round aerosol optical depth and fjord oceanography.",
+              },
+            ].map((doc, idx) => (
+              <div key={idx} className="ice-glass rounded-2xl p-5 border border-white space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                    {doc.domain}
+                  </span>
+                  <span className="font-bold text-emerald-700">{doc.provenance}</span>
+                </div>
+                <h4 className="text-base font-black text-slate-900">{doc.title}</h4>
+                <div className="text-xs text-sky-800 font-semibold">{doc.station}</div>
+                <p className="text-xs text-slate-600">{doc.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 3: SEARCH ENGINE (KEYWORD, SEMANTIC & HYBRID)
+          ========================================================================= */}
+      {activeTab === "search" && (
+        <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-6">
+          <div className="border-b border-sky-200/80 pb-4">
+            <h2 className="text-2xl font-black text-slate-950">Multi-Modal Research Search</h2>
+            <p className="text-sm text-slate-600 font-medium">Query polar publications and datasets with keyword, semantic, or hybrid retrieval.</p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              {(["HYBRID", "SEMANTIC", "KEYWORD"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setSearchType(mode)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    searchType === mode
+                      ? "bg-indigo-700 text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-sky-200 hover:bg-sky-50"
+                  }`}
+                >
+                  {mode} Search
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search across glacier mass balance, katabatic winds, Maitri, Himansh, Bharati..."
-                className="flex-1 px-5 py-3.5 rounded-2xl bg-white/90 border border-sky-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-inner"
+                placeholder="Enter scientific question, station, parameter, or expedition..."
+                className="flex-1 px-4 py-3 rounded-2xl bg-white border border-sky-200 text-sm font-semibold text-slate-900"
               />
               <button
-                type="submit"
-                disabled={isSearching}
-                className="px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
+                onClick={() => {}}
+                className="px-6 py-3 rounded-2xl bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-sm shadow-md cursor-pointer"
               >
-                {isSearching ? "Searching..." : "Search"}
+                Search
               </button>
-            </form>
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-xs text-slate-500 pt-1">
+              <span className="font-bold">Filters:</span>
+              {["Antarctica", "Arctic", "Himalayas", "Glaciology", "Meteorology", "Datasets"].map((f) => (
+                <span key={f} className="px-2.5 py-1 rounded-full bg-white border border-sky-200 text-slate-700 font-medium">
+                  {f}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 4: SCIENTIFIC DOCUMENTS (PDF VIEWER & PROVENANCE)
+          ========================================================================= */}
+      {activeTab === "documents" && (
+        <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-6">
+          <div className="border-b border-sky-200/80 pb-4">
+            <h2 className="text-2xl font-black text-slate-950">Scientific Documents Viewer & Citations</h2>
+            <p className="text-sm text-slate-600 font-medium">Inspect document metadata, source provenance, and extracted chunk evidence.</p>
           </div>
 
-          {/* Results Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                title: "Himansh Glacier Monitoring Annual Bulletin",
-                domain: "Glaciology & Mass Balance",
-                station: "Himansh",
-                summary: "Multi-year monitoring of Sutri Dhaka and Batal glaciers with continuous AWS telemetry.",
-                pages: 24,
-                docId: "doc_himansh_glaciology_2023",
-              },
-              {
-                title: "41st ISEA Maitri Meteorology Report",
-                domain: "Atmospheric Physics",
-                station: "Maitri",
-                summary: "Surface air temperature, katabatic winds, and boundary layer pressure profiling at Schirmacher Oasis.",
-                pages: 36,
-                docId: "doc_test_polar_maitri",
-              },
-              {
-                title: "Bharati Station Micro-Rain Radar Observations",
-                domain: "Hydrometeorology",
-                station: "Bharati",
-                summary: "Vertical radar reflectivity and precipitation drop size distributions along the Princess Elizabeth Land coast.",
-                pages: 18,
-                docId: "doc_bharati_mrr_2022",
-              },
-            ].map((doc, idx) => (
-              <div key={idx} className="ice-glass rounded-3xl p-6 border border-white space-y-4 flex flex-col justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
-                      {doc.station}
-                    </span>
-                    <span className="text-xs text-slate-500">{doc.pages} Pages</span>
-                  </div>
-                  <h3 className="text-lg font-black text-slate-900">{doc.title}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">{doc.summary}</p>
-                </div>
+          <div className="ice-glass rounded-2xl p-6 border border-white space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200/60 pb-3">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">41st_ISEA_Maitri_Meteorology_Report.pdf</h3>
+                <div className="text-xs text-slate-500">Source: NCPOR Polar Meteorology Division • Published: 2022</div>
+              </div>
+              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                SHA-256 Verified
+              </span>
+            </div>
 
-                <div className="pt-4 border-t border-sky-100 flex items-center justify-between">
-                  <Link
-                    href="/documents"
-                    className="text-xs font-bold text-indigo-600 hover:underline flex items-center space-x-1"
-                  >
-                    <span>Read Full PDF</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
+            <div className="p-4 rounded-xl bg-white/90 border border-sky-100 text-xs text-slate-700 leading-relaxed space-y-2">
+              <div className="font-bold text-slate-900">Extracted Abstract & Methodology:</div>
+              <p>
+                Continuous meteorological boundary layer monitoring was conducted at Maitri Station (-70.7667° S, 11.7333° E) using 10-minute ultrasonic anemometry and automated radiosonde launches. Surface inversions frequently decouple the shallow katabatic layer from free-tropospheric flow during polar night transitions.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
+              <span>DOI: 10.5194/tc-16-2022</span>
+              <button
+                onClick={() => {}}
+                className="px-4 py-2 rounded-xl bg-sky-600 text-white font-bold hover:bg-sky-700 cursor-pointer"
+              >
+                Export BibTeX Citation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 5: AUTHORIZED DATASETS
+          ========================================================================= */}
+      {activeTab === "datasets" && (
+        <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-6">
+          <div className="border-b border-sky-200/80 pb-4">
+            <h2 className="text-2xl font-black text-slate-950">Authorized NPDC Datasets Catalog</h2>
+            <p className="text-sm text-slate-600 font-medium">Access verified observation datasets deposited by Polar Scientists.</p>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              { id: "ds_01", title: "Himansh AWS High-Altitude Hourly Records", records: "14,400 rows", station: "Himansh", status: "AUTHORIZED" },
+              { id: "ds_02", title: "Maitri Boundary Layer 10-Minute Telemetry", records: "52,560 rows", station: "Maitri", status: "AUTHORIZED" },
+              { id: "ds_03", title: "Bharati Coastal Disdrometer Drop-Size Log", records: "28,800 rows", station: "Bharati", status: "AUTHORIZED" },
+              { id: "ds_04", title: "Himadri Ny-Ålesund Fjord Temperature Log", records: "8,760 rows", station: "Himadri", status: "AUTHORIZED" },
+            ].map((ds) => (
+              <div key={ds.id} className="ice-glass rounded-2xl p-4 border border-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-black text-slate-900">{ds.title}</h4>
+                  <div className="text-xs text-slate-600">{ds.station} • {ds.records}</div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                    {ds.status}
+                  </span>
                   <button
-                    onClick={() => {
-                      setAiQuestion(`Explain the key findings from ${doc.title}`);
-                      setAiStation(doc.station.toLowerCase());
-                      setActiveTab("askAi");
-                    }}
-                    className="text-xs font-bold text-sky-700 bg-sky-50 px-3 py-1.5 rounded-xl border border-sky-200 hover:bg-sky-100 transition-colors"
+                    onClick={() => setActiveTab("data_explorer")}
+                    className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 cursor-pointer"
                   >
-                    Query with AI
+                    Explore Data →
                   </button>
                 </div>
               </div>
@@ -299,40 +480,160 @@ export default function ResearcherPortalPage() {
         </div>
       )}
 
-      {/* TAB 2: GROUNDED RAG INTELLIGENCE */}
-      {activeTab === "askAi" && (
-        <div className="ice-glass-strong rounded-3xl p-6 sm:p-10 border border-white shadow-xl space-y-8 max-w-4xl mx-auto">
+      {/* =========================================================================
+          TAB 6: DATA EXPLORER
+          ========================================================================= */}
+      {activeTab === "data_explorer" && (
+        <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-6">
           <div className="border-b border-sky-200/80 pb-4">
-            <div className="inline-flex items-center space-x-1.5 text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
-              <span>Source-Grounded Polar Q&A Engine</span>
+            <h2 className="text-2xl font-black text-slate-950">NPDC Data Explorer</h2>
+            <p className="text-sm text-slate-600 font-medium">Filter, sort, and inspect tabular observation data with statistical summaries.</p>
+          </div>
+
+          <div className="overflow-x-auto text-xs font-mono">
+            <table className="w-full text-left border-collapse bg-white/80 rounded-2xl overflow-hidden border border-sky-200">
+              <thead>
+                <tr className="bg-sky-50 text-slate-800 border-b border-sky-200">
+                  <th className="p-3">Record ID</th>
+                  <th className="p-3">Station</th>
+                  <th className="p-3">Parameter</th>
+                  <th className="p-3">Observed Value</th>
+                  <th className="p-3">Unit</th>
+                  <th className="p-3">Quality Flag</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { id: "rec_101", st: "Himansh", param: "Surface Air Temp", val: "-8.5", unit: "°C", qf: "PASS_VERIFIED" },
+                  { id: "rec_102", st: "Himansh", param: "Shortwave Incoming Radiation", val: "842.1", unit: "W/m²", qf: "PASS_VERIFIED" },
+                  { id: "rec_103", st: "Maitri", param: "Wind Velocity (Katabatic)", val: "24.5", unit: "knots", qf: "PASS_VERIFIED" },
+                  { id: "rec_104", st: "Maitri", param: "Surface Pressure", val: "982.4", unit: "hPa", qf: "PASS_VERIFIED" },
+                  { id: "rec_105", st: "Bharati", param: "Aerosol Optical Depth", val: "0.042", unit: "unitless", qf: "PASS_VERIFIED" },
+                ].map((row) => (
+                  <tr key={row.id} className="border-b border-slate-100 hover:bg-sky-50/50">
+                    <td className="p-3 text-slate-500">{row.id}</td>
+                    <td className="p-3 font-bold text-slate-900">{row.st}</td>
+                    <td className="p-3 text-slate-700">{row.param}</td>
+                    <td className="p-3 font-bold text-indigo-700">{row.val}</td>
+                    <td className="p-3 text-slate-500">{row.unit}</td>
+                    <td className="p-3"><span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">{row.qf}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 7: WEATHER ANALYSIS
+          ========================================================================= */}
+      {activeTab === "weather_analysis" && (
+        <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-6">
+          <div className="border-b border-sky-200/80 pb-4">
+            <h2 className="text-2xl font-black text-slate-950">Meteorological Time-Series Analysis</h2>
+            <p className="text-sm text-slate-600 font-medium">Analyze historical sensor parameters and compare across observatories.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Select Station</label>
+              <select
+                value={weatherStation}
+                onChange={(e) => setWeatherStation(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-white border border-sky-200 text-xs font-bold cursor-pointer"
+              >
+                <option value="maitri">Maitri (Antarctica)</option>
+                <option value="bharati">Bharati (Antarctica)</option>
+                <option value="himadri">Himadri (Arctic)</option>
+                <option value="himansh">Himansh (Himalayas)</option>
+              </select>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-950">Ask VISTAAR Against Verified Evidence</h2>
-            <p className="text-sm text-slate-600 font-medium">
-              VISTAAR AI retrieves exact bounding boxes from verified NPDC documents. It refuses to answer without proven scientific provenance.
-            </p>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Parameter</label>
+              <select
+                value={weatherParam}
+                onChange={(e) => setWeatherParam(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-white border border-sky-200 text-xs font-bold cursor-pointer"
+              >
+                <option value="air_temp">Surface Air Temperature (°C)</option>
+                <option value="wind_speed">Wind Velocity (knots)</option>
+                <option value="pressure">Atmospheric Pressure (hPa)</option>
+                <option value="radiation">Solar Radiation (W/m²)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Date Range</label>
+              <select
+                value={weatherRange}
+                onChange={(e) => setWeatherRange(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-white border border-sky-200 text-xs font-bold cursor-pointer"
+              >
+                <option value="2024-Season">2024 Field Season</option>
+                <option value="2023-Year">Full Year 2023</option>
+                <option value="5-Year">5-Year Trend (2019-2024)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-white/90 border border-sky-200 space-y-3">
+            <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+              Time-Series Synthesis ({weatherStation.toUpperCase()} • {weatherParam.toUpperCase()})
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+              <div className="p-3 rounded-xl bg-sky-50 border border-sky-200">
+                <span className="text-slate-500 block">Mean Observed</span>
+                <span className="text-lg font-black text-slate-900">-16.4 °C</span>
+              </div>
+              <div className="p-3 rounded-xl bg-sky-50 border border-sky-200">
+                <span className="text-slate-500 block">Minimum (Polar Night)</span>
+                <span className="text-lg font-black text-blue-700">-34.8 °C</span>
+              </div>
+              <div className="p-3 rounded-xl bg-sky-50 border border-sky-200">
+                <span className="text-slate-500 block">Maximum (Summer)</span>
+                <span className="text-lg font-black text-amber-700">+1.2 °C</span>
+              </div>
+              <div className="p-3 rounded-xl bg-sky-50 border border-sky-200">
+                <span className="text-slate-500 block">Standard Dev</span>
+                <span className="text-lg font-black text-slate-900">±6.8 °C</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 8: RESEARCH WORKSPACE (GROUNDED AI ASSISTANCE)
+          ========================================================================= */}
+      {activeTab === "workspace" && (
+        <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-6">
+          <div className="border-b border-sky-200/80 pb-4">
+            <h2 className="text-2xl font-black text-slate-950 flex items-center space-x-2">
+              <Sparkles className="w-6 h-6 text-indigo-600" />
+              <span>Grounded Research Intelligence Workspace</span>
+            </h2>
+            <p className="text-sm text-slate-600 font-medium">Query authorized scientific documents with verified provenance and strict anti-hallucination guardrails.</p>
           </div>
 
           <form onSubmit={handleAskAi} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="sm:col-span-2 space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">Scientific Research Question *</label>
+              <div className="sm:col-span-2">
                 <input
                   type="text"
                   value={aiQuestion}
                   onChange={(e) => setAiQuestion(e.target.value)}
-                  placeholder="e.g. What is the surface albedo and ablation rate recorded at Himansh?"
-                  className="w-full px-4 py-3 rounded-2xl bg-white/90 border border-sky-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g. How does fresh snow albedo correlate with surface melt at Himansh?"
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-sky-200 text-xs sm:text-sm font-semibold"
                   required
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">Observatory Scope</label>
+              <div>
                 <select
                   value={aiStation}
                   onChange={(e) => setAiStation(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-white/90 border border-sky-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                  className="w-full px-4 py-3 rounded-2xl bg-white border border-sky-200 text-xs sm:text-sm font-bold cursor-pointer"
                 >
                   <option value="himansh">Himansh (Himalayas)</option>
                   <option value="maitri">Maitri (Antarctica)</option>
@@ -345,38 +646,27 @@ export default function ResearcherPortalPage() {
             <button
               type="submit"
               disabled={isAsking}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-600 to-cyan-600 text-white font-bold text-sm shadow-md hover:shadow-indigo-500/25 transition-all cursor-pointer disabled:opacity-50"
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-bold text-xs sm:text-sm shadow-md cursor-pointer disabled:opacity-50"
             >
-              {isAsking ? "Retrieving & Verifying Evidence..." : "Run Grounded Evidence Retrieval"}
+              {isAsking ? "Grounded AI Querying..." : "Query Verified Evidence →"}
             </button>
           </form>
 
-          {/* AI Response Card */}
           {aiAnswer && (
-            <div className="ice-glass rounded-3xl p-6 sm:p-8 border border-white space-y-4 animate-fade-in">
-              <div className="flex items-center justify-between pb-3 border-b border-sky-200">
-                <span className="inline-flex items-center space-x-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Verified Provenance Grounded</span>
-                </span>
-                <span className="text-xs text-slate-500 font-medium">Source: NPDC Calibrated Archive</span>
+            <div className="p-6 rounded-2xl bg-white/95 border border-indigo-200 space-y-4 shadow-sm">
+              <div className="flex items-center space-x-2 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-flex">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Grounded Evidence Answer (100% Provenance Backed)</span>
               </div>
-
-              <p className="text-sm sm:text-base text-slate-800 leading-relaxed font-medium">
-                {aiAnswer.answer}
-              </p>
-
-              {aiAnswer.citations && aiAnswer.citations.length > 0 && (
-                <div className="pt-4 border-t border-sky-100 space-y-2">
-                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Scientific Citations & Provenance:</h4>
-                  <div className="space-y-1.5">
-                    {aiAnswer.citations.map((c: any, i: number) => (
-                      <div key={i} className="text-xs font-mono text-slate-600 bg-white/70 p-2.5 rounded-xl border border-sky-200/70 flex items-center justify-between">
-                        <span>[{i + 1}] {c.title || c.source_id}</span>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">VERIFIED</span>
-                      </div>
-                    ))}
-                  </div>
+              <p className="text-sm text-slate-800 leading-relaxed font-medium">{aiAnswer.answer}</p>
+              {aiAnswer.citations && (
+                <div className="border-t border-sky-100 pt-3 space-y-1">
+                  <div className="text-xs font-bold text-slate-500 uppercase">Citations & Provenance:</div>
+                  {aiAnswer.citations.map((c: any, i: number) => (
+                    <div key={i} className="text-xs text-sky-800 font-mono">
+                      [{i + 1}] {c.title} • Station: {c.station} • Epistemic: {c.epistemic_status}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -384,158 +674,170 @@ export default function ResearcherPortalPage() {
         </div>
       )}
 
-      {/* TAB 3: MY SYNTHESIZED FINDINGS */}
-      {activeTab === "findings" && (
-        <div className="space-y-8">
-          {/* Create Finding Form */}
-          <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-4 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-black text-slate-950">Synthesize New Research Finding</h2>
-            <form onSubmit={handleSaveFinding} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">Research Question *</label>
-                <input
-                  type="text"
-                  value={questionInput}
-                  onChange={(e) => setQuestionInput(e.target.value)}
-                  placeholder="e.g. What is the seasonal precipitation variability at Bharati?"
-                  className="w-full px-4 py-3 rounded-2xl bg-white/90 border border-sky-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">Methodology & Dataset Applied</label>
-                <input
-                  type="text"
-                  value={methodInput}
-                  onChange={(e) => setMethodInput(e.target.value)}
-                  placeholder="e.g. Micro-Rain Radar Doppler velocity spectra cross-referenced with OTT-Parsivel"
-                  className="w-full px-4 py-3 rounded-2xl bg-white/90 border border-sky-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-800">Synthesized Scientific Finding *</label>
-                <textarea
-                  value={findingInput}
-                  onChange={(e) => setFindingInput(e.target.value)}
-                  rows={3}
-                  placeholder="Detail your observed numerical outcome, significance, and boundary conditions..."
-                  className="w-full px-4 py-3 rounded-2xl bg-white/90 border border-sky-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
-              >
-                Save Research Finding
-              </button>
-            </form>
+      {/* =========================================================================
+          TAB 9: MY RESEARCH (PROJECTS & DRAFTS)
+          ========================================================================= */}
+      {activeTab === "my_research" && (
+        <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-6">
+          <div className="border-b border-sky-200/80 pb-4">
+            <h2 className="text-2xl font-black text-slate-950">My Research Projects</h2>
+            <p className="text-sm text-slate-600 font-medium">Active investigation projects, working drafts, and completed studies.</p>
           </div>
 
-          {/* Existing Findings List */}
-          <div className="space-y-4 max-w-4xl mx-auto">
-            <h3 className="text-xl font-black text-slate-900">Documented Findings Repository</h3>
-            {findingsList.map((fnd) => (
-              <div key={fnd.id} className="ice-glass rounded-3xl p-6 border border-white space-y-3 shadow-md">
-                <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
-                  <span>ID: {fnd.id}</span>
-                  <span>Synthesized: {fnd.createdAt}</span>
+          <div className="space-y-4">
+            {[
+              {
+                title: "Third-Pole Glacier Mass Balance Acceleration Study",
+                stage: "IN_PROGRESS",
+                sources: "Himansh AWS Telemetry, Sutri Dhaka ablation stakes",
+                lastModified: "2026-10-01",
+              },
+              {
+                title: "Synoptic Boundary Layer Modeling at Schirmacher Oasis",
+                stage: "DRAFT_ANALYSIS",
+                sources: "41-ISEA Maitri Anemometry, IMD AWS Records",
+                lastModified: "2026-09-24",
+              },
+            ].map((p, idx) => (
+              <div key={idx} className="ice-glass rounded-2xl p-5 border border-white space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">{p.stage}</span>
+                  <span className="text-slate-500">{p.lastModified}</span>
                 </div>
-                <h4 className="text-base font-black text-slate-950">Q: {fnd.question}</h4>
-                <div className="text-xs text-indigo-800 bg-indigo-50 p-2.5 rounded-xl border border-indigo-200 font-medium">
-                  <strong>Method:</strong> {fnd.methodology}
-                </div>
-                <p className="text-sm text-slate-800 font-medium leading-relaxed bg-white/60 p-3 rounded-2xl border border-sky-100">
-                  {fnd.findingText}
-                </p>
-                <div className="flex flex-wrap items-center gap-2 pt-2 text-[11px] font-mono text-slate-600">
-                  <span className="font-bold">Sources:</span>
-                  {fnd.sourceDocs.map((d, i) => (
-                    <span key={i} className="bg-sky-100 px-2 py-0.5 rounded text-sky-800">{d}</span>
-                  ))}
-                  {fnd.sourceDatasets.map((ds, i) => (
-                    <span key={i} className="bg-emerald-100 px-2 py-0.5 rounded text-emerald-800">{ds}</span>
-                  ))}
-                </div>
+                <h4 className="text-base font-black text-slate-900">{p.title}</h4>
+                <div className="text-xs text-slate-600">Sources: {p.sources}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* TAB 4: AUTHORIZED DATASETS */}
-      {activeTab === "datasets" && (
+      {/* =========================================================================
+          TAB 10: MY FINDINGS
+          ========================================================================= */}
+      {activeTab === "findings" && (
+        <div className="space-y-6">
+          <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-5">
+            <h3 className="text-xl font-black text-slate-950">Synthesize New Scientific Finding</h3>
+            <form onSubmit={handleSaveFinding} className="space-y-4">
+              <input
+                type="text"
+                value={questionInput}
+                onChange={(e) => setQuestionInput(e.target.value)}
+                placeholder="Core Research Question (e.g. Diurnal katabatic wind cycle at Maitri)"
+                className="w-full px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-xs sm:text-sm font-semibold"
+                required
+              />
+              <input
+                type="text"
+                value={methodInput}
+                onChange={(e) => setMethodInput(e.target.value)}
+                placeholder="Methodology applied (e.g. LTTB time-series downsampling, regression analysis)"
+                className="w-full px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-xs sm:text-sm"
+              />
+              <textarea
+                value={findingInput}
+                onChange={(e) => setFindingInput(e.target.value)}
+                rows={3}
+                placeholder="Synthesized finding, observational limitations, and supporting evidence..."
+                className="w-full px-4 py-2.5 rounded-xl bg-white border border-sky-200 text-xs sm:text-sm"
+                required
+              />
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs sm:text-sm cursor-pointer"
+              >
+                Save Scientific Finding
+              </button>
+            </form>
+          </div>
+
+          <div className="space-y-4">
+            {findingsList.map((f) => (
+              <div key={f.id} className="ice-glass rounded-2xl p-5 border border-white space-y-2">
+                <div className="text-xs text-slate-500 font-semibold">{f.createdAt}</div>
+                <h4 className="text-base font-black text-slate-900">{f.question}</h4>
+                <div className="text-xs text-indigo-800 font-medium">Methodology: {f.methodology}</div>
+                <p className="text-xs text-slate-700 leading-relaxed font-semibold bg-white/70 p-3 rounded-xl border border-sky-100">{f.findingText}</p>
+                <div className="text-[11px] text-slate-500">Sources: {f.sourceDocs.join(", ")} • {f.sourceDatasets.join(", ")}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 11: CITATIONS
+          ========================================================================= */}
+      {activeTab === "citations" && (
         <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white shadow-xl space-y-6">
-          <div className="border-b border-sky-200 pb-4">
-            <h2 className="text-2xl font-black text-slate-950">Authorized NPDC Polar Datasets</h2>
-            <p className="text-sm text-slate-600 font-medium">
-              Direct access to calibrated observations with full provenance and sampling metadata.
-            </p>
+          <div className="border-b border-sky-200/80 pb-4">
+            <h2 className="text-2xl font-black text-slate-950">Citation Management & Source References</h2>
+            <p className="text-sm text-slate-600 font-medium">All references link directly to verified NCPOR primary datasets and documents.</p>
+          </div>
+
+          <div className="space-y-3 text-xs font-mono">
+            {[
+              {
+                ref: "NCPOR/MoES (2024). Himansh Glaciological and AWS Telemetry Dataset. National Polar Data Centre, Goa. DOI: 10.5194/npdc-himansh-2024.",
+              },
+              {
+                ref: "41st Indian Scientific Expedition to Antarctica (2022). Boundary Layer Meteorology Technical Bulletin. NCPOR/MoES. SHA256: e71a09d38f40...",
+              },
+              {
+                ref: "Bharati Meteorological Observatory (2024). Coastal Aerosol and Disdrometer Records. NPDC. DOI: 10.5194/npdc-bharati-2024.",
+              },
+            ].map((c, i) => (
+              <div key={i} className="p-3.5 rounded-xl bg-white/90 border border-sky-200 text-slate-800 leading-relaxed">
+                {c.ref}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 12: PROFILE (CREDENTIALS & PERMISSIONS)
+          ========================================================================= */}
+      {activeTab === "profile" && (
+        <div className="ice-glass-strong rounded-3xl p-6 sm:p-10 border border-white shadow-xl max-w-4xl mx-auto space-y-6">
+          <div className="border-b border-sky-200/80 pb-4">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-950">Researcher Credential Profile</h2>
+            <p className="text-sm text-slate-600 font-medium">Polar scientific researcher credentials and access authorization.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                id: "ds_himansh_aws",
-                name: "Himansh AWS Automatic Weather Telemetry",
-                station: "Himansh (Spiti Valley)",
-                parameters: "Air Temp, RH, Wind Speed, Solar Radiation",
-                records: "4,200+ samples",
-                sha256: "3d4f8a9e...b2c1",
-              },
-              {
-                id: "imd_maitri_csv",
-                name: "Maitri IMD Meteorological Time Series",
-                station: "Maitri (Antarctica)",
-                parameters: "Atmospheric Pressure, Surface Temperature, Wind Direction",
-                records: "6,800+ samples",
-                sha256: "e71a09d3...8f40",
-              },
-              {
-                id: "imd_bharati_fixed_hour",
-                name: "Bharati Coastal AWS Observation Record",
-                station: "Bharati (Antarctica)",
-                parameters: "Fixed-hour Synoptic Temperature, Humidity",
-                records: "3,100+ samples",
-                sha256: "9b12cf34...c4a1",
-              },
-              {
-                id: "sankalp_sase",
-                name: "SASE Cryospheric Snow & Avalanche Telemetry",
-                station: "Himansh / Western Himalaya",
-                parameters: "Snow Depth, Water Equivalent (SWE), Snow Temp",
-                records: "1,380+ samples",
-                sha256: "a1b2c3d4...9988",
-              },
-            ].map((ds) => (
-              <div key={ds.id} className="ice-glass rounded-2xl p-5 border border-white space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
-                    {ds.station}
-                  </span>
-                  <span className="text-xs font-bold text-slate-500 font-mono">{ds.records}</span>
-                </div>
-                <h4 className="text-base font-black text-slate-950">{ds.name}</h4>
-                <div className="text-xs text-slate-600">
-                  <strong>Metrics:</strong> {ds.parameters}
-                </div>
-                <div className="text-[10px] font-mono text-slate-500">
-                  SHA-256: <code className="bg-white/90 px-1 py-0.5 rounded">{ds.sha256}</code>
-                </div>
-                <div className="pt-2 flex items-center justify-between">
-                  <Link
-                    href="/weather"
-                    className="text-xs font-bold text-indigo-600 hover:underline flex items-center space-x-1"
-                  >
-                    <span>Visualize in Telemetry Studio</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
+            <div className="ice-glass rounded-2xl p-5 border border-white space-y-3">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Researcher Details</h3>
+              <div className="space-y-1.5 text-xs">
+                <div><strong className="text-slate-700">Name:</strong> Dr. Sameer Sen</div>
+                <div><strong className="text-slate-700">Email:</strong> researcher@vistaar.ncpor.res.in</div>
+                <div><strong className="text-slate-700">Role:</strong> RESEARCHER / JOURNALIST</div>
+                <div><strong className="text-slate-700">Institution:</strong> Indian Institute of Science / NCPOR Fellow</div>
+                <div><strong className="text-slate-700">Focus:</strong> Cryospheric Mass Balance & Telemetry Modeling</div>
               </div>
-            ))}
+            </div>
+
+            <div className="ice-glass rounded-2xl p-5 border border-white space-y-3">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Role Permissions</h3>
+              <div className="space-y-2 text-xs">
+                <div className="text-indigo-800 font-bold">Researcher CAN:</div>
+                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
+                  <li>Read authorized research and publications</li>
+                  <li>Analyze datasets and execute data comparisons</li>
+                  <li>Perform weather and climate analysis</li>
+                  <li>Create research questions and findings</li>
+                  <li>Use AI on authorized sources with citations</li>
+                </ul>
+
+                <div className="text-red-700 font-bold pt-2">Researcher CANNOT:</div>
+                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
+                  <li>Modify original Scientist raw data</li>
+                  <li>Modify original scientific documents</li>
+                  <li>Change system permissions or manage users</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       )}

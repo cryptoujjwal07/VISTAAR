@@ -446,25 +446,62 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   // If user is logged in but visiting a role route they aren't authorized for:
   if (!publicRoute && user && !routeAllowed) {
-    const roleSpec = ROLE_PORTAL_MAP[user.role] || ROLE_PORTAL_MAP.PUBLIC_USER;
+    const roleSpec = ROLE_PORTAL_MAP[user.role] || ROLE_PORTAL_MAP.STUDENT;
     return (
-      <div className="min-h-[80vh] w-full flex items-center justify-center px-4 sm:px-6 py-16">
-        <div className="max-w-md w-full ice-glass-strong rounded-3xl p-8 text-center space-y-4 shadow-xl border border-white/90">
-          <div className="w-14 h-14 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 mx-auto flex items-center justify-center">
-            <Lock className="w-7 h-7 text-amber-700" />
+      <div className="min-h-[85vh] w-full flex items-center justify-center px-4 sm:px-6 py-12">
+        <div className="max-w-lg w-full ice-glass-strong rounded-3xl p-8 sm:p-10 text-center space-y-6 shadow-2xl border-2 border-red-200/80 bg-red-50/20 backdrop-blur-xl animate-fade-in">
+          {/* 403 Forbidden Security Badge */}
+          <div className="w-16 h-16 rounded-2xl bg-red-100 border-2 border-red-300 text-red-700 mx-auto flex items-center justify-center shadow-inner">
+            <Lock className="w-8 h-8 text-red-600 animate-pulse" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Workspace Restricted</h2>
-          <p className="text-sm text-slate-600">
-            Your role (<strong className="font-mono">{user.role}</strong>) does not have access to <code>{pathname}</code>.
-          </p>
-          <div className="pt-3">
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-red-100/90 text-red-800 border border-red-200 text-xs font-mono font-black tracking-wider uppercase">
+              <span>❌ 403 Forbidden • Access Denied</span>
+            </div>
+            <h2 className="text-3xl font-black text-slate-950 tracking-tight">
+              Unauthorized Portal Access
+            </h2>
+            <p className="text-sm text-slate-700 leading-relaxed font-medium">
+              Your account role <span className="font-mono font-black px-2 py-0.5 rounded bg-red-100 text-red-900 border border-red-200">{user.role}</span> is not authorized to access <code className="font-mono font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-900 border border-slate-200">{pathname}</code>.
+            </p>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              VISTAAR Role-Based Access Control (RBAC) enforces strict operational segregation between Scientist, Researcher, Educator, Student, and Governance workspaces.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href={roleSpec.route}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 text-white font-bold text-sm shadow-md inline-flex items-center space-x-2"
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white font-extrabold text-sm shadow-md transition-all inline-flex items-center justify-center space-x-2"
             >
-              <span>Go to My Role Workspace ({roleSpec.route})</span>
+              <span>Go to My Authorized Portal ({roleSpec.route})</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
+
+            <Link
+              href="/"
+              className="px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-200 shadow-xs transition-all inline-flex items-center justify-center"
+            >
+              <span>Public Home</span>
+            </Link>
+          </div>
+
+          <div className="pt-4 border-t border-red-200/80 flex items-center justify-between text-xs text-slate-500">
+            <span>Signed in as: <strong className="text-slate-800">{user.email}</strong></span>
+            <button
+              onClick={() => {
+                localStorage.removeItem("vistaar_token");
+                localStorage.removeItem("vistaar_refresh_token");
+                localStorage.removeItem("vistaar_user");
+                clearClientApiCache();
+                window.dispatchEvent(new Event("vistaar-auth-changed"));
+                setModalOpen(true);
+              }}
+              className="text-red-600 hover:underline font-bold cursor-pointer"
+            >
+              Switch Role Account
+            </button>
           </div>
         </div>
       </div>

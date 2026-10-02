@@ -4,70 +4,30 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Compass,
-  Database,
-  CloudSun,
-  GraduationCap,
-  Image as ImageIcon,
-  Shield,
-  Globe2,
-  FileSearch,
   Search,
   Menu,
   X,
-  Building2,
-  Home,
+  Globe2,
+  LogIn,
   LogOut,
   ChevronDown,
-  CheckCircle,
+  ArrowRight,
+  Shield,
   FlaskConical,
-  BookOpen,
-  Edit3,
+  Compass,
+  GraduationCap,
   Sparkles,
-  LogIn,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchApi, clearClientApiCache } from "@/lib/api";
 import { MountainLogo } from "@/components/ui/MountainLogo";
-import { ROLE_PORTAL_MAP, getRolePortalRoute } from "@/components/layout/AuthGate";
-
-const CORE_NAV_ITEMS = [
-  { href: "/", label: "Overview", icon: Home },
-  { href: "/stations", label: "Stations", icon: Building2 },
-  { href: "/weather", label: "Live Weather", icon: CloudSun },
-  { href: "/research", label: "Research", icon: BookOpen },
-  { href: "/education", label: "Classroom", icon: GraduationCap },
-];
-
-const EXTENDED_NAV_ITEMS = [
-  { href: "/expeditions", label: "Expeditions", icon: Compass },
-  { href: "/media", label: "Media & Press", icon: ImageIcon },
-];
-
-const MORE_NAV_ITEMS = [
-  { href: "/expeditions", label: "Expeditions", desc: "Antarctic, Arctic & Himalayan expeditions", icon: Compass },
-  { href: "/media", label: "Media & Press", desc: "Scientific bulletins & press releases", icon: ImageIcon },
-  { href: "/datasets", label: "NPDC Datasets", desc: "38,000+ scientific observation records", icon: Database },
-  { href: "/about", label: "About VISTAAR", desc: "Institutional mandate and governance", icon: Shield },
-];
-
-const ALL_MOBILE_NAV_ITEMS = [
-  { href: "/", label: "Overview", icon: Home },
-  { href: "/stations", label: "Stations", icon: Building2 },
-  { href: "/weather", label: "Live Weather", icon: CloudSun },
-  { href: "/expeditions", label: "Expeditions", icon: Compass },
-  { href: "/research", label: "Research", icon: BookOpen },
-  { href: "/education", label: "Classroom", icon: GraduationCap },
-  { href: "/media", label: "Media & Press", icon: ImageIcon },
-  { href: "/datasets", label: "NPDC Datasets", icon: Database },
-  { href: "/about", label: "About VISTAAR", icon: Shield },
-];
+import { getRolePortalRoute, getRolePortalLabel } from "@/components/layout/AuthGate";
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState<"en" | "hi">("en");
@@ -76,8 +36,15 @@ export function Navbar() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  // Check if current route is inside one of the 5 role portals
+  const isPortalRoute =
+    pathname.startsWith("/scientist") ||
+    pathname.startsWith("/researcher") ||
+    pathname.startsWith("/teacher") ||
+    pathname.startsWith("/student") ||
+    pathname.startsWith("/admin");
+
   useEffect(() => {
-    setMoreMenuOpen(false);
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
   }, [pathname]);
@@ -98,9 +65,6 @@ export function Navbar() {
       const target = e.target as HTMLElement;
       if (!target.closest("#user-menu-container")) {
         setUserMenuOpen(false);
-      }
-      if (!target.closest("#more-nav-container")) {
-        setMoreMenuOpen(false);
       }
     };
     document.addEventListener("click", handleClickOutside);
@@ -168,11 +132,30 @@ export function Navbar() {
     }
   }
 
+  const roleBadgeStyle = (role: string) => {
+    switch (role) {
+      case "SUPER_ADMIN":
+      case "ADMIN":
+        return { bg: "bg-red-50 text-red-800 border-red-200", dot: "bg-red-500", label: "Admin" };
+      case "SCIENTIST":
+      case "FIELD_SCIENTIST":
+        return { bg: "bg-emerald-50 text-emerald-800 border-emerald-200", dot: "bg-emerald-600", label: "Scientist" };
+      case "RESEARCHER":
+      case "JOURNALIST":
+        return { bg: "bg-indigo-50 text-indigo-800 border-indigo-200", dot: "bg-indigo-600", label: "Researcher" };
+      case "TEACHER":
+        return { bg: "bg-amber-50 text-amber-900 border-amber-200", dot: "bg-amber-600", label: "Teacher" };
+      case "STUDENT":
+      default:
+        return { bg: "bg-sky-50 text-sky-800 border-sky-200", dot: "bg-sky-500", label: "Student" };
+    }
+  };
+
   return (
     <>
       <header className="sticky top-0 z-50 w-full transition-all">
         {/* Top Ice Institutional Ribbon */}
-        <div className="bg-white/90 backdrop-blur-xl border-b border-sky-200/80 text-slate-800 px-3 sm:px-5 lg:px-8 py-1 text-[11px] font-medium">
+        <div className="bg-white/95 backdrop-blur-xl border-b border-sky-200/80 text-slate-800 px-3 sm:px-5 lg:px-8 py-1 text-[11px] font-medium">
           <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-hidden">
             <div className="flex items-center space-x-2 shrink-0">
               <span className="flex items-center space-x-0.5 shadow-2xs" title="Government of India">
@@ -190,7 +173,7 @@ export function Navbar() {
             </div>
 
             <div className="flex items-center space-x-2 shrink-0">
-              {/* Live Telemetry Ping */}
+              {/* Live Telemetry Status */}
               <div className="hidden md:flex items-center space-x-1.5 bg-sky-50/90 border border-sky-200/90 px-2.5 py-0.5 rounded-full text-[10px] text-sky-950 font-mono">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -199,10 +182,10 @@ export function Navbar() {
                 <span className="font-semibold">Maitri • Bharati • Himadri • Himansh</span>
               </div>
 
-              {/* Bhashini Multilingual Toggle */}
+              {/* Bhashini Multilingual Toggle: EN / हिंदी */}
               <button
                 onClick={() => setSelectedLanguage(selectedLanguage === "en" ? "hi" : "en")}
-                className="flex items-center space-x-1 px-2 py-0.5 rounded-md bg-white border border-sky-200/90 hover:bg-sky-50 text-slate-800 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
+                className="flex items-center space-x-1 px-2.5 py-0.5 rounded-md bg-white border border-sky-200/90 hover:bg-sky-50 text-slate-800 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
                 title="Digital India Bhashini Language Engine"
               >
                 <Globe2 className="w-3 h-3 text-sky-600" />
@@ -212,10 +195,10 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Main Ice-Mountain Frosted Glass Navigation Bar */}
+        {/* Main Frosted Glass Navigation Bar */}
         <div className="ice-glass border-b border-sky-200/80">
-          <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-16 flex items-center justify-between gap-2 lg:gap-3">
-            {/* Brand Mountain Logo & Title */}
+          <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-16 flex items-center justify-between gap-3">
+            {/* Left: VISTAAR Logo */}
             <Link href="/" className="flex items-center space-x-2.5 group shrink-0">
               <MountainLogo size="md" className="group-hover:scale-105 transition-transform drop-shadow-xs" />
               <div className="flex flex-col">
@@ -227,163 +210,40 @@ export function Navbar() {
                     विस्तार
                   </span>
                 </div>
-                <span className="text-[10px] text-slate-500 font-semibold tracking-wide uppercase mt-0.5 hidden 2xl:block">
+                <span className="text-[10px] text-slate-500 font-semibold tracking-wide uppercase mt-0.5 hidden sm:block">
                   Polar Science & Knowledge Portal
                 </span>
               </div>
             </Link>
 
-            {/* Desktop Navigation Links — Compact, Responsive, Never Overflowing */}
-            <nav
-              className="hidden lg:flex items-center space-x-1 xl:space-x-1.5"
-              aria-label="Primary Navigation"
-            >
-              {/* Core Links: Overview, Stations, Weather, Research, Classroom */}
-              {CORE_NAV_ITEMS.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center space-x-1.5 px-2 xl:px-2.5 py-1.5 rounded-xl text-xs xl:text-xs 2xl:text-sm font-bold transition-all whitespace-nowrap",
-                      isActive
-                        ? "bg-white text-sky-700 shadow-2xs border border-sky-200"
-                        : "text-slate-700 hover:text-sky-700 hover:bg-white/60"
-                    )}
-                  >
-                    <Icon className={cn("w-3.5 h-3.5 shrink-0 hidden 2xl:inline-block", isActive ? "text-sky-600" : "text-slate-400")} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-
-              {/* Extended Links: Expeditions, Media & Press (Visible directly on xl: 1280px+) */}
-              {EXTENDED_NAV_ITEMS.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(item.href);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "hidden xl:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs 2xl:text-sm font-bold transition-all whitespace-nowrap",
-                      isActive
-                        ? "bg-white text-sky-700 shadow-2xs border border-sky-200"
-                        : "text-slate-700 hover:text-sky-700 hover:bg-white/60"
-                    )}
-                  >
-                    <Icon className={cn("w-3.5 h-3.5 shrink-0 hidden 2xl:inline-block", isActive ? "text-sky-600" : "text-slate-400")} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-
-              {/* "More ▾" Dropdown: On lg (1024-1279px) screens to guarantee zero horizontal overflow */}
-              <div id="more-nav-container" className="relative hidden lg:block xl:hidden">
-                <button
-                  type="button"
-                  onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+            {/* Portal Context Indicator if navigated inside a role workspace */}
+            {isPortalRoute && currentUser && (
+              <div className="hidden md:flex items-center space-x-2">
+                <div
                   className={cn(
-                    "flex items-center space-x-1 px-2 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
-                    moreMenuOpen || ["/expeditions", "/media", "/datasets", "/about"].some((p) => pathname.startsWith(p))
-                      ? "bg-white text-sky-700 shadow-2xs border border-sky-200"
-                      : "text-slate-700 hover:text-sky-700 hover:bg-white/60"
+                    "px-3 py-1 rounded-full text-xs font-bold border flex items-center space-x-1.5",
+                    roleBadgeStyle(currentUser.role).bg
                   )}
                 >
-                  <span>More</span>
-                  <ChevronDown className={cn("w-3 h-3 transition-transform", moreMenuOpen && "rotate-180")} />
-                </button>
-
-                {moreMenuOpen && (
-                  <div className="absolute left-0 mt-2 w-64 rounded-2xl ice-glass-strong p-2.5 z-50 space-y-1 shadow-xl border border-white">
-                    {MORE_NAV_ITEMS.map((item) => {
-                      const isActive = pathname === item.href || pathname.startsWith(item.href);
-                      const Icon = item.icon;
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setMoreMenuOpen(false)}
-                          className={cn(
-                            "flex items-start space-x-2.5 p-2 rounded-xl transition-all",
-                            isActive
-                              ? "bg-sky-50 text-sky-900 font-bold border border-sky-200"
-                              : "hover:bg-white/80 text-slate-800"
-                          )}
-                        >
-                          <Icon className={cn("w-4 h-4 mt-0.5 shrink-0", isActive ? "text-sky-600" : "text-slate-500")} />
-                          <div>
-                            <div className="text-xs font-bold">{item.label}</div>
-                            <div className="text-[10px] text-slate-500 leading-tight">{item.desc}</div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
+                  <span className={cn("w-2 h-2 rounded-full", roleBadgeStyle(currentUser.role).dot)} />
+                  <span>{getRolePortalLabel(currentUser.role)}</span>
+                </div>
+                <Link
+                  href="/"
+                  className="text-xs text-sky-700 hover:text-sky-900 font-semibold flex items-center space-x-1 px-2 py-1 rounded-lg hover:bg-white/60 transition-colors"
+                >
+                  <span>← Public Home</span>
+                </Link>
               </div>
+            )}
 
-              {/* Special Workspace Links for authenticated roles */}
-              {currentUser && (
-                <>
-                  {["SUPER_ADMIN", "ADMIN"].includes(currentUser.role) && (
-                    <Link
-                      href="/admin"
-                      className="flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-extrabold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-all whitespace-nowrap"
-                    >
-                      <Shield className="w-3 h-3 shrink-0" />
-                      <span>Admin</span>
-                    </Link>
-                  )}
-                  {["SCIENTIST", "FIELD_SCIENTIST"].includes(currentUser.role) && (
-                    <Link
-                      href="/scientist"
-                      className="flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-all whitespace-nowrap"
-                    >
-                      <FlaskConical className="w-3 h-3 shrink-0" />
-                      <span>Scientist</span>
-                    </Link>
-                  )}
-                  {["RESEARCHER", "JOURNALIST"].includes(currentUser.role) && (
-                    <Link
-                      href="/researcher"
-                      className="flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-all whitespace-nowrap"
-                    >
-                      <Compass className="w-3 h-3 shrink-0" />
-                      <span>Researcher</span>
-                    </Link>
-                  )}
-                  {currentUser.role === "TEACHER" && (
-                    <Link
-                      href="/teacher"
-                      className="flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-extrabold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-all whitespace-nowrap"
-                    >
-                      <GraduationCap className="w-3 h-3 shrink-0" />
-                      <span>Teacher</span>
-                    </Link>
-                  )}
-                  {["STUDENT", "PUBLIC_USER"].includes(currentUser.role) && (
-                    <Link
-                      href="/student"
-                      className="flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-extrabold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-all whitespace-nowrap"
-                    >
-                      <Sparkles className="w-3 h-3 shrink-0" />
-                      <span>Student</span>
-                    </Link>
-                  )}
-                </>
-              )}
-            </nav>
-
-            {/* Right Action Controls: Search & Sign In (ALWAYS VISIBLE ACROSS ALL SCREENS!) */}
-            <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-              {/* Quick Search Button — Always Visible Across All Screens */}
+            {/* Right: Clean Action Controls (Language, Search & Sign In) */}
+            <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+              {/* Universal Search Button */}
               <button
                 onClick={() => setSearchOpen(true)}
-                className="flex items-center space-x-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl border border-sky-200/90 bg-white/90 hover:bg-white text-xs text-slate-700 font-semibold transition-all cursor-pointer shadow-2xs shrink-0"
-                title="Search Portal (Ctrl+K)"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-sky-200/90 bg-white/90 hover:bg-white text-xs text-slate-700 font-semibold transition-all cursor-pointer shadow-2xs shrink-0"
+                title="Search Polar Science & Records (Ctrl+K)"
               >
                 <Search className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                 <span className="hidden sm:inline">Search</span>
@@ -392,81 +252,86 @@ export function Navbar() {
                 </kbd>
               </button>
 
-              {/* User Profile or Prominent Sign-In Button */}
+              {/* If Logged In: Role Badge + Go to Portal + User Menu */}
               {currentUser ? (
-                <div className="relative shrink-0" id="user-menu-container">
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="inline-flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-sky-200 bg-white/95 hover:bg-white shadow-2xs text-xs font-bold text-slate-900 transition-all cursor-pointer shrink-0"
+                <div className="flex items-center space-x-2">
+                  <Link
+                    href={getRolePortalRoute(currentUser.role)}
+                    className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white font-extrabold text-xs shadow-xs transition-all"
                   >
-                    <span
-                      className={cn(
-                        "w-2 h-2 rounded-full shrink-0",
-                        currentUser.role === "SUPER_ADMIN" || currentUser.role === "ADMIN"
-                          ? "bg-red-500"
-                          : currentUser.role === "SCIENTIST" || currentUser.role === "FIELD_SCIENTIST"
-                          ? "bg-emerald-600"
-                          : currentUser.role === "RESEARCHER"
-                          ? "bg-indigo-600"
-                          : currentUser.role === "TEACHER"
-                          ? "bg-amber-600"
-                          : "bg-sky-500"
-                      )}
-                    />
-                    <span className="max-w-[70px] sm:max-w-[110px] truncate">{currentUser.name || currentUser.email}</span>
-                    <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-sky-50 text-sky-800 border border-sky-200 font-extrabold hidden sm:inline">
-                      {currentUser.role}
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  </button>
+                    <span>My Role Portal</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
 
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-72 rounded-2xl ice-glass-strong p-4 z-50 space-y-3 shadow-xl border border-white">
-                      <div className="border-b border-sky-200/80 pb-2.5">
-                        <p className="text-sm font-bold text-slate-900">{currentUser.name}</p>
-                        <p className="text-xs text-slate-500 font-mono truncate">{currentUser.email}</p>
-                        <span className="inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800">
-                          {currentUser.role}
-                        </span>
-                      </div>
+                  <div className="relative shrink-0" id="user-menu-container">
+                    <button
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className="inline-flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-sky-200 bg-white/95 hover:bg-white shadow-2xs text-xs font-bold text-slate-900 transition-all cursor-pointer shrink-0"
+                    >
+                      <span className={cn("w-2 h-2 rounded-full shrink-0", roleBadgeStyle(currentUser.role).dot)} />
+                      <span className="max-w-[70px] sm:max-w-[100px] truncate">
+                        {currentUser.name || currentUser.email}
+                      </span>
+                      <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-sky-50 text-sky-800 border border-sky-200 font-extrabold hidden lg:inline">
+                        {roleBadgeStyle(currentUser.role).label}
+                      </span>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    </button>
 
-                      <div className="space-y-1">
-                        <Link
-                          href={getRolePortalRoute(currentUser.role)}
-                          onClick={() => setUserMenuOpen(false)}
-                          className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold bg-sky-50 hover:bg-sky-100 text-sky-900 flex items-center justify-between"
-                        >
-                          <span>Open Assigned Role Portal</span>
-                          <span>→</span>
-                        </Link>
-                      </div>
+                    {userMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-72 rounded-2xl ice-glass-strong p-4 z-50 space-y-3 shadow-xl border border-white">
+                        <div className="border-b border-sky-200/80 pb-2.5">
+                          <p className="text-sm font-bold text-slate-900">{currentUser.name}</p>
+                          <p className="text-xs text-slate-500 font-mono truncate">{currentUser.email}</p>
+                          <span
+                            className={cn(
+                              "inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full border",
+                              roleBadgeStyle(currentUser.role).bg
+                            )}
+                          >
+                            {roleBadgeStyle(currentUser.role).label} Portal
+                          </span>
+                        </div>
 
-                      <div className="border-t border-sky-200/80 pt-2 flex items-center justify-between">
-                        <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center justify-center space-x-1.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold cursor-pointer transition-colors"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          <span>Sign Out</span>
-                        </button>
+                        <div className="space-y-1">
+                          <Link
+                            href={getRolePortalRoute(currentUser.role)}
+                            onClick={() => setUserMenuOpen(false)}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold bg-sky-50 hover:bg-sky-100 text-sky-900 flex items-center justify-between"
+                          >
+                            <span>Open {getRolePortalLabel(currentUser.role)}</span>
+                            <span>→</span>
+                          </Link>
+                        </div>
+
+                        <div className="border-t border-sky-200/80 pt-2 flex items-center justify-between">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center justify-center space-x-1.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold cursor-pointer transition-colors"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Sign Out</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ) : (
+                /* Unauthenticated: Primary Clean Sign In Button */
                 <button
                   onClick={openAuthModal}
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-black text-xs sm:text-sm shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 whitespace-nowrap"
+                  className="px-3.5 py-2 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-black text-xs sm:text-sm shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 whitespace-nowrap"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>Sign In</span>
                 </button>
               )}
 
-              {/* Mobile Hamburger Toggle */}
+              {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-1.5 rounded-xl border border-sky-200 bg-white/90 text-slate-800 hover:bg-white transition-colors shrink-0"
+                className="sm:hidden p-1.5 rounded-xl border border-sky-200 bg-white/90 text-slate-800 hover:bg-white transition-colors shrink-0"
                 aria-label="Toggle navigation menu"
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -475,72 +340,102 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer */}
+        {/* Mobile Minimal Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden ice-glass-strong border-b border-sky-200 px-4 pt-3 pb-6 space-y-2 shadow-xl">
-            {ALL_MOBILE_NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    "flex items-center space-x-3 px-4 py-3 rounded-2xl text-base font-bold transition-all",
-                    isActive
-                      ? "bg-white text-sky-700 shadow-sm border border-sky-200"
-                      : "text-slate-800 hover:bg-white/60"
-                  )}
-                >
-                  <Icon className={cn("w-5 h-5", isActive ? "text-sky-600" : "text-slate-500")} />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+          <div className="sm:hidden ice-glass-strong border-b border-sky-200 px-4 pt-3 pb-6 space-y-3 shadow-xl">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setSearchOpen(true);
+              }}
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl bg-white text-slate-800 font-bold border border-sky-200"
+            >
+              <Search className="w-5 h-5 text-sky-600" />
+              <span>Search Polar Science & Records</span>
+            </button>
 
-            {!currentUser && (
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    openAuthModal();
-                  }}
-                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 text-white font-black text-center shadow-md cursor-pointer"
+            {currentUser ? (
+              <div className="space-y-2">
+                <Link
+                  href={getRolePortalRoute(currentUser.role)}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 text-white font-bold"
                 >
-                  Sign In to VISTAAR
+                  <span>Open {getRolePortalLabel(currentUser.role)}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-2xl bg-red-50 text-red-700 font-bold text-sm border border-red-200"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
                 </button>
               </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAuthModal();
+                }}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-700 text-white font-black text-sm shadow-md"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In to VISTAAR</span>
+              </button>
             )}
           </div>
         )}
       </header>
 
-      {/* Global Interactive Search Modal (⌘K) */}
+      {/* Quick Search Modal (Ctrl+K or Header Search Click) */}
       {searchOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 bg-slate-950/40 backdrop-blur-md">
-          <div className="w-full max-w-2xl rounded-3xl ice-glass-strong overflow-hidden shadow-2xl border border-white">
-            <form onSubmit={handleSearchSubmit} className="flex items-center px-5 py-4 border-b border-sky-200/80">
-              <Search className="w-6 h-6 text-sky-600 mr-3 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search polar stations, expeditions, weather telemetry, NCERT lessons..."
-                className="w-full text-base font-semibold bg-transparent text-slate-900 placeholder-slate-400 focus:outline-none"
-                autoFocus
-              />
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-slate-950/40 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-2xl ice-glass-strong rounded-3xl p-5 shadow-2xl border-2 border-white/95 space-y-4">
+            <div className="flex items-center justify-between border-b border-sky-200/80 pb-3">
+              <div className="flex items-center space-x-2">
+                <Search className="w-5 h-5 text-sky-600" />
+                <span className="font-black text-slate-900 text-base">Search VISTAAR Polar Repository</span>
+              </div>
               <button
-                type="button"
                 onClick={() => setSearchOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-800"
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-sky-100"
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            <form onSubmit={handleSearchSubmit}>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search polar science, research, stations, expeditions, datasets and stories..."
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-sky-200 bg-white text-slate-900 text-sm font-semibold focus:outline-none focus:border-sky-500"
+                  autoFocus
+                />
+              </div>
             </form>
-            <div className="p-4 bg-white/70 text-xs text-slate-500 flex items-center justify-between font-medium">
-              <span>Press <kbd className="px-2 py-0.5 bg-white border border-sky-200 rounded font-mono font-bold">Enter</kbd> to search</span>
-              <span><kbd className="px-2 py-0.5 bg-white border border-sky-200 rounded font-mono font-bold">Esc</kbd> to close</span>
+
+            <div className="space-y-2 pt-2">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Filters & Categorized Search:
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {["Antarctica", "Arctic", "Himalayas", "Stations", "Expeditions", "Datasets"].map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => {
+                      setSearchOpen(false);
+                      router.push(`/explore?filter=${encodeURIComponent(filter.toLowerCase())}`);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white/80 hover:bg-white border border-sky-200 font-semibold text-slate-700 hover:text-sky-700 transition-colors cursor-pointer"
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
