@@ -78,7 +78,7 @@ describe('VISTAAR Role-Based Portals, Minimal Navbar, and RBAC Verification Suit
   // 2. SCIENTIST PORTAL (/scientist)
   // ==========================================
   describe('2. 🔬 Scientist Portal Specification', () => {
-    test('Scientist page contains all 12 specified tabs and CAN/CANNOT boundaries', () => {
+    test('Scientist page contains all 12 specified tabs and clean profile accreditations', () => {
       const content = readFile('app/scientist/page.tsx');
 
       const expectedTabs = [
@@ -103,19 +103,13 @@ describe('VISTAAR Role-Based Portals, Minimal Navbar, and RBAC Verification Suit
         );
       }
 
-      // Scientist CAN capabilities
-      assert.match(content, /Scientist CAN/i, 'Must define Scientist CAN boundary card');
-      assert.match(content, /Upload research/i, 'Scientist CAN upload research');
-      assert.match(content, /Upload PDF\/CSV\/photos\/videos/i, 'Scientist CAN upload media and datasets');
-      assert.match(content, /Add observations\/notes/i, 'Scientist CAN record field notes');
-
-      // Scientist CANNOT limitations
-      assert.match(content, /Scientist CANNOT/i, 'Must define Scientist CANNOT boundary card');
-      assert.match(content, /Manage users/i, 'Scientist CANNOT manage users');
-      assert.match(content, /Edit another scientist/i, 'Scientist CANNOT edit others private research');
-
-      // Stations & Expeditions
+      // Professional Accreditations & Station References
+      assert.match(content, /Field Accreditations|National Centre for Polar and Ocean Research/i, 'Must display professional field accreditations');
       assert.match(content, /Maitri|Bharati|Himadri|Himansh/i, 'Scientist portal must reference India polar stations');
+
+      // Verify intrusive CAN / CANNOT boxes have been removed
+      assert.doesNotMatch(content, /Scientist CANNOT/i, 'Must NOT contain intrusive Scientist CANNOT box');
+      assert.doesNotMatch(content, /Scientist CAN\b/i, 'Must NOT contain intrusive Scientist CAN box');
     });
   });
 
@@ -123,7 +117,7 @@ describe('VISTAAR Role-Based Portals, Minimal Navbar, and RBAC Verification Suit
   // 3. RESEARCHER PORTAL (/researcher)
   // ==========================================
   describe('3. 🧪 Researcher Portal Specification', () => {
-    test('Researcher page contains all 12 specified tabs and CAN/CANNOT boundaries', () => {
+    test('Researcher page contains all 12 specified tabs and clean accreditations', () => {
       const content = readFile('app/researcher/page.tsx');
 
       const expectedTabs = [
@@ -148,16 +142,12 @@ describe('VISTAAR Role-Based Portals, Minimal Navbar, and RBAC Verification Suit
         );
       }
 
-      // Researcher CAN & CANNOT
-      assert.match(content, /Researcher CAN/i, 'Must define Researcher CAN boundary card');
-      assert.match(content, /Read authorized research/i, 'Researcher CAN read authorized research');
-      assert.match(content, /Analyze datasets/i, 'Researcher CAN analyze datasets');
-      assert.match(content, /Weather Analysis/i, 'Researcher CAN perform weather analysis');
-      assert.match(content, /Use AI on authorized sources/i, 'Researcher CAN use AI on sources');
+      // Researcher Professional Accreditations
+      assert.match(content, /Researcher Accreditations|National Polar Data Centre/i, 'Must display professional researcher accreditations');
 
-      assert.match(content, /Researcher CANNOT/i, 'Must define Researcher CANNOT boundary card');
-      assert.match(content, /Modify original Scientist data/i, 'Researcher CANNOT modify original scientist data');
-      assert.match(content, /Manage users/i, 'Researcher CANNOT manage users');
+      // Verify intrusive CAN / CANNOT boxes have been removed
+      assert.doesNotMatch(content, /Researcher CANNOT/i, 'Must NOT contain intrusive Researcher CANNOT box');
+      assert.doesNotMatch(content, /Researcher CAN\b/i, 'Must NOT contain intrusive Researcher CAN box');
     });
   });
 
@@ -165,7 +155,7 @@ describe('VISTAAR Role-Based Portals, Minimal Navbar, and RBAC Verification Suit
   // 4. TEACHER PORTAL (/teacher)
   // ==========================================
   describe('4. 👨‍🏫 Teacher Portal Specification', () => {
-    test('Teacher page contains all 11 tabs, 9 AI content types, and CAN/CANNOT boundaries', () => {
+    test('Teacher page contains all 11 tabs, 9 AI content types, and clean accreditations', () => {
       const content = readFile('app/teacher/page.tsx');
 
       const expectedTabs = [
@@ -209,12 +199,9 @@ describe('VISTAAR Role-Based Portals, Minimal Navbar, and RBAC Verification Suit
         );
       }
 
-      // Teacher CAN / CANNOT
-      assert.match(content, /Teacher CAN/i, 'Must define Teacher CAN boundary card');
-      assert.match(content, /Generate educational content with AI/i, 'Teacher CAN generate educational content with AI');
-      assert.match(content, /Manage own classes/i, 'Teacher CAN manage own classes');
-      assert.match(content, /Teacher CANNOT/i, 'Must define Teacher CANNOT boundary card');
-      assert.match(content, /Modify original scientific research/i, 'Teacher CANNOT modify original scientific research');
+      // Verify intrusive CAN / CANNOT boxes have been removed
+      assert.doesNotMatch(content, /Teacher CANNOT/i, 'Must NOT contain intrusive Teacher CANNOT box');
+      assert.doesNotMatch(content, /Teacher CAN\b/i, 'Must NOT contain intrusive Teacher CAN box');
     });
   });
 
@@ -222,7 +209,7 @@ describe('VISTAAR Role-Based Portals, Minimal Navbar, and RBAC Verification Suit
   // 5. STUDENT PORTAL (/student)
   // ==========================================
   describe('5. 🎓 Student Portal Specification', () => {
-    test('Student page contains all 12 tabs and CAN/CANNOT boundaries', () => {
+    test('Student page contains all 12 tabs and clean accreditations', () => {
       const content = readFile('app/student/page.tsx');
 
       const expectedTabs = [
@@ -247,15 +234,9 @@ describe('VISTAAR Role-Based Portals, Minimal Navbar, and RBAC Verification Suit
         );
       }
 
-      // Student CAN / CANNOT
-      assert.match(content, /Student CAN/i, 'Must define Student CAN boundary card');
-      assert.match(content, /Read research summaries/i, 'Student CAN read summaries');
-      assert.match(content, /Attempt quizzes/i, 'Student CAN attempt quizzes');
-      assert.match(content, /Submit assignments/i, 'Student CAN submit assignments');
-
-      assert.match(content, /Student CANNOT/i, 'Must define Student CANNOT boundary card');
-      assert.match(content, /Upload scientific datasets/i, 'Student CANNOT upload scientific datasets');
-      assert.match(content, /Access private\/restricted research/i, 'Student CANNOT access restricted research');
+      // Verify intrusive CAN / CANNOT boxes have been removed
+      assert.doesNotMatch(content, /Student CANNOT/i, 'Must NOT contain intrusive Student CANNOT box');
+      assert.doesNotMatch(content, /Student CAN\b/i, 'Must NOT contain intrusive Student CAN box');
     });
   });
 

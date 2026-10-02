@@ -75,9 +75,11 @@ class StatusUpdateRequest(BaseModel):
 
 class DraftSubmissionRequest(BaseModel):
     title: str = Field(..., min_length=3)
-    station_id: str
-    category: Literal['DATASET', 'DOCUMENT', 'FIELD_OBSERVATION']
-    summary: str
+    station_id: Optional[str] = None
+    station: Optional[str] = None
+    category: Optional[str] = "FIELD_OBSERVATION"
+    summary: Optional[str] = None
+    abstract: Optional[str] = None
     content_payload: Optional[dict] = None
 
 class TokenResponse(BaseModel):
@@ -102,19 +104,23 @@ async def login(req: LoginRequest, request: Request):
     user = await db.users.find_one({"email": email_key})
 
     # Auto-seed initial root super admin if credentials match
-    if not user and email_key == settings.SUPER_ADMIN_EMAIL.lower() and req.password == settings.SUPER_ADMIN_PASSWORD:
-        admin_doc = {
-            "id": f"usr_{uuid.uuid4().hex[:12]}",
-            "email": settings.SUPER_ADMIN_EMAIL.lower(),
-            "password_hash": get_password_hash(settings.SUPER_ADMIN_PASSWORD),
-            "name": "VISTAAR Lead Administrator",
-            "role": "SUPER_ADMIN",
-            "is_active": True,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.users.insert_one(admin_doc)
-        user = admin_doc
+    if email_key == settings.SUPER_ADMIN_EMAIL.lower() and req.password == settings.SUPER_ADMIN_PASSWORD:
+        if not user:
+            admin_doc = {
+                "id": f"usr_{uuid.uuid4().hex[:12]}",
+                "email": settings.SUPER_ADMIN_EMAIL.lower(),
+                "password_hash": get_password_hash(settings.SUPER_ADMIN_PASSWORD),
+                "name": "VISTAAR Lead Administrator",
+                "role": "SUPER_ADMIN",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.users.insert_one(admin_doc)
+            user = admin_doc
+        else:
+            user["role"] = "SUPER_ADMIN"
+            await db.users.update_one({"email": email_key}, {"$set": {"role": "SUPER_ADMIN"}})
 
     # 2. Verify credentials
     if not user or not verify_password(req.password, user.get("password_hash", "")):
@@ -484,9 +490,9 @@ async def create_draft_submission(
     doc = {
         "submission_id": sub_id,
         "title": req.title,
-        "station_id": req.station_id.lower(),
-        "category": req.category,
-        "summary": req.summary,
+        "station_id": (req.station_id or req.station or "maitri").lower(),
+        "category": (req.category or "FIELD_OBSERVATION").upper(),
+        "summary": req.summary or req.abstract or "",
         "content_payload": req.content_payload or {},
         "author_id": current_user["id"],
         "author_email": current_user["email"],

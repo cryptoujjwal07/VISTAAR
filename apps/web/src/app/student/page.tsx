@@ -624,23 +624,12 @@ export default function StudentPortalPage() {
             </div>
 
             <div className="ice-glass rounded-2xl p-5 border border-white space-y-3">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Role Permissions</h3>
-              <div className="space-y-2 text-xs">
-                <div className="text-sky-800 font-bold">Student CAN:</div>
-                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
-                  <li>Read research summaries and simplified articles</li>
-                  <li>Learn lessons and attempt quizzes</li>
-                  <li>Complete hands-on activities and submit assignments</li>
-                  <li>Watch approved educational videos</li>
-                  <li>Explore polar stations and view public weather</li>
-                </ul>
-
-                <div className="text-red-700 font-bold pt-2">Student CANNOT:</div>
-                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
-                  <li>Upload scientific datasets or modify research</li>
-                  <li>Access private/restricted research or admin portals</li>
-                  <li>Modify teacher content or manage classes</li>
-                </ul>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Learning Accreditations</h3>
+              <div className="space-y-2 text-xs text-slate-700">
+                <div><strong className="text-slate-900">Enrollment Status:</strong> Active Junior Polar Explorer</div>
+                <div><strong className="text-slate-900">Curriculum Track:</strong> Grade 9-10 Polar Cryosphere & Atmospheric Science</div>
+                <div><strong className="text-slate-900">Earned Badges:</strong> Antarctica Scout, Glaciology Novice</div>
+                <div><strong className="text-slate-900">Verification:</strong> Kendriya Vidyalaya Polar Outreach Chapter</div>
               </div>
             </div>
           </div>

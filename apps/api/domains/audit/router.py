@@ -10,6 +10,7 @@ from apps.api.core.security import require_roles, get_current_user
 router = APIRouter(prefix="/audit", tags=["Governance & Audit Logs (Prompt 08)"])
 
 @router.get("")
+@router.get("/logs")
 async def get_audit_logs(
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,

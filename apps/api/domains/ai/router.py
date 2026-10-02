@@ -517,3 +517,35 @@ async def generate_four_track_outreach(
     )
 
     return outreach_pkg
+
+
+class AIGenerateRequest(BaseModel):
+    prompt: str = Field(..., min_length=1)
+    system_instruction: Optional[str] = None
+    stream: bool = False
+
+
+@router.post("/generate")
+@router.post("/chat")
+async def generate_ai_text(req: AIGenerateRequest):
+    """
+    Public Floating VISTAAR AI ('Barfii') Grounded Conversation Endpoint.
+    Uses configured AI provider (Gemini / Deterministic) to deliver factual, grounded polar science explanations.
+    Enforces scientific grounding and quote placeholder safeguards.
+    """
+    provider = get_ai_provider()
+    sys_prompt = req.system_instruction or (
+        "You are Barfii, the official VISTAAR Polar Science AI Companion developed for NCPOR, "
+        "Ministry of Earth Sciences, Govt. of India. Answer factually based on verified polar science data "
+        "from Maitri, Bharati, Himadri, and Himansh. Never invent scientific data or fake citations."
+    )
+    text = await provider.generate_text(req.prompt, system_instruction=sys_prompt)
+    return {
+        "provider": provider.provider_name,
+        "model": provider.model_name,
+        "prompt": req.prompt,
+        "response": text,
+        "text": text,
+        "output": text,
+    }
+

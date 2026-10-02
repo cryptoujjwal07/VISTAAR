@@ -213,15 +213,34 @@ async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCrede
         return None
 
 def require_roles(allowed_roles: List[str]):
-    """Enforces role-based access control (RBAC)."""
+    """Enforces role-based access control (RBAC) with normalized role aliases."""
+    ROLE_EQUIVALENTS: Dict[str, set] = {
+        "ADMIN": {"ADMIN", "SUPER_ADMIN"},
+        "SUPER_ADMIN": {"ADMIN", "SUPER_ADMIN"},
+        "SCIENTIST": {"SCIENTIST", "FIELD_SCIENTIST"},
+        "FIELD_SCIENTIST": {"SCIENTIST", "FIELD_SCIENTIST"},
+        "RESEARCHER": {"RESEARCHER", "JOURNALIST"},
+        "STUDENT": {"STUDENT", "PUBLIC_USER"},
+        "PUBLIC_USER": {"STUDENT", "PUBLIC_USER"},
+    }
+
     async def role_checker(user: dict = Depends(get_current_user)):
         user_role = user.get("role", "PUBLIC_USER")
-        if user_role not in allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Operation not permitted. Required role: {', '.join(allowed_roles)}"
-            )
-        return user
+        # Direct check
+        if user_role in allowed_roles:
+            return user
+        
+        # Check equivalent roles
+        user_aliases = ROLE_EQUIVALENTS.get(user_role, {user_role})
+        for role in allowed_roles:
+            role_aliases = ROLE_EQUIVALENTS.get(role, {role})
+            if user_aliases.intersection(role_aliases):
+                return user
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Operation not permitted. Required role: {', '.join(allowed_roles)}"
+        )
     return role_checker
 
 def require_permission(permission: str):
@@ -239,9 +258,9 @@ def require_permission(permission: str):
 def verify_ownership(resource_owner_id: str, current_user: dict, allow_roles: Optional[List[str]] = None) -> bool:
     """
     Prevents Insecure Direct Object References (IDOR).
-    Grants access if the current user owns the resource, or has an authorized override role (e.g. SUPER_ADMIN).
+    Grants access if the current user owns the resource, or has an authorized override role (e.g. SUPER_ADMIN, ADMIN).
     """
-    authorized_roles = allow_roles or ["SUPER_ADMIN", "OUTREACH_EDITOR"]
+    authorized_roles = allow_roles or ["SUPER_ADMIN", "ADMIN", "OUTREACH_EDITOR"]
     user_role = current_user.get("role", "PUBLIC_USER")
 
     if user_role in authorized_roles:

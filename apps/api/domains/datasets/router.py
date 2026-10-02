@@ -263,6 +263,7 @@ async def trigger_async_ingestion(
 
 
 @router.post("/upload-csv")
+@router.post("/upload")
 async def upload_and_validate_csv(
     file: UploadFile = File(...),
     current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR", "FIELD_SCIENTIST"])),

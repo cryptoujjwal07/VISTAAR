@@ -369,7 +369,7 @@ async def get_admin_console_overview(
     station_id: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    current_user=Depends(require_roles(["SUPER_ADMIN", "OUTREACH_EDITOR"])),
+    current_user=Depends(require_roles(["SUPER_ADMIN", "ADMIN", "OUTREACH_EDITOR"])),
 ):
     """
     Production Administration Console Overview (Prompt 25 & Prompt 27 parallel query execution).

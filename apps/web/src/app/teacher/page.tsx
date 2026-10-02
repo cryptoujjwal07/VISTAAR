@@ -718,23 +718,12 @@ export default function TeacherPortalPage() {
             </div>
 
             <div className="ice-glass rounded-2xl p-5 border border-white space-y-3">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Role Permissions</h3>
-              <div className="space-y-2 text-xs">
-                <div className="text-emerald-800 font-bold">Teacher CAN:</div>
-                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
-                  <li>Use authorized scientific research</li>
-                  <li>Generate educational content with AI</li>
-                  <li>Create lessons, quizzes, activities, worksheets</li>
-                  <li>Manage own classes and assign work</li>
-                  <li>View own students&apos; progress in EN/Hindi</li>
-                </ul>
-
-                <div className="text-red-700 font-bold pt-2">Teacher CANNOT:</div>
-                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
-                  <li>Modify original scientific research</li>
-                  <li>Modify scientific datasets</li>
-                  <li>Manage system users or permissions</li>
-                </ul>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Educator Accreditations</h3>
+              <div className="space-y-2 text-xs text-slate-700">
+                <div><strong className="text-slate-900">Credential Status:</strong> Certified Polar Outreach Educator</div>
+                <div><strong className="text-slate-900">Curriculum Framework:</strong> NCERT / CBSE Secondary & Higher Secondary Aligned</div>
+                <div><strong className="text-slate-900">Classroom Studio:</strong> Interactive Bilingual AI Lesson & Quiz Synthesis Active</div>
+                <div><strong className="text-slate-900">Content Integrity:</strong> Grounded Scientific Source Linking Active</div>
               </div>
             </div>
           </div>

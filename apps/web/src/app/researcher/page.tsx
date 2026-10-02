@@ -258,40 +258,6 @@ export default function ResearcherPortalPage() {
             </div>
           </div>
 
-          {/* CAN / CANNOT Governance Card */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-2xl p-5 bg-emerald-50/90 border border-emerald-200 text-xs space-y-2">
-              <div className="font-bold text-emerald-900 flex items-center space-x-1.5 text-sm">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Researcher CAN</span>
-              </div>
-              <ul className="space-y-1 text-emerald-800">
-                <li>✅ Read authorized research & papers</li>
-                <li>✅ Analyze datasets & telemetry</li>
-                <li>✅ Compare data across observatories</li>
-                <li>✅ Weather Analysis & station correlations</li>
-                <li>✅ Create research questions & hypothesis</li>
-                <li>✅ Create findings & synthesis reports</li>
-                <li>✅ Create research reports with evidence</li>
-                <li>✅ Use AI on authorized sources only</li>
-                <li>✅ Generate charts & visualizations</li>
-                <li>✅ Add citations & provenance anchors</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl p-5 bg-red-50/90 border border-red-200 text-xs space-y-2">
-              <div className="font-bold text-red-900 flex items-center space-x-1.5 text-sm">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-                <span>Researcher CANNOT</span>
-              </div>
-              <ul className="space-y-1 text-red-800">
-                <li>❌ Modify original Scientist data</li>
-                <li>❌ Modify original scientific documents</li>
-                <li>❌ Change system permissions</li>
-                <li>❌ Manage users & role approvals</li>
-                <li>❌ Alter cryptographic provenance or checksums</li>
-              </ul>
-            </div>
-          </div>
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -854,23 +820,12 @@ export default function ResearcherPortalPage() {
             </div>
 
             <div className="ice-glass rounded-2xl p-5 border border-white space-y-3">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Role Permissions</h3>
-              <div className="space-y-2 text-xs">
-                <div className="text-indigo-800 font-bold">Researcher CAN:</div>
-                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
-                  <li>Read authorized research and publications</li>
-                  <li>Analyze datasets and execute data comparisons</li>
-                  <li>Perform weather and climate analysis</li>
-                  <li>Create research questions and findings</li>
-                  <li>Use AI on authorized sources with citations</li>
-                </ul>
-
-                <div className="text-red-700 font-bold pt-2">Researcher CANNOT:</div>
-                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
-                  <li>Modify original Scientist raw data</li>
-                  <li>Modify original scientific documents</li>
-                  <li>Change system permissions or manage users</li>
-                </ul>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Researcher Accreditations</h3>
+              <div className="space-y-2 text-xs text-slate-700">
+                <div><strong className="text-slate-900">Credential Status:</strong> Verified Institutional Researcher</div>
+                <div><strong className="text-slate-900">Authorization Scope:</strong> National Polar Data Centre (NPDC) Repositories</div>
+                <div><strong className="text-slate-900">Telemetry Access:</strong> Maitri, Bharati, Himadri, Himansh Telemetry Nodes</div>
+                <div><strong className="text-slate-900">Audit Compliance:</strong> ISO/IEC 27001 Cryptographic Verification Compliant</div>
               </div>
             </div>
           </div>

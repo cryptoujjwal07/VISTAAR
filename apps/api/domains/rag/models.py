@@ -2,7 +2,8 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
 class RAGQueryRequest(BaseModel):
-    question: str = Field(..., min_length=3, description="Scientific question to answer from NPDC and polar archives")
+    question: Optional[str] = Field(None, description="Scientific question to answer from NPDC and polar archives")
+    query: Optional[str] = Field(None, description="Alias for question")
     station_id: Optional[str] = Field(None, description="Filter by polar research base (maitri, bharati, himadri, himansh)")
     region: Optional[str] = Field(None, description="Filter by polar region (antarctica, arctic, himalayas, southern_ocean)")
     dataset_id: Optional[str] = Field(None, description="Filter by specific calibrated NPDC dataset ID")
@@ -13,6 +14,13 @@ class RAGQueryRequest(BaseModel):
     topic: Optional[str] = Field(None, description="Topic filter (meteorology, glaciology, oceanography, radiation)")
     content_type: Optional[str] = Field("ALL", description="Content filter (ALL, PDF_CHUNK, DATASET_RECORD, TABLE)")
     top_k: int = Field(5, ge=1, le=20, description="Maximum number of evidence citations to select")
+
+    def __init__(self, **data):
+        if "query" in data and not data.get("question"):
+            data["question"] = data["query"]
+        super().__init__(**data)
+        if not self.question:
+            self.question = self.query or "Polar scientific question"
 
 class EvidenceItem(BaseModel):
     evidence_id: str

@@ -374,36 +374,6 @@ export default function ScientistPortalPage() {
             </div>
           </div>
 
-          {/* CAN / CANNOT Governance Card */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-2xl p-5 bg-emerald-50/90 border border-emerald-200 text-xs space-y-2">
-              <div className="font-bold text-emerald-900 flex items-center space-x-1.5 text-sm">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Scientist CAN</span>
-              </div>
-              <ul className="space-y-1 text-emerald-800">
-                <li>✅ Upload research & peer-reviewed papers</li>
-                <li>✅ Upload PDF/CSV/photos/videos with metadata</li>
-                <li>✅ Create scientific records with SHA-256 provenance</li>
-                <li>✅ Add observations/notes from polar expeditions</li>
-                <li>✅ Edit own drafts & datasets</li>
-                <li>✅ Submit research for verification review</li>
-                <li>✅ View authorized scientific data & AWS feeds</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl p-5 bg-red-50/90 border border-red-200 text-xs space-y-2">
-              <div className="font-bold text-red-900 flex items-center space-x-1.5 text-sm">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-                <span>Scientist CANNOT</span>
-              </div>
-              <ul className="space-y-1 text-red-800">
-                <li>❌ Manage users & permissions</li>
-                <li>❌ Change system permissions & RBAC matrix</li>
-                <li>❌ Edit another scientist's private research</li>
-                <li>❌ Directly publish unrestricted public content without governance</li>
-              </ul>
-            </div>
-          </div>
 
           {/* Quick Weather Telemetry Glance */}
           <div className="ice-glass-strong rounded-3xl p-6 sm:p-8 border border-white space-y-4">
@@ -1203,25 +1173,13 @@ export default function ScientistPortalPage() {
               </div>
             </div>
 
-            {/* Clear Role Boundaries: CAN vs CANNOT */}
             <div className="ice-glass rounded-2xl p-5 border border-white space-y-3">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Role Permissions</h3>
-              <div className="space-y-2 text-xs">
-                <div className="text-emerald-800 font-bold">Scientist CAN:</div>
-                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
-                  <li>Upload research, PDF documents, CSV datasets</li>
-                  <li>Upload field photographs and expedition videos</li>
-                  <li>Create scientific records and field observation notes</li>
-                  <li>Edit own drafts and submit for review</li>
-                  <li>View authorized scientific data and weather telemetry</li>
-                </ul>
-
-                <div className="text-red-700 font-bold pt-2">Scientist CANNOT:</div>
-                <ul className="list-disc list-inside text-slate-700 space-y-0.5">
-                  <li>Manage users or change system roles</li>
-                  <li>Edit another scientist&apos;s private drafts</li>
-                  <li>Directly publish unrestricted public content without governance approval</li>
-                </ul>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Field Accreditations</h3>
+              <div className="space-y-2 text-xs text-slate-700">
+                <div><strong className="text-slate-900">Credential Status:</strong> Accredited Polar Expedition Scientist</div>
+                <div><strong className="text-slate-900">Field Certification:</strong> Indian Antarctic Programme (MoES / NCPOR)</div>
+                <div><strong className="text-slate-900">Active Station Clearance:</strong> Maitri & Bharati Research Bases</div>
+                <div><strong className="text-slate-900">Data Integrity:</strong> SHA-256 Provenance & Cryospheric Hash Enforcement Active</div>
               </div>
             </div>
           </div>
